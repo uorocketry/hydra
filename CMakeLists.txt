@@ -1,12 +1,11 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.16)
 
-project(Hydra C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
-SET(CMAKE_SYSTEM_NAME Generic)
-SET(CMAKE_SYSTEM_PROCESSOR arm)
-SET(CMAKE_CROSSCOMPILING 1)
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR arm)
+set(CMAKE_CROSSCOMPILING 1)
 
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
@@ -16,6 +15,8 @@ set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
 set(CMAKE_OBJDUMP arm-none-eabi-objdump)
 set(SIZE arm-none-eabi-size)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
+project(Hydra C CXX)
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message(STATUS "Maximum optimization for speed")
@@ -44,7 +45,7 @@ add_link_options(--specs=nano.specs -Wl,--gc-sections -mcpu=cortex-m4)
 add_link_options(-T same51j18a_flash.ld)
 
 # shared code
-#add_subdirectory(src/shared)
+add_subdirectory(src/shared)
 
 # include all boards here
 add_subdirectory(src/boards/main)

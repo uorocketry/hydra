@@ -1,9 +1,9 @@
 #project(main)
 
-add_executable(main main.cpp)
+add_executable(main main.cpp syscalls.c)
 set_target_properties(main PROPERTIES OUTPUT_NAME "main.elf")
 
-#target_link_libraries(main PUBLIC shared)
+target_link_libraries(main PUBLIC shared)
 
 add_subdirectory(hal)
 
