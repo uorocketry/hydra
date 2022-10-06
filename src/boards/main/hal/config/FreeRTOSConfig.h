@@ -66,7 +66,7 @@ void assert_triggered(const char *file, uint32_t line);
 // <e> Advanced
 // <id> freertos_advanced
 #ifndef FREERTOS_ADVANCED_CONFIG
-#define FREERTOS_ADVANCED_CONFIG 0
+#define FREERTOS_ADVANCED_CONFIG 1
 #endif
 
 // <q> Enable preemption
@@ -207,19 +207,19 @@ to exclude the API function. */
 // <q> Include function to set task priority
 // <id> freertos_vtaskpriorityset
 #ifndef INCLUDE_vTaskPrioritySet
-#define INCLUDE_vTaskPrioritySet 0
+#define INCLUDE_vTaskPrioritySet 1
 #endif
 
 // <q> Include function to get task priority
 // <id> freertos_uxtaskpriorityget
 #ifndef INCLUDE_uxTaskPriorityGet
-#define INCLUDE_uxTaskPriorityGet 0
+#define INCLUDE_uxTaskPriorityGet 1
 #endif
 
 // <q> Include function to delete task
 // <id> freertos_vtaskdelete
 #ifndef INCLUDE_vTaskDelete
-#define INCLUDE_vTaskDelete 0
+#define INCLUDE_vTaskDelete 1
 #endif
 
 // <q> Include function to suspend task

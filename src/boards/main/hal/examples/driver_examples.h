@@ -12,7 +12,19 @@
 extern "C" {
 #endif
 
+void CRC_0_example(void);
+
+void CALENDER_INTERFACE_example(void);
+
+void USART_0_example(void);
+
+void USART_1_example(void);
+
+void delay_example(void);
+
 void CAN_0_example(void);
+
+void CAN_1_example(void);
 
 #ifdef __cplusplus
 }

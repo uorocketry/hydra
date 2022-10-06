@@ -421,3 +421,39 @@ void CAN0_Handler(void)
 
 	hri_can_write_IR_reg(dev->hw, ir);
 }
+
+/*
+ * \brief CAN interrupt handler
+ */
+void CAN1_Handler(void)
+{
+	struct _can_async_device *dev = _can1_dev;
+	uint32_t                  ir;
+	ir = hri_can_read_IR_reg(dev->hw);
+
+	if (ir & CAN_IR_RF0N) {
+		dev->cb.rx_done(dev);
+	}
+
+	if (ir & CAN_IR_TC) {
+		dev->cb.tx_done(dev);
+	}
+
+	if (ir & CAN_IR_BO) {
+		dev->cb.irq_handler(dev, CAN_IRQ_BO);
+	}
+
+	if (ir & CAN_IR_EW) {
+		dev->cb.irq_handler(dev, CAN_IRQ_EW);
+	}
+
+	if (ir & CAN_IR_EP) {
+		dev->cb.irq_handler(dev, hri_can_get_PSR_EP_bit(dev->hw) ? CAN_IRQ_EP : CAN_IRQ_EA);
+	}
+
+	if (ir & CAN_IR_RF0L) {
+		dev->cb.irq_handler(dev, CAN_IRQ_DO);
+	}
+
+	hri_can_write_IR_reg(dev->hw, ir);
+}

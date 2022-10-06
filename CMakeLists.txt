@@ -17,13 +17,13 @@ set(CMAKE_CROSSCOMPILING 1)
 # set(SIZE arm-none-eabi-size)
 
 # Using XC32
-set(CMAKE_C_COMPILER /opt/microchip/xc32/v4.10/bin/xc32-gcc)
-set(CMAKE_CXX_COMPILER /opt/microchip/xc32/v4.10/bin/xc32-g++)
-set(CMAKE_ASM_COMPILER  /opt/microchip/xc32/v4.10/bin/xc32-gcc)
-set(CMAKE_AR /opt/microchip/xc32/v4.10/bin/xc32-ar)
-set(CMAKE_OBJCOPY /opt/microchip/xc32/v4.10/bin/xc32-objcopy)
-set(CMAKE_OBJDUMP /opt/microchip/xc32/v4.10/bin/xc32-objdump)
-set(SIZE /opt/microchip/xc32/v4.10/bin/xc32-size)
+set(CMAKE_C_COMPILER xc32-gcc)
+set(CMAKE_CXX_COMPILER xc32-g++)
+set(CMAKE_ASM_COMPILER xc32-gcc)
+set(CMAKE_AR xc32-ar)
+set(CMAKE_OBJCOPY xc32-objcopy)
+set(CMAKE_OBJDUMP xc32-objdump)
+set(SIZE xc32-size)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(Hydra C CXX)
@@ -69,4 +69,3 @@ add_subdirectory(src/shared)
 
 # include all boards here
 add_subdirectory(src/boards/main)
-add_subdirectory(src/boards/dev)

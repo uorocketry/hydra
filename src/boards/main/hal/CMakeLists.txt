@@ -1,43 +1,57 @@
 target_sources(main PRIVATE
         hal/src/hal_io.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/list.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/MemMang/heap_1.c
         hal/src/hal_can_async.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/event_groups.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/croutine.c
-        gcc/system_same51.c
-        hpl/can/hpl_can.c
-        hpl/core/hpl_core_m4.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/stream_buffer.c
         hal/utils/src/utils_syscalls.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/queue.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/GCC/ARM_CM4F/port.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/timers.c
         hal/src/hal_delay.c
-        hpl/pm/hpl_pm.c
-        hpl/core/hpl_init.c
-        hpl/gclk/hpl_gclk.c
         hal/utils/src/utils_list.c
         hal/utils/src/utils_assert.c
-        hpl/dmac/hpl_dmac.c
-        hpl/oscctrl/hpl_oscctrl.c
-        hpl/mclk/hpl_mclk.c
-        hpl/ramecc/hpl_ramecc.c
         hal/src/hal_init.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/rtos_port.c
-        rtos_start.c
-        hpl/osc32kctrl/hpl_osc32kctrl.c
-        examples/driver_examples.c
-        driver_init.c
         hal/src/hal_gpio.c
         hal/utils/src/utils_event.c
         hal/src/hal_sleep.c
         hal/src/hal_cache.c
-        hpl/cmcc/hpl_cmcc.c
-        atmel_start.c
-        gcc/gcc/startup_same51.c
+        hal/src/hal_crc_sync.c
+        hal/src/hal_mci_sync.c
+        hal/src/hal_usart_sync.c
         hal/src/hal_atomic.c
+        hal/src/hal_calendar.c
+        hpl/can/hpl_can.c
+        hpl/core/hpl_core_m4.c
+        hpl/pm/hpl_pm.c
+        hpl/core/hpl_init.c
+        hpl/gclk/hpl_gclk.c
+        hpl/dmac/hpl_dmac.c
+        hpl/oscctrl/hpl_oscctrl.c
+        hpl/mclk/hpl_mclk.c
+        hpl/ramecc/hpl_ramecc.c
+        hpl/osc32kctrl/hpl_osc32kctrl.c
+        hpl/cmcc/hpl_cmcc.c
+        hpl/dsu/hpl_dsu.c
+        hpl/pac/hpl_pac.c
+        hpl/sdhc/hpl_sdhc.c
+        hpl/sercom/hpl_sercom.c
+        hpl/systick/hpl_systick.c
+        hpl/rtc/hpl_rtc.c
+        sd_mmc/sd_mmc.c
+        sd_mmc_start.c
+        diskio/sdmmc_diskio.c
+        diskio_start.c
+        fatfs/src/ff.c
+        fatfs_main.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/list.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/MemMang/heap_1.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/event_groups.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/croutine.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/stream_buffer.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/queue.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/GCC/ARM_CM4F/port.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/timers.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/rtos_port.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/tasks.c
+        rtos_start.c
+        examples/driver_examples.c
+        driver_init.c
+        atmel_start.c
         )
 
 target_include_directories(main PRIVATE
@@ -57,8 +71,16 @@ target_include_directories(main PRIVATE
     hpl/pm
     hpl/port
     hpl/ramecc
+    hp1/dsu
+    hp1/sercom
+    hpl/systick
+    hpl/sdhc
+    hpl/pac
+    hpl/rtc
     hri
-    config
+    sd_mmc
+    diskio
+    fatfs/src
     thirdparty/RTOS
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/include
