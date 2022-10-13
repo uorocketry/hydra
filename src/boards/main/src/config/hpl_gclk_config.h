@@ -25,7 +25,7 @@
 // <i> This defines the clock source for generic clock generator 0
 // <id> gclk_gen_0_oscillator
 #ifndef CONF_GCLK_GEN_0_SOURCE
-#define CONF_GCLK_GEN_0_SOURCE GCLK_GENCTRL_SRC_OSCULP32K
+#define CONF_GCLK_GEN_0_SOURCE GCLK_GENCTRL_SRC_DFLL
 #endif
 
 // <q> Run in Standby
@@ -39,7 +39,7 @@
 // <i> Indicates whether Divide Selection is enabled or not
 //<id> gclk_gen_0_div_sel
 #ifndef CONF_GCLK_GEN_0_DIVSEL
-#define CONF_GCLK_GEN_0_DIVSEL 0
+#define CONF_GCLK_GEN_0_DIVSEL 1
 #endif
 
 // <q> Output Enable
@@ -84,7 +84,7 @@
 // <i> Indicates whether generic clock 1 configuration is enabled or not
 // <id> enable_gclk_gen_1
 #ifndef CONF_GCLK_GENERATOR_1_CONFIG
-#define CONF_GCLK_GENERATOR_1_CONFIG 0
+#define CONF_GCLK_GENERATOR_1_CONFIG 1
 #endif
 
 // <h> Generic Clock Generator Control
@@ -100,7 +100,7 @@
 // <i> This defines the clock source for generic clock generator 1
 // <id> gclk_gen_1_oscillator
 #ifndef CONF_GCLK_GEN_1_SOURCE
-#define CONF_GCLK_GEN_1_SOURCE GCLK_GENCTRL_SRC_DFLL
+#define CONF_GCLK_GEN_1_SOURCE GCLK_GENCTRL_SRC_XOSC32K
 #endif
 
 // <q> Run in Standby
@@ -142,7 +142,7 @@
 // <i> Indicates whether Generic Clock Generator Enable is enabled or not
 // <id> gclk_arch_gen_1_enable
 #ifndef CONF_GCLK_GEN_1_GENEN
-#define CONF_GCLK_GEN_1_GENEN 0
+#define CONF_GCLK_GEN_1_GENEN 1
 #endif
 // </h>
 
@@ -159,7 +159,7 @@
 // <i> Indicates whether generic clock 2 configuration is enabled or not
 // <id> enable_gclk_gen_2
 #ifndef CONF_GCLK_GENERATOR_2_CONFIG
-#define CONF_GCLK_GENERATOR_2_CONFIG 0
+#define CONF_GCLK_GENERATOR_2_CONFIG 1
 #endif
 
 // <h> Generic Clock Generator Control
@@ -176,7 +176,7 @@
 // <i> This defines the clock source for generic clock generator 2
 // <id> gclk_gen_2_oscillator
 #ifndef CONF_GCLK_GEN_2_SOURCE
-#define CONF_GCLK_GEN_2_SOURCE GCLK_GENCTRL_SRC_XOSC1
+#define CONF_GCLK_GEN_2_SOURCE GCLK_GENCTRL_SRC_OSCULP32K
 #endif
 
 // <q> Run in Standby
@@ -190,7 +190,7 @@
 // <i> Indicates whether Divide Selection is enabled or not
 //<id> gclk_gen_2_div_sel
 #ifndef CONF_GCLK_GEN_2_DIVSEL
-#define CONF_GCLK_GEN_2_DIVSEL 1
+#define CONF_GCLK_GEN_2_DIVSEL 0
 #endif
 
 // <q> Output Enable
@@ -218,7 +218,7 @@
 // <i> Indicates whether Generic Clock Generator Enable is enabled or not
 // <id> gclk_arch_gen_2_enable
 #ifndef CONF_GCLK_GEN_2_GENEN
-#define CONF_GCLK_GEN_2_GENEN 0
+#define CONF_GCLK_GEN_2_GENEN 1
 #endif
 // </h>
 
@@ -294,7 +294,7 @@
 // <i> Indicates whether Generic Clock Generator Enable is enabled or not
 // <id> gclk_arch_gen_3_enable
 #ifndef CONF_GCLK_GEN_3_GENEN
-#define CONF_GCLK_GEN_3_GENEN 0
+#define CONF_GCLK_GEN_3_GENEN 1
 #endif
 // </h>
 

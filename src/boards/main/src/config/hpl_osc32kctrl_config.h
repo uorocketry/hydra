@@ -7,7 +7,7 @@
 // <e> RTC Source configuration
 // <id> enable_rtc_source
 #ifndef CONF_RTCCTRL_CONFIG
-#define CONF_RTCCTRL_CONFIG 1
+#define CONF_RTCCTRL_CONFIG 0
 #endif
 
 // <h> RTC source control
@@ -43,7 +43,7 @@
 // <i> Indicates whether configuration for External 32K Osc is enabled or not
 // <id> enable_xosc32k
 #ifndef CONF_XOSC32K_CONFIG
-#define CONF_XOSC32K_CONFIG 0
+#define CONF_XOSC32K_CONFIG 1
 #endif
 
 // <h> 32kHz External Crystal Oscillator Control
@@ -51,7 +51,7 @@
 // <i> Indicates whether 32kHz External Crystal Oscillator is enabled or not
 // <id> xosc32k_arch_enable
 #ifndef CONF_XOSC32K_ENABLE
-#define CONF_XOSC32K_ENABLE 0
+#define CONF_XOSC32K_ENABLE 1
 #endif
 
 // <o> Start-Up Time
@@ -92,7 +92,7 @@
 // <i> Indicates whether 32kHz Output is enabled or not
 // <id> xosc32k_arch_en32k
 #ifndef CONF_XOSC32K_EN32K
-#define CONF_XOSC32K_EN32K 0
+#define CONF_XOSC32K_EN32K 1
 #endif
 
 // <q> Clock Switch Back

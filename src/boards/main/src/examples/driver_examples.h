@@ -16,9 +16,9 @@ void CRC_0_example(void);
 
 void CALENDER_INTERFACE_example(void);
 
-void USART_0_example(void);
-
 void USART_1_example(void);
+
+void USART_0_example(void);
 
 void delay_example(void);
 

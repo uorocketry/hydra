@@ -153,7 +153,7 @@
 // <7=> 64 byte data field.
 // <id> can_rxesc_f0ds
 #ifndef CONF_CAN0_RXESC_F0DS
-#define CONF_CAN0_RXESC_F0DS 5
+#define CONF_CAN0_RXESC_F0DS 0
 #endif
 
 /* Bytes size for CAN FIFO 0 element, plus 8 bytes for R0,R1 */
@@ -184,7 +184,7 @@
 // <7=> 64 byte data field.
 // <id> can_txesc_tbds
 #ifndef CONF_CAN0_TXESC_TBDS
-#define CONF_CAN0_TXESC_TBDS 5
+#define CONF_CAN0_TXESC_TBDS 0
 #endif
 
 /* Bytes size for CAN Transmit Buffer element, plus 8 bytes for R0,R1 */
@@ -535,7 +535,7 @@
 // <7=> 64 byte data field.
 // <id> can_rxesc_f0ds
 #ifndef CONF_CAN1_RXESC_F0DS
-#define CONF_CAN1_RXESC_F0DS 5
+#define CONF_CAN1_RXESC_F0DS 0
 #endif
 
 /* Bytes size for CAN FIFO 0 element, plus 8 bytes for R0,R1 */
@@ -566,7 +566,7 @@
 // <7=> 64 byte data field.
 // <id> can_txesc_tbds
 #ifndef CONF_CAN1_TXESC_TBDS
-#define CONF_CAN1_TXESC_TBDS 5
+#define CONF_CAN1_TXESC_TBDS 0
 #endif
 
 /* Bytes size for CAN Transmit Buffer element, plus 8 bytes for R0,R1 */

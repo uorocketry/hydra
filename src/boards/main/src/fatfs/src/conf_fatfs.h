@@ -185,7 +185,7 @@
 	// <1258=> Vietnam (OEM, Windows)
 // <id> code_page
 #ifndef _CODE_PAGE
-#   define _CODE_PAGE 437
+#   define _CODE_PAGE 850
 #endif
 
 // <o> LFN Feature

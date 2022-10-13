@@ -17,9 +17,9 @@ struct can_async_descriptor CAN_1;
 
 struct calendar_descriptor CALENDER_INTERFACE;
 
-struct usart_sync_descriptor USART_0;
-
 struct usart_sync_descriptor USART_1;
+
+struct usart_sync_descriptor USART_0;
 
 struct mci_sync_desc IO_BUS;
 
@@ -45,35 +45,12 @@ void CALENDER_INTERFACE_init(void)
 	calendar_init(&CALENDER_INTERFACE, RTC);
 }
 
-void USART_0_PORT_init(void)
-{
-
-	gpio_set_pin_function(PA04, PINMUX_PA04D_SERCOM0_PAD0);
-
-	gpio_set_pin_function(PA05, PINMUX_PA05D_SERCOM0_PAD1);
-}
-
-void USART_0_CLOCK_init(void)
-{
-	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM0_GCLK_ID_CORE, CONF_GCLK_SERCOM0_CORE_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM0_GCLK_ID_SLOW, CONF_GCLK_SERCOM0_SLOW_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-
-	hri_mclk_set_APBAMASK_SERCOM0_bit(MCLK);
-}
-
-void USART_0_init(void)
-{
-	USART_0_CLOCK_init();
-	usart_sync_init(&USART_0, SERCOM0, (void *)NULL);
-	USART_0_PORT_init();
-}
-
 void USART_1_PORT_init(void)
 {
 
-	gpio_set_pin_function(PA00, PINMUX_PA00D_SERCOM1_PAD0);
+	gpio_set_pin_function(PA16, PINMUX_PA16C_SERCOM1_PAD0);
 
-	gpio_set_pin_function(PA01, PINMUX_PA01D_SERCOM1_PAD1);
+	gpio_set_pin_function(PA17, PINMUX_PA17C_SERCOM1_PAD1);
 }
 
 void USART_1_CLOCK_init(void)
@@ -91,8 +68,34 @@ void USART_1_init(void)
 	USART_1_PORT_init();
 }
 
+void USART_0_PORT_init(void)
+{
+
+	gpio_set_pin_function(PB16, PINMUX_PB16C_SERCOM5_PAD0);
+
+	gpio_set_pin_function(PB17, PINMUX_PB17C_SERCOM5_PAD1);
+}
+
+void USART_0_CLOCK_init(void)
+{
+	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM5_GCLK_ID_CORE, CONF_GCLK_SERCOM5_CORE_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM5_GCLK_ID_SLOW, CONF_GCLK_SERCOM5_SLOW_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+
+	hri_mclk_set_APBDMASK_SERCOM5_bit(MCLK);
+}
+
+void USART_0_init(void)
+{
+	USART_0_CLOCK_init();
+	usart_sync_init(&USART_0, SERCOM5, (void *)NULL);
+	USART_0_PORT_init();
+}
+
 void IO_BUS_PORT_init(void)
 {
+
+	gpio_set_pin_direction(LED, GPIO_DIRECTION_OUT);
+	gpio_set_pin_level(LED, false);
 
 	gpio_set_pin_direction(PB11,
 	                       // <y> Pin direction
@@ -432,9 +435,9 @@ void system_init(void)
 
 	CALENDER_INTERFACE_init();
 
-	USART_0_init();
-
 	USART_1_init();
+
+	USART_0_init();
 
 	IO_BUS_init();
 
