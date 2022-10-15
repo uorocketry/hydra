@@ -18,7 +18,7 @@ extern "C" {
 #include <hal_calendar.h>
 #include "ff.h"
 
-extern struct calendar_descriptor CALENDER_INTERFACE;
+extern struct calendar_descriptor CALENDAR_0;
 
 DWORD get_fattime(void);
 

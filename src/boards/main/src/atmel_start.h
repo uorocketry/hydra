@@ -9,6 +9,8 @@ extern "C" {
 #include "rtos_start.h"
 #include "diskio_start.h"
 #include "sd_mmc_start.h"
+#include <usart.h>
+#include <fdcan.h>
 
 /**
  * Initializes MCU, drivers and middleware in the project

@@ -9,7 +9,7 @@
  * \brief CPU's Clock frequency
  */
 #ifndef CONF_CPU_FREQUENCY
-#define CONF_CPU_FREQUENCY 12000000
+#define CONF_CPU_FREQUENCY 24000000
 #endif
 
 // <y> RTC Clock Source
@@ -97,7 +97,7 @@
  * \brief SERCOM1's Core Clock frequency
  */
 #ifndef CONF_GCLK_SERCOM1_CORE_FREQUENCY
-#define CONF_GCLK_SERCOM1_CORE_FREQUENCY 12000000
+#define CONF_GCLK_SERCOM1_CORE_FREQUENCY 24000000
 #endif
 
 /**
@@ -169,7 +169,7 @@
 
 // <i> Select the slow clock source.
 #ifndef CONF_GCLK_SERCOM5_SLOW_SRC
-#define CONF_GCLK_SERCOM5_SLOW_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
+#define CONF_GCLK_SERCOM5_SLOW_SRC GCLK_PCHCTRL_GEN_GCLK3_Val
 #endif
 
 /**
@@ -177,7 +177,7 @@
  * \brief SERCOM5's Core Clock frequency
  */
 #ifndef CONF_GCLK_SERCOM5_CORE_FREQUENCY
-#define CONF_GCLK_SERCOM5_CORE_FREQUENCY 12000000
+#define CONF_GCLK_SERCOM5_CORE_FREQUENCY 24000000
 #endif
 
 /**
@@ -218,7 +218,7 @@
 // <i> Select the clock source for SDHC.
 // <id> sdhc_gclk_selection
 #ifndef CONF_GCLK_SDHC0_SRC
-#define CONF_GCLK_SDHC0_SRC GCLK_PCHCTRL_GEN_GCLK2_Val
+#define CONF_GCLK_SDHC0_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
 #endif
 
 // <y> SDHC clock slow source
@@ -250,7 +250,7 @@
 // <i> Select the clock source for SDHC.
 // <id> sdhc_slow_gclk_selection
 #ifndef CONF_GCLK_SDHC0_SLOW_SRC
-#define CONF_GCLK_SDHC0_SLOW_SRC GCLK_PCHCTRL_GEN_GCLK3_Val
+#define CONF_GCLK_SDHC0_SLOW_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
 #endif
 // </h>
 
@@ -259,7 +259,7 @@
  * \brief SDHC's Clock frequency
  */
 #ifndef CONF_SDHC0_FREQUENCY
-#define CONF_SDHC0_FREQUENCY 32768
+#define CONF_SDHC0_FREQUENCY 24000000
 #endif
 
 /**
@@ -267,7 +267,7 @@
  * \brief SDHC's Clock slow frequency
  */
 #ifndef CONF_SDHC0_SLOW_FREQUENCY
-#define CONF_SDHC0_SLOW_FREQUENCY 16384
+#define CONF_SDHC0_SLOW_FREQUENCY 32768
 #endif
 
 // <y> CAN0 Clock Source
@@ -299,7 +299,7 @@
 
 // <i> Select the clock source for CAN0.
 #ifndef CONF_GCLK_CAN0_SRC
-#define CONF_GCLK_CAN0_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
+#define CONF_GCLK_CAN0_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
 #endif
 
 /**
@@ -307,7 +307,7 @@
  * \brief CAN0's Clock frequency
  */
 #ifndef CONF_GCLK_CAN0_FREQUENCY
-#define CONF_GCLK_CAN0_FREQUENCY 32768
+#define CONF_GCLK_CAN0_FREQUENCY 24000000
 #endif
 
 // <y> CAN1 Clock Source
@@ -339,7 +339,7 @@
 
 // <i> Select the clock source for CAN1.
 #ifndef CONF_GCLK_CAN1_SRC
-#define CONF_GCLK_CAN1_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
+#define CONF_GCLK_CAN1_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
 #endif
 
 /**
@@ -347,7 +347,7 @@
  * \brief CAN1's Clock frequency
  */
 #ifndef CONF_GCLK_CAN1_FREQUENCY
-#define CONF_GCLK_CAN1_FREQUENCY 32768
+#define CONF_GCLK_CAN1_FREQUENCY 24000000
 #endif
 
 // <<< end of configuration section >>>

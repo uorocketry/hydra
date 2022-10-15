@@ -49,7 +49,8 @@ target_sources(main PRIVATE
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/rtos_port.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/tasks.c
         rtos_start.c
-        examples/driver_examples.c
+        communication/usart.c
+        communication/fdcan.c
         driver_init.c
         atmel_start.c
         )
@@ -81,6 +82,7 @@ target_include_directories(main PRIVATE
     sd_mmc
     diskio
     fatfs/src
+    communication
     thirdparty/RTOS
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/include

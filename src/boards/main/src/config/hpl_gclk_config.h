@@ -39,7 +39,7 @@
 // <i> Indicates whether Divide Selection is enabled or not
 //<id> gclk_gen_0_div_sel
 #ifndef CONF_GCLK_GEN_0_DIVSEL
-#define CONF_GCLK_GEN_0_DIVSEL 1
+#define CONF_GCLK_GEN_0_DIVSEL 0
 #endif
 
 // <q> Output Enable
@@ -75,7 +75,7 @@
 //<o> Generic clock generator 0 division <0x0000-0xFFFF>
 // <id> gclk_gen_0_div
 #ifndef CONF_GCLK_GEN_0_DIV
-#define CONF_GCLK_GEN_0_DIV 1
+#define CONF_GCLK_GEN_0_DIV 2
 #endif
 // </h>
 // </e>

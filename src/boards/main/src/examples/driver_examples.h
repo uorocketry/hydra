@@ -14,7 +14,7 @@ extern "C" {
 
 void CRC_0_example(void);
 
-void CALENDER_INTERFACE_example(void);
+void CALENDAR_0_example(void);
 
 void USART_1_example(void);
 

@@ -37,7 +37,7 @@ extern "C" {
 
 extern struct crc_sync_descriptor CRC_0;
 
-extern struct calendar_descriptor CALENDER_INTERFACE;
+extern struct calendar_descriptor CALENDAR_0;
 
 extern struct usart_sync_descriptor USART_1;
 
@@ -48,8 +48,8 @@ extern struct mci_sync_desc IO_BUS;
 extern struct can_async_descriptor CAN_0;
 extern struct can_async_descriptor CAN_1;
 
-void CALENDER_INTERFACE_CLOCK_init(void);
-void CALENDER_INTERFACE_init(void);
+void CALENDAR_0_CLOCK_init(void);
+void CALENDAR_0_init(void);
 
 void USART_1_PORT_init(void);
 void USART_1_CLOCK_init(void);
