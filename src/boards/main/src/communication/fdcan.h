@@ -6,7 +6,6 @@
 #define FDCAN_H
 
 #include <driver_init.h>
-#include <usart.h>
 
 #ifdef __cplusplus
 extern "C" {

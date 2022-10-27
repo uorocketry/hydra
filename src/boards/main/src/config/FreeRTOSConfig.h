@@ -36,7 +36,7 @@ void assert_triggered(const char *file, uint32_t line);
 // <i> Default: 64
 // <id> freertos_minimal_stack_size
 #ifndef configMINIMAL_STACK_SIZE
-#define configMINIMAL_STACK_SIZE ((uint16_t)64)
+#define configMINIMAL_STACK_SIZE ((uint16_t)128)
 #endif
 
 /* configTOTAL_HEAP_SIZE is not used when heap_3.c is used. */
@@ -46,7 +46,7 @@ void assert_triggered(const char *file, uint32_t line);
 // <i> Default: 2400
 // <id> freertos_total_heap_size
 #ifndef configTOTAL_HEAP_SIZE
-#define configTOTAL_HEAP_SIZE ((size_t)(2400))
+#define configTOTAL_HEAP_SIZE ((size_t)(9000))
 #endif
 
 // <q> Enable mutex
@@ -90,7 +90,7 @@ void assert_triggered(const char *file, uint32_t line);
 // <q> Use 16bit tick
 // <id> freertos_use_16_bit_ticks
 #ifndef configUSE_16_BIT_TICKS
-#define configUSE_16_BIT_TICKS 0
+#define configUSE_16_BIT_TICKS 1
 #endif
 
 // <q> Check stack overflow
@@ -207,7 +207,7 @@ to exclude the API function. */
 // <q> Include function to set task priority
 // <id> freertos_vtaskpriorityset
 #ifndef INCLUDE_vTaskPrioritySet
-#define INCLUDE_vTaskPrioritySet 1
+#define INCLUDE_vTaskPrioritySet 0
 #endif
 
 // <q> Include function to get task priority
@@ -237,7 +237,7 @@ to exclude the API function. */
 // <q> Include task delay utilities
 // <id> freertos_vtaskdelayuntil
 #ifndef INCLUDE_vTaskDelayUntil
-#define INCLUDE_vTaskDelayUntil 0
+#define INCLUDE_vTaskDelayUntil 1
 #endif
 
 // <q> Include task delay function

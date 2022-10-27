@@ -11,15 +11,26 @@
 #include <utils.h>
 #include <hal_init.h>
 
+/* The priority of the peripheral should be between the low and high interrupt priority set by chosen RTOS,
+ * Otherwise, some of the RTOS APIs may fail to work inside interrupts
+ * In case of FreeRTOS,the Lowest Interrupt priority is set by configLIBRARY_LOWEST_INTERRUPT_PRIORITY and
+ * Maximum interrupt priority by configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, So Interrupt Priority of the peripheral
+ * should be between configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY and configLIBRARY_LOWEST_INTERRUPT_PRIORITY
+ */
+#define PERIPHERAL_INTERRUPT_PRIORITY (configLIBRARY_LOWEST_INTERRUPT_PRIORITY - 1)
+
 struct crc_sync_descriptor  CRC_0;
 struct can_async_descriptor CAN_0;
 struct can_async_descriptor CAN_1;
 
 struct calendar_descriptor CALENDAR_0;
 
-struct usart_sync_descriptor USART_1;
+struct usart_os_descriptor USART_1;
+uint8_t                    USART_1_buffer[USART_1_BUFFER_SIZE];
 
-struct usart_sync_descriptor USART_0;
+struct usart_os_descriptor USART_0;
+uint8_t                    USART_0_buffer[USART_0_BUFFER_SIZE];
+struct io_descriptor *ioU0;
 
 struct mci_sync_desc IO_BUS;
 
@@ -63,8 +74,15 @@ void USART_1_CLOCK_init(void)
 
 void USART_1_init(void)
 {
+
 	USART_1_CLOCK_init();
-	usart_sync_init(&USART_1, SERCOM1, (void *)NULL);
+	uint32_t irq = SERCOM1_0_IRQn;
+	for (uint32_t i = 0; i < 4; i++) {
+		NVIC_SetPriority((IRQn_Type)irq, PERIPHERAL_INTERRUPT_PRIORITY);
+		irq++;
+	}
+	usart_os_init(&USART_1, SERCOM1, USART_1_buffer, USART_1_BUFFER_SIZE, (void *)NULL);
+	usart_os_enable(&USART_1);
 	USART_1_PORT_init();
 }
 
@@ -86,8 +104,15 @@ void USART_0_CLOCK_init(void)
 
 void USART_0_init(void)
 {
+
 	USART_0_CLOCK_init();
-	usart_sync_init(&USART_0, SERCOM5, (void *)NULL);
+	uint32_t irq = SERCOM5_0_IRQn;
+	for (uint32_t i = 0; i < 4; i++) {
+		NVIC_SetPriority((IRQn_Type)irq, PERIPHERAL_INTERRUPT_PRIORITY);
+		irq++;
+	}
+	usart_os_init(&USART_0, SERCOM5, USART_0_buffer, USART_0_BUFFER_SIZE, (void *)NULL);
+	usart_os_enable(&USART_0);
 	USART_0_PORT_init();
 }
 
@@ -396,13 +421,11 @@ void CAN_0_PORT_init(void)
  *
  * Enables CAN peripheral, clocks and initializes CAN driver
  */
-
 void CAN_0_init(void)
 {
 	// !! You'll need to configure the bit rate based on the CAN clock.
 	// We need to set CCCR.Test to 1 to enable test modes and operation.
 
-	// hri_can_toggle_TEST_LBCK_bit(CAN0); // This will allow us to take transmitted packets as received packets.   
 	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, CONF_GCLK_CAN0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
 	hri_can_write_CCCR_TEST_bit(CAN0, true);
@@ -434,6 +457,7 @@ void CAN_1_init(void)
 void system_init(void)
 {
 	init_mcu();
+
 	// GPIO on PA14
 
 	gpio_set_pin_level(LED,
@@ -447,7 +471,7 @@ void system_init(void)
 	gpio_set_pin_direction(LED, GPIO_DIRECTION_OUT);
 
 	gpio_set_pin_function(LED, GPIO_PIN_FUNCTION_OFF);
-	
+
 	CRC_0_init();
 
 	CALENDAR_0_init();

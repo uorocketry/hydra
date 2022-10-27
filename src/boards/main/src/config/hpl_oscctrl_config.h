@@ -289,7 +289,7 @@
 // <i> Indicates whether Wait Lock is enabled or not
 // <id> dfll_arch_waitlock
 #ifndef CONF_DFLL_WAITLOCK
-#define CONF_DFLL_WAITLOCK 1
+#define CONF_DFLL_WAITLOCK 0
 #endif
 
 // <q> Bypass Coarse Lock

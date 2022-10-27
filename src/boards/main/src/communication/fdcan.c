@@ -10,7 +10,8 @@ void CAN_0_rx_callback(struct can_async_descriptor *const descr)
 	uint8_t            data[64];
 	msg.data = data;
 	can_async_read(descr, &msg);
-	USART_0_write(msg.data, msg.len);
+	ioU0->write(ioU0, (uint8_t *)&msg.data, msg.len);
+	ioU0->write(ioU0, (uint8_t *)"\r\n", 2);
 	return;
 }
 

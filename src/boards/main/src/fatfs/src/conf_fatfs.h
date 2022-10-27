@@ -86,7 +86,7 @@
 // <i> Number of volumes (logical drives) to be used. (1 to 10)
 // <id> num_volumes
 #ifndef _VOLUMES
-#   define _VOLUMES 5
+#   define _VOLUMES 1
 #endif
 
 // <o> Minimum Sector Size 

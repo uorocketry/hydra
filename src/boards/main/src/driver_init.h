@@ -25,9 +25,9 @@ extern "C" {
 
 #include <hal_calendar.h>
 
-#include <hal_usart_sync.h>
+#include <hal_usart_os.h>
 
-#include <hal_usart_sync.h>
+#include <hal_usart_os.h>
 
 #include <hal_mci_sync.h>
 
@@ -35,13 +35,20 @@ extern "C" {
 #include <hal_can_async.h>
 #include <hal_can_async.h>
 
+#define USART_1_BUFFER_SIZE 16
+
+#define USART_0_BUFFER_SIZE 16
+
 extern struct crc_sync_descriptor CRC_0;
 
 extern struct calendar_descriptor CALENDAR_0;
 
-extern struct usart_sync_descriptor USART_1;
+extern struct usart_os_descriptor USART_1;
+extern uint8_t                    USART_1_buffer[];
 
-extern struct usart_sync_descriptor USART_0;
+extern struct usart_os_descriptor USART_0;
+extern uint8_t                    USART_0_buffer[];
+extern struct io_descriptor *ioU0;
 
 extern struct mci_sync_desc IO_BUS;
 

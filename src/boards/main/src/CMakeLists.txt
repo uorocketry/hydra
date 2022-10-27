@@ -5,6 +5,7 @@ target_sources(main PRIVATE
         hal/src/hal_delay.c
         hal/utils/src/utils_list.c
         hal/utils/src/utils_assert.c
+        hal/utils/src/utils_ringbuffer.c
         hal/src/hal_init.c
         hal/src/hal_gpio.c
         hal/utils/src/utils_event.c
@@ -12,7 +13,7 @@ target_sources(main PRIVATE
         hal/src/hal_cache.c
         hal/src/hal_crc_sync.c
         hal/src/hal_mci_sync.c
-        hal/src/hal_usart_sync.c
+        hal/src/hal_usart_os.c
         hal/src/hal_atomic.c
         hal/src/hal_calendar.c
         hpl/can/hpl_can.c
@@ -38,8 +39,10 @@ target_sources(main PRIVATE
         diskio_start.c
         fatfs/src/ff.c
         fatfs_main.c
+        StateMachine/HotFire.cpp
+        StateMachine/StateMachine.cpp
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/list.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/MemMang/heap_1.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/MemMang/heap_2.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/event_groups.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/croutine.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/stream_buffer.c
@@ -48,8 +51,6 @@ target_sources(main PRIVATE
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/timers.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/rtos_port.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/tasks.c
-        rtos_start.c
-        communication/usart.c
         communication/fdcan.c
         driver_init.c
         atmel_start.c
@@ -83,6 +84,7 @@ target_include_directories(main PRIVATE
     diskio
     fatfs/src
     communication
+    StateMachine
     thirdparty/RTOS
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/include

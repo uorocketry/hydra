@@ -51,7 +51,7 @@
 // <i> Baud Rate Prescale
 // <id> can_btp_brp
 #ifndef CONF_CAN0_BTP_BRP
-#define CONF_CAN0_BTP_BRP 3
+#define CONF_CAN0_BTP_BRP 1
 #endif
 
 // <o> time segment before sample point <2-256>
@@ -402,7 +402,7 @@
 // <i> Bit Rate Switch Enable
 // <id> can_cccr_brse
 #ifndef CONF_CAN1_CCCR_BRSE
-#define CONF_CAN1_CCCR_BRSE 0
+#define CONF_CAN1_CCCR_BRSE 1
 #endif
 
 // <hidden> Run In Standby is invalid for C21/E5x/D5x devices
@@ -433,7 +433,7 @@
 // <i> Baud Rate Prescale
 // <id> can_btp_brp
 #ifndef CONF_CAN1_BTP_BRP
-#define CONF_CAN1_BTP_BRP 3
+#define CONF_CAN1_BTP_BRP 1
 #endif
 
 // <o> time segment before sample point <2-256>

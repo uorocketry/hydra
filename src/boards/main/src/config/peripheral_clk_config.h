@@ -169,7 +169,7 @@
 
 // <i> Select the slow clock source.
 #ifndef CONF_GCLK_SERCOM5_SLOW_SRC
-#define CONF_GCLK_SERCOM5_SLOW_SRC GCLK_PCHCTRL_GEN_GCLK3_Val
+#define CONF_GCLK_SERCOM5_SLOW_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
 #endif
 
 /**
