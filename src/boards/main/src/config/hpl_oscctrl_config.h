@@ -268,7 +268,7 @@
 // <i> Indicates whether On Demand Control is enabled or not
 // <id> dfll_arch_ondemand
 #ifndef CONF_DFLL_ONDEMAND
-#define CONF_DFLL_ONDEMAND 0
+#define CONF_DFLL_ONDEMAND 1
 #endif
 
 // <q> Run in Standby
@@ -324,7 +324,7 @@
 // <i> Indicates whether Stable DFLL Frequency is enabled or not
 // <id> dfll_arch_stable
 #ifndef CONF_DFLL_STABLE
-#define CONF_DFLL_STABLE 0
+#define CONF_DFLL_STABLE 1
 #endif
 
 // <o> Operating Mode Selection
@@ -382,7 +382,7 @@
 // <i> Indicates whether configuration for FDPLL0 is enabled or not
 // <id> enable_fdpll0
 #ifndef CONF_FDPLL0_CONFIG
-#define CONF_FDPLL0_CONFIG 0
+#define CONF_FDPLL0_CONFIG 1
 #endif
 
 // <y> Reference Clock Source
@@ -412,7 +412,7 @@
 // <i> Indicates whether Digital Phase Locked Loop is enabled or not
 // <id> fdpll0_arch_enable
 #ifndef CONF_FDPLL0_ENABLE
-#define CONF_FDPLL0_ENABLE 0
+#define CONF_FDPLL0_ENABLE 1
 #endif
 
 // <q> On Demand Control
@@ -433,14 +433,14 @@
 // <i> Value of LDRFRAC is calculated using Fclk_dpll=Fckr*(LDR+1+LDRFRAC/32) formula as given in datasheet. This value is directly written in to DPLLRATIO register
 // <id> fdpll0_ldrfrac
 #ifndef CONF_FDPLL0_LDRFRAC
-#define CONF_FDPLL0_LDRFRAC 0xd
+#define CONF_FDPLL0_LDRFRAC 0x18
 #endif
 
 // <o> Loop Divider Ratio Integer Part <0x0-0x1FFF>
 // <i> Value of LDR is calculated using Fclk_dpll=Fckr*(LDR+1+LDRFRAC/32) formula as given in datasheet. This value is directly written in to DPLLRATIO register
 // <id> fdpll0_ldr
 #ifndef CONF_FDPLL0_LDR
-#define CONF_FDPLL0_LDR 0x5b7
+#define CONF_FDPLL0_LDR 0xbea
 #endif
 
 // <o> Clock Divider <0x0-0x7FF>
@@ -561,14 +561,14 @@
 // <i> Value of LDRFRAC is calculated using Fclk_dpll=Fckr*(LDR+1+LDRFRAC/32) formula as given in datasheet. This value is directly written in to DPLLRATIO register
 // <id> fdpll1_ldrfrac
 #ifndef CONF_FDPLL1_LDRFRAC
-#define CONF_FDPLL1_LDRFRAC 0xd
+#define CONF_FDPLL1_LDRFRAC 0x17
 #endif
 
 // <o> Loop Divider Ratio Integer Part <0x0-0x1FFF>
 // <i> Value of LDR is calculated using Fclk_dpll=Fckr*(LDR+1+LDRFRAC/32) formula as given in datasheet. This value is directly written in to DPLLRATIO register
 // <id> fdpll1_ldr
 #ifndef CONF_FDPLL1_LDR
-#define CONF_FDPLL1_LDR 0x5b7
+#define CONF_FDPLL1_LDR 0xbad
 #endif
 
 // <o> Clock Divider <0x0-0x7FF>

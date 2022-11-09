@@ -12,19 +12,13 @@
 extern "C" {
 #endif
 
-void CRC_0_example(void);
-
 void CALENDAR_0_example(void);
 
-void USART_1_example_task(void *p);
+void RADIO_example_task(void *p);
 
-void USART_0_example_task(void *p);
+void SBG_example_task(void *p);
 
-void delay_example(void);
-
-void CAN_0_example(void);
-
-void CAN_1_example(void);
+void COMPUTER_example_task(void *p);
 
 #ifdef __cplusplus
 }

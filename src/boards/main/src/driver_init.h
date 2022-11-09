@@ -21,9 +21,9 @@ extern "C" {
 #include <hal_io.h>
 #include <hal_sleep.h>
 
-#include <hal_crc_sync.h>
-
 #include <hal_calendar.h>
+
+#include <hal_usart_os.h>
 
 #include <hal_usart_os.h>
 
@@ -31,46 +31,43 @@ extern "C" {
 
 #include <hal_mci_sync.h>
 
-#include <hal_delay.h>
-#include <hal_can_async.h>
-#include <hal_can_async.h>
+#define RADIO_BUFFER_SIZE 16
 
-#define USART_1_BUFFER_SIZE 16
+#define SBG_BUFFER_SIZE 16
 
-#define USART_0_BUFFER_SIZE 16
-
-extern struct crc_sync_descriptor CRC_0;
+#define COMPUTER_BUFFER_SIZE 16
 
 extern struct calendar_descriptor CALENDAR_0;
 
-extern struct usart_os_descriptor USART_1;
-extern uint8_t                    USART_1_buffer[];
+extern struct usart_os_descriptor RADIO;
+extern uint8_t                    RADIO_buffer[];
 
-extern struct usart_os_descriptor USART_0;
-extern uint8_t                    USART_0_buffer[];
-extern struct io_descriptor *ioU0;
+extern struct usart_os_descriptor SBG;
+extern uint8_t                    SBG_buffer[];
+
+extern struct usart_os_descriptor COMPUTER;
+extern uint8_t                    COMPUTER_buffer[];
 
 extern struct mci_sync_desc IO_BUS;
-
-extern struct can_async_descriptor CAN_0;
-extern struct can_async_descriptor CAN_1;
 
 void CALENDAR_0_CLOCK_init(void);
 void CALENDAR_0_init(void);
 
-void USART_1_PORT_init(void);
-void USART_1_CLOCK_init(void);
-void USART_1_init(void);
+void RADIO_PORT_init(void);
+void RADIO_CLOCK_init(void);
+void RADIO_init(void);
 
-void USART_0_PORT_init(void);
-void USART_0_CLOCK_init(void);
-void USART_0_init(void);
+void SBG_PORT_init(void);
+void SBG_CLOCK_init(void);
+void SBG_init(void);
+
+void COMPUTER_PORT_init(void);
+void COMPUTER_CLOCK_init(void);
+void COMPUTER_init(void);
 
 void IO_BUS_PORT_init(void);
 void IO_BUS_CLOCK_init(void);
 void IO_BUS_init(void);
-
-void delay_driver_init(void);
 
 /**
  * \brief Perform system initialization, initialize pins and clocks for

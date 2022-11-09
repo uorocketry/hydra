@@ -1,8 +1,6 @@
 target_sources(main PRIVATE
         hal/src/hal_io.c
-        hal/src/hal_can_async.c
         hal/utils/src/utils_syscalls.c
-        hal/src/hal_delay.c
         hal/utils/src/utils_list.c
         hal/utils/src/utils_assert.c
         hal/utils/src/utils_ringbuffer.c
@@ -11,12 +9,10 @@ target_sources(main PRIVATE
         hal/utils/src/utils_event.c
         hal/src/hal_sleep.c
         hal/src/hal_cache.c
-        hal/src/hal_crc_sync.c
         hal/src/hal_mci_sync.c
         hal/src/hal_usart_os.c
         hal/src/hal_atomic.c
         hal/src/hal_calendar.c
-        hpl/can/hpl_can.c
         hpl/core/hpl_core_m4.c
         hpl/pm/hpl_pm.c
         hpl/core/hpl_init.c
@@ -27,22 +23,17 @@ target_sources(main PRIVATE
         hpl/ramecc/hpl_ramecc.c
         hpl/osc32kctrl/hpl_osc32kctrl.c
         hpl/cmcc/hpl_cmcc.c
-        hpl/dsu/hpl_dsu.c
-        hpl/pac/hpl_pac.c
         hpl/sdhc/hpl_sdhc.c
         hpl/sercom/hpl_sercom.c
-        hpl/systick/hpl_systick.c
         hpl/rtc/hpl_rtc.c
         sd_mmc/sd_mmc.c
         sd_mmc_start.c
         diskio/sdmmc_diskio.c
         diskio_start.c
-        fatfs/src/ff.c
-        fatfs_main.c
-        StateMachine/HotFire.cpp
-        StateMachine/StateMachine.cpp
+        # fatfs/src/ff.c
+        # fatfs_main.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/list.c
-        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/MemMang/heap_2.c
+        thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/MemMang/heap_4.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/event_groups.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/croutine.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/stream_buffer.c
@@ -51,7 +42,55 @@ target_sources(main PRIVATE
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/timers.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/rtos_port.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/tasks.c
-        communication/fdcan.c
+        sbgECom/src/sbgEComGetVersion.c
+        sbgECom/src/protocol/sbgEComProtocol.c
+        sbgECom/src/commands/sbgEComCmdLicense.c
+        sbgECom/src/commands/sbgEComCmdApi.c
+        sbgECom/src/commands/sbgEComCmdOdo.c
+        sbgECom/src/commands/sbgEComCmdEthernet.c
+        sbgECom/src/commands/sbgEComCmdSensor.c
+        sbgECom/src/commands/sbgEComCmdInterface.c
+        sbgECom/src/commands/sbgEComCmdEvent.c
+        sbgECom/src/commands/sbgEComCmdFeatures.c
+        sbgECom/src/commands/sbgEComCmdCommon.c
+        sbgECom/src/commands/sbgEComCmdGnss.c
+        sbgECom/src/commands/sbgEComCmdSettings.c
+        sbgECom/src/commands/sbgEComCmdDvl.c
+        sbgECom/src/commands/sbgEComCmdMag.c
+        sbgECom/src/commands/sbgEComCmdAirData.c
+        sbgECom/src/commands/sbgEComCmdInfo.c
+        sbgECom/src/commands/sbgEComCmdOutput.c
+        sbgECom/src/commands/sbgEComCmdAdvanced.c
+        sbgECom/src/transfer/sbgEComTransfer.c
+        sbgECom/src/sbgECom.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogGps.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogRawData.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogUtc.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogUsbl.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogRtcm.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogMag.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogOdometer.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogDiag.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogStatus.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogEvent.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogDepth.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogEkf.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogAirData.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogDvl.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogShipMotion.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogImu.c
+        sbgECom/src/binaryLogs/sbgEComBinaryLogs.c
+        sbgECom/common/crc/sbgCrc.c
+        sbgECom/common/platform/sbgPlatform.c
+        sbgECom/common/splitBuffer/sbgSplitBuffer.c
+        sbgECom/common/swap/sbgSwap.c
+        sbgECom/common/version/sbgVersion.c
+        sbgECom/common/debug/sbgDebug.c
+        sbgECom/common/streamBuffer/sbgStreamBuffer.c
+        sbgECom/common/network/sbgNetwork.c
+        sbgECom/common/interfaces/sbgInterface.c
+        sbgECom/common/interfaces/sbgInterfaceFile.c
+        # windows, unix, and udp interface files removed
         driver_init.c
         atmel_start.c
         )
@@ -59,10 +98,8 @@ target_sources(main PRIVATE
 target_include_directories(main PRIVATE
     ./
     config
-    examples
     hal/include
     hal/utils/include
-    hpl/can
     hpl/cmcc
     hpl/core
     hpl/dmac
@@ -82,14 +119,27 @@ target_include_directories(main PRIVATE
     hri
     sd_mmc
     diskio
-    fatfs/src
-    communication
-    StateMachine
+    # fatfs/src
     thirdparty/RTOS
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/include
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/GCC/ARM_CM4F
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0/module_config
+    sbgECom/common/crc
+    sbgECom/common/debug
+    sbgECom/common/interfaces
+    sbgECom/common/network
+    sbgECom/common/platform
+    sbgECom/common/splitBuffer
+    sbgECom/common/streamBuffer
+    sbgECom/common/swap
+    sbgECom/common/version
+    sbgECom/common/
+    sbgECom/src/binaryLogs
+    sbgECom/src/commands
+    sbgECom/src/protocol
+    sbgECom/src/transfer
+    sbgECom/src/
     CMSIS/Core/Include
     include
         )

@@ -19,7 +19,7 @@
 // <q> Enable the OS support
 // <id> conf_sd_mmc_os_support
 #ifndef CONF_OS_SUPPORT
-#define CONF_OS_SUPPORT 0
+#define CONF_OS_SUPPORT 1
 #endif
 
 // Detection (card/write protect) timeout (ms/ticks)

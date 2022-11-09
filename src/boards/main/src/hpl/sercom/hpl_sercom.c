@@ -163,7 +163,9 @@ static struct usart_configuration _usarts[] = {
 };
 #endif
 
-static struct _usart_async_device *_sercom1_dev = NULL;
+static struct _usart_async_device *_sercom0_dev = NULL;
+
+static struct _usart_async_device *_sercom4_dev = NULL;
 
 static struct _usart_async_device *_sercom5_dev = NULL;
 
@@ -628,8 +630,12 @@ static uint8_t _get_sercom_index(const void *const hw)
 static void _sercom_init_irq_param(const void *const hw, void *dev)
 {
 
-	if (hw == SERCOM1) {
-		_sercom1_dev = (struct _usart_async_device *)dev;
+	if (hw == SERCOM0) {
+		_sercom0_dev = (struct _usart_async_device *)dev;
+	}
+
+	if (hw == SERCOM4) {
+		_sercom4_dev = (struct _usart_async_device *)dev;
 	}
 
 	if (hw == SERCOM5) {
@@ -2409,30 +2415,59 @@ static inline const struct sercomspi_regs_cfg *_spi_get_regs(const uint32_t hw_a
 /**
  * \internal Sercom interrupt handler
  */
-void SERCOM1_0_Handler(void)
+void SERCOM0_0_Handler(void)
 {
-	_sercom_usart_interrupt_handler(_sercom1_dev);
+	_sercom_usart_interrupt_handler(_sercom0_dev);
 }
 /**
  * \internal Sercom interrupt handler
  */
-void SERCOM1_1_Handler(void)
+void SERCOM0_1_Handler(void)
 {
-	_sercom_usart_interrupt_handler(_sercom1_dev);
+	_sercom_usart_interrupt_handler(_sercom0_dev);
 }
 /**
  * \internal Sercom interrupt handler
  */
-void SERCOM1_2_Handler(void)
+void SERCOM0_2_Handler(void)
 {
-	_sercom_usart_interrupt_handler(_sercom1_dev);
+	_sercom_usart_interrupt_handler(_sercom0_dev);
 }
 /**
  * \internal Sercom interrupt handler
  */
-void SERCOM1_3_Handler(void)
+void SERCOM0_3_Handler(void)
 {
-	_sercom_usart_interrupt_handler(_sercom1_dev);
+	_sercom_usart_interrupt_handler(_sercom0_dev);
+}
+
+/**
+ * \internal Sercom interrupt handler
+ */
+void SERCOM4_0_Handler(void)
+{
+	_sercom_usart_interrupt_handler(_sercom4_dev);
+}
+/**
+ * \internal Sercom interrupt handler
+ */
+void SERCOM4_1_Handler(void)
+{
+	_sercom_usart_interrupt_handler(_sercom4_dev);
+}
+/**
+ * \internal Sercom interrupt handler
+ */
+void SERCOM4_2_Handler(void)
+{
+	_sercom_usart_interrupt_handler(_sercom4_dev);
+}
+/**
+ * \internal Sercom interrupt handler
+ */
+void SERCOM4_3_Handler(void)
+{
+	_sercom_usart_interrupt_handler(_sercom4_dev);
 }
 
 /**

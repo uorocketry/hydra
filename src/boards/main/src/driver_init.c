@@ -19,31 +19,18 @@
  */
 #define PERIPHERAL_INTERRUPT_PRIORITY (configLIBRARY_LOWEST_INTERRUPT_PRIORITY - 1)
 
-struct crc_sync_descriptor  CRC_0;
-struct can_async_descriptor CAN_0;
-struct can_async_descriptor CAN_1;
-
 struct calendar_descriptor CALENDAR_0;
 
-struct usart_os_descriptor USART_1;
-uint8_t                    USART_1_buffer[USART_1_BUFFER_SIZE];
+struct usart_os_descriptor RADIO;
+uint8_t                    RADIO_buffer[RADIO_BUFFER_SIZE];
 
-struct usart_os_descriptor USART_0;
-uint8_t                    USART_0_buffer[USART_0_BUFFER_SIZE];
-struct io_descriptor *ioU0;
+struct usart_os_descriptor SBG;
+uint8_t                    SBG_buffer[SBG_BUFFER_SIZE];
+
+struct usart_os_descriptor COMPUTER;
+uint8_t                    COMPUTER_buffer[COMPUTER_BUFFER_SIZE];
 
 struct mci_sync_desc IO_BUS;
-
-/**
- * \brief CRC initialization function
- *
- * Enables CRC peripheral, clocks and initializes CRC driver
- */
-void CRC_0_init(void)
-{
-	hri_mclk_set_APBBMASK_DSU_bit(MCLK);
-	crc_sync_init(&CRC_0, DSU);
-}
 
 void CALENDAR_0_CLOCK_init(void)
 {
@@ -56,37 +43,67 @@ void CALENDAR_0_init(void)
 	calendar_init(&CALENDAR_0, RTC);
 }
 
-void USART_1_PORT_init(void)
+void RADIO_PORT_init(void)
 {
 
-	gpio_set_pin_function(PA16, PINMUX_PA16C_SERCOM1_PAD0);
+	gpio_set_pin_function(RADIOTX, PINMUX_PA04D_SERCOM0_PAD0);
 
-	gpio_set_pin_function(PA17, PINMUX_PA17C_SERCOM1_PAD1);
+	gpio_set_pin_function(RADIORX, PINMUX_PA05D_SERCOM0_PAD1);
 }
 
-void USART_1_CLOCK_init(void)
+void RADIO_CLOCK_init(void)
 {
-	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM1_GCLK_ID_CORE, CONF_GCLK_SERCOM1_CORE_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM1_GCLK_ID_SLOW, CONF_GCLK_SERCOM1_SLOW_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM0_GCLK_ID_CORE, CONF_GCLK_SERCOM0_CORE_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM0_GCLK_ID_SLOW, CONF_GCLK_SERCOM0_SLOW_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
 
-	hri_mclk_set_APBAMASK_SERCOM1_bit(MCLK);
+	hri_mclk_set_APBAMASK_SERCOM0_bit(MCLK);
 }
 
-void USART_1_init(void)
+void RADIO_init(void)
 {
 
-	USART_1_CLOCK_init();
-	uint32_t irq = SERCOM1_0_IRQn;
+	RADIO_CLOCK_init();
+	uint32_t irq = SERCOM0_0_IRQn;
 	for (uint32_t i = 0; i < 4; i++) {
 		NVIC_SetPriority((IRQn_Type)irq, PERIPHERAL_INTERRUPT_PRIORITY);
 		irq++;
 	}
-	usart_os_init(&USART_1, SERCOM1, USART_1_buffer, USART_1_BUFFER_SIZE, (void *)NULL);
-	usart_os_enable(&USART_1);
-	USART_1_PORT_init();
+	usart_os_init(&RADIO, SERCOM0, RADIO_buffer, RADIO_BUFFER_SIZE, (void *)NULL);
+	usart_os_enable(&RADIO);
+	RADIO_PORT_init();
 }
 
-void USART_0_PORT_init(void)
+void SBG_PORT_init(void)
+{
+
+	gpio_set_pin_function(PB08, PINMUX_PB08D_SERCOM4_PAD0);
+
+	gpio_set_pin_function(PB09, PINMUX_PB09D_SERCOM4_PAD1);
+}
+
+void SBG_CLOCK_init(void)
+{
+	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM4_GCLK_ID_CORE, CONF_GCLK_SERCOM4_CORE_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM4_GCLK_ID_SLOW, CONF_GCLK_SERCOM4_SLOW_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+
+	hri_mclk_set_APBDMASK_SERCOM4_bit(MCLK);
+}
+
+void SBG_init(void)
+{
+
+	SBG_CLOCK_init();
+	uint32_t irq = SERCOM4_0_IRQn;
+	for (uint32_t i = 0; i < 4; i++) {
+		NVIC_SetPriority((IRQn_Type)irq, PERIPHERAL_INTERRUPT_PRIORITY);
+		irq++;
+	}
+	usart_os_init(&SBG, SERCOM4, SBG_buffer, SBG_BUFFER_SIZE, (void *)NULL);
+	usart_os_enable(&SBG);
+	SBG_PORT_init();
+}
+
+void COMPUTER_PORT_init(void)
 {
 
 	gpio_set_pin_function(PB16, PINMUX_PB16C_SERCOM5_PAD0);
@@ -94,7 +111,7 @@ void USART_0_PORT_init(void)
 	gpio_set_pin_function(PB17, PINMUX_PB17C_SERCOM5_PAD1);
 }
 
-void USART_0_CLOCK_init(void)
+void COMPUTER_CLOCK_init(void)
 {
 	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM5_GCLK_ID_CORE, CONF_GCLK_SERCOM5_CORE_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
 	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM5_GCLK_ID_SLOW, CONF_GCLK_SERCOM5_SLOW_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
@@ -102,18 +119,18 @@ void USART_0_CLOCK_init(void)
 	hri_mclk_set_APBDMASK_SERCOM5_bit(MCLK);
 }
 
-void USART_0_init(void)
+void COMPUTER_init(void)
 {
 
-	USART_0_CLOCK_init();
+	COMPUTER_CLOCK_init();
 	uint32_t irq = SERCOM5_0_IRQn;
 	for (uint32_t i = 0; i < 4; i++) {
 		NVIC_SetPriority((IRQn_Type)irq, PERIPHERAL_INTERRUPT_PRIORITY);
 		irq++;
 	}
-	usart_os_init(&USART_0, SERCOM5, USART_0_buffer, USART_0_BUFFER_SIZE, (void *)NULL);
-	usart_os_enable(&USART_0);
-	USART_0_PORT_init();
+	usart_os_init(&COMPUTER, SERCOM5, COMPUTER_buffer, COMPUTER_BUFFER_SIZE, (void *)NULL);
+	usart_os_enable(&COMPUTER);
+	COMPUTER_PORT_init();
 }
 
 void IO_BUS_PORT_init(void)
@@ -404,56 +421,6 @@ void IO_BUS_init(void)
 	IO_BUS_PORT_init();
 }
 
-void delay_driver_init(void)
-{
-	delay_init(SysTick);
-}
-
-void CAN_0_PORT_init(void)
-{
-
-	gpio_set_pin_function(PA23, PINMUX_PA23I_CAN0_RX);
-
-	gpio_set_pin_function(PA22, PINMUX_PA22I_CAN0_TX);
-}
-/**
- * \brief CAN initialization function
- *
- * Enables CAN peripheral, clocks and initializes CAN driver
- */
-void CAN_0_init(void)
-{
-	// !! You'll need to configure the bit rate based on the CAN clock.
-	// We need to set CCCR.Test to 1 to enable test modes and operation.
-
-	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, CONF_GCLK_CAN0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	hri_can_write_CCCR_TEST_bit(CAN0, true);
-	hri_can_write_TEST_LBCK_bit(CAN0, true); // should be the same as toggle.
-	can_async_init(&CAN_0, CAN0);
-	CAN_0_PORT_init();
-}
-
-void CAN_1_PORT_init(void)
-{
-
-	gpio_set_pin_function(PB13, PINMUX_PB13H_CAN1_RX);
-
-	gpio_set_pin_function(PB12, PINMUX_PB12H_CAN1_TX);
-}
-/**
- * \brief CAN initialization function
- *
- * Enables CAN peripheral, clocks and initializes CAN driver
- */
-void CAN_1_init(void)
-{
-	hri_mclk_set_AHBMASK_CAN1_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, CAN1_GCLK_ID, CONF_GCLK_CAN1_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	can_async_init(&CAN_1, CAN1);
-	CAN_1_PORT_init();
-}
-
 void system_init(void)
 {
 	init_mcu();
@@ -472,17 +439,13 @@ void system_init(void)
 
 	gpio_set_pin_function(LED, GPIO_PIN_FUNCTION_OFF);
 
-	CRC_0_init();
-
 	CALENDAR_0_init();
 
-	USART_1_init();
+	RADIO_init();
 
-	USART_0_init();
+	SBG_init();
+
+	COMPUTER_init();
 
 	IO_BUS_init();
-
-	delay_driver_init();
-	CAN_0_init();
-	CAN_1_init();
 }

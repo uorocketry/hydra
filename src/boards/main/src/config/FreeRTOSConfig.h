@@ -36,7 +36,7 @@ void assert_triggered(const char *file, uint32_t line);
 // <i> Default: 64
 // <id> freertos_minimal_stack_size
 #ifndef configMINIMAL_STACK_SIZE
-#define configMINIMAL_STACK_SIZE ((uint16_t)128)
+#define configMINIMAL_STACK_SIZE ((uint16_t)64)
 #endif
 
 /* configTOTAL_HEAP_SIZE is not used when heap_3.c is used. */
@@ -90,7 +90,7 @@ void assert_triggered(const char *file, uint32_t line);
 // <q> Use 16bit tick
 // <id> freertos_use_16_bit_ticks
 #ifndef configUSE_16_BIT_TICKS
-#define configUSE_16_BIT_TICKS 1
+#define configUSE_16_BIT_TICKS 0
 #endif
 
 // <q> Check stack overflow
@@ -127,20 +127,20 @@ void assert_triggered(const char *file, uint32_t line);
 // <q> Use trace facility
 // <id> freertos_use_trace_facility
 #ifndef configUSE_TRACE_FACILITY
-#define configUSE_TRACE_FACILITY 1
+#define configUSE_TRACE_FACILITY 0
 #endif
 
 // <q> Use statistics formating functions
 // <id> freertos_use_stats_formatting_functions
 #ifndef configUSE_STATS_FORMATTING_FUNCTIONS
-#define configUSE_STATS_FORMATTING_FUNCTIONS 1
+#define configUSE_STATS_FORMATTING_FUNCTIONS 0
 #endif
 
 // <q> Use port optimised selection functions
 // <i> default is not supposed for Cortex-M0
 // <id> freertos_use_port_optimised_functions
 #ifndef configUSE_PORT_OPTIMISED_TASK_SELECTION
-#define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 #endif
 
 // <q> Use application task tag functions
@@ -213,7 +213,7 @@ to exclude the API function. */
 // <q> Include function to get task priority
 // <id> freertos_uxtaskpriorityget
 #ifndef INCLUDE_uxTaskPriorityGet
-#define INCLUDE_uxTaskPriorityGet 1
+#define INCLUDE_uxTaskPriorityGet 0
 #endif
 
 // <q> Include function to delete task
@@ -267,7 +267,7 @@ to exclude the API function. */
 // <q> Include the function to get task name
 // <id> freertos_pctaskgettaskname
 #ifndef INCLUDE_pcTaskGetTaskName
-#define INCLUDE_pcTaskGetTaskName 1
+#define INCLUDE_pcTaskGetTaskName 0
 #endif
 
 // <q> Include the function to get task state
