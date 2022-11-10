@@ -235,6 +235,13 @@ static uint32_t convert_datetime_to_timestamp(struct calendar_descriptor *const 
 	return tmp;
 }
 
+/** \brief Outward facing function to return a unix timestamp.
+ *  \return timestamp
+ */
+uint32_t get_UNIX_time(struct calendar_descriptor *const calendar, struct calendar_date_time *dt) {
+	return convert_datetime_to_timestamp(calendar, dt);
+}
+
 /** \brief calibrate timestamp to make desired timestamp ahead of current timestamp
  */
 static void calibrate_timestamp(struct calendar_descriptor *const calendar, struct calendar_alarm *alarm,

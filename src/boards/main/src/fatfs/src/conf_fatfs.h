@@ -278,7 +278,7 @@
 // <i> Enabling the feature adds synchronization handlers, ff_req_grant, ff_rel_grant, ff_del_syncobj and ff_cre_syncobj functions.
 // <id> reentrant_enable 
 #ifndef _FS_REENTRANT
-#   define _FS_REENTRANT 1
+#   define _FS_REENTRANT 0
 #endif
 
 // <o> File System Timeout <1-100000>

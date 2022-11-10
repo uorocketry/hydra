@@ -607,7 +607,7 @@
 // <e> Advanced configuration
 // <id> usart_advanced
 #ifndef CONF_SERCOM_5_USART_ADVANCED_CONFIG
-#define CONF_SERCOM_5_USART_ADVANCED_CONFIG 1
+#define CONF_SERCOM_5_USART_ADVANCED_CONFIG 0
 #endif
 
 // <q> Run in stand-by

@@ -131,6 +131,14 @@ int32_t calendar_set_date(struct calendar_descriptor *const calendar, struct cal
  */
 int32_t calendar_get_date_time(struct calendar_descriptor *const calendar, struct calendar_date_time *const date_time);
 
+/** \brief Convert the date_time structure to a UNIX timestamp
+ *
+ *  \param calendar Pointer to the HAL Calendar instance.
+ *  \param date_time Pointer to the value that will be filled with the current time.
+ *  \return UNIX time
+ */
+uint32_t get_UNIX_time(struct calendar_descriptor *const calendar, struct calendar_date_time *dt);
+
 /** \brief Config the alarm time for calendar HAL instance and hardware
  *
  *  Set the alarm time to calendar instance. If the callback is NULL, remove

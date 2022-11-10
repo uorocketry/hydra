@@ -85,7 +85,7 @@ middlewares:
       multiple_partition_enable: false
       num_volumes: 1
       read_only_fs_enable: false
-      reentrant_enable: true
+      reentrant_enable: false
       relative_path_enable: 2 - f_getcwd() is available in addition to 1.
       sectore_erase_enable: false
       strfunc_fs_enable: false
@@ -688,10 +688,10 @@ drivers:
     functionality: System
     api: HAL:HPL:GCLK
     configuration:
-      $input: 32768
-      $input_id: 32kHz External Crystal Oscillator (XOSC32K)
-      RESERVED_InputFreq: 32768
-      RESERVED_InputFreq_id: 32kHz External Crystal Oscillator (XOSC32K)
+      $input: 12000000
+      $input_id: External Crystal Oscillator 8-48MHz (XOSC1)
+      RESERVED_InputFreq: 12000000
+      RESERVED_InputFreq_id: External Crystal Oscillator 8-48MHz (XOSC1)
       _$freq_output_Generic clock generator 0: 99999744
       _$freq_output_Generic clock generator 1: 32768
       _$freq_output_Generic clock generator 10: 12000000
@@ -896,9 +896,9 @@ drivers:
     api: HAL:HPL:OSCCTRL
     configuration:
       $input: 32768
-      $input_id: Generic clock generator 1
+      $input_id: 32kHz External Crystal Oscillator (XOSC32K)
       RESERVED_InputFreq: 32768
-      RESERVED_InputFreq_id: Generic clock generator 1
+      RESERVED_InputFreq_id: 32kHz External Crystal Oscillator (XOSC32K)
       _$freq_output_Digital Frequency Locked Loop (DFLL48M): 48000000
       _$freq_output_Digital Phase Locked Loop (DPLL0): 99999744
       _$freq_output_Digital Phase Locked Loop (DPLL1): 97999872
@@ -1186,7 +1186,7 @@ drivers:
     functionality: USART
     api: HAL:Driver:USART_RTOS_Beta
     configuration:
-      usart_advanced: true
+      usart_advanced: false
       usart_arch_clock_mode: USART with internal clock
       usart_arch_cloden: false
       usart_arch_dbgstop: Keep running
