@@ -1,4 +1,9 @@
 #include <atmel_start.h>
+// sbgCommonLib headers
+#include <sbgCommon.h>
+
+// sbgECom headers
+#include <sbgEComLib.h>
 
 #define TASK_EXAMPLE_STACK_SIZE (128*3 / sizeof(portSTACK_TYPE))
 #define TASK_STATEMACHINE_STACK_SIZE (128*3 / sizeof(portSTACK_TYPE))
@@ -40,6 +45,25 @@ void COMPUTER_example_task(void *p)
 		os_sleep(1000);
 	}
 	vTaskDelete(NULL);
+}
+
+/**
+ * Example task of using SBG to echo using the IO abstraction.
+ */
+void SBG_task(void *p)
+{
+	SbgErrorCode		errorCode = SBG_NO_ERROR;
+	SbgInterface		sbgInterface;
+	int					exitCode;
+	struct io_descriptor *io;
+
+	(void)p;
+
+	usart_os_get_io(&SBG, &io);
+
+	for (;;) {
+		
+	}
 }
 
 int main()

@@ -72,7 +72,8 @@ SBG_COMMON_LIB_API void sbgSleep(uint32_t ms)
  */
 SBG_COMMON_LIB_API void sbgPlatformDebugLogMsg(const char *pFileName, const char *pFunctionName, uint32_t line, const char *pCategory, SbgDebugLogType logType, SbgErrorCode errorCode, const char *pFormat, ...)
 {
-	char		errorMsg[SBG_CONFIG_LOG_MAX_SIZE];
+	int n;
+	char errorMsg[SBG_CONFIG_LOG_MAX_SIZE];
 	va_list		args;
 
 	ASSERT(pFunctionName);
@@ -81,7 +82,6 @@ SBG_COMMON_LIB_API void sbgPlatformDebugLogMsg(const char *pFileName, const char
 	SBG_UNUSED_PARAMETER(pFileName);
 	SBG_UNUSED_PARAMETER(pCategory);
 	
-	//
 	// Initialize the list of variable arguments on the latest function argument
 	//
 	va_start(args, pFormat);
@@ -89,7 +89,7 @@ SBG_COMMON_LIB_API void sbgPlatformDebugLogMsg(const char *pFileName, const char
 	//
 	// Generate the error message string
 	//
-	vsprintf(errorMsg, pFormat, args);
+	vsprintf(errorMsg, pFormat, args); 
 
 	//
 	// Close the list of variable arguments
@@ -102,19 +102,24 @@ SBG_COMMON_LIB_API void sbgPlatformDebugLogMsg(const char *pFileName, const char
 	switch (logType)
 	{
 	case SBG_DEBUG_LOG_TYPE_ERROR:
-		fprintf(stderr, "*ERR * %s(%"PRIu32"): %s - %s\n\r", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg);
+		n = sprintf(errorMsg, "*ERR * %s(%"PRIu32"): %s - %s\n\r", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg);
+		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
 		break;
 	case SBG_DEBUG_LOG_TYPE_WARNING:
-		fprintf(stderr, "*WARN* %s(%"PRIu32"): %s - %s\n\r", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg);
+		n = sprintf(errorMsg, "*WARN* %s(%"PRIu32"): %s - %s\n\r", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg); 
+		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
 		break;
 	case SBG_DEBUG_LOG_TYPE_INFO:
-		fprintf(stderr, "*INFO* %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg);
+		n = sprintf(errorMsg, "*INFO* %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg); 
+		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
 		break;
 	case SBG_DEBUG_LOG_TYPE_DEBUG:
-		fprintf(stderr, "*DBG * %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg);
+		n = sprintf(errorMsg, "*DBG * %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg); 
+		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
 		break;
 	default:
-		fprintf(stderr, "*UKNW* %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg);
+		n = sprintf(errorMsg, "*UKNW* %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg);
+		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
 		break;
 	}
 }
