@@ -103,23 +103,23 @@ SBG_COMMON_LIB_API void sbgPlatformDebugLogMsg(const char *pFileName, const char
 	{
 	case SBG_DEBUG_LOG_TYPE_ERROR:
 		n = sprintf(errorMsg, "*ERR * %s(%"PRIu32"): %s - %s\n\r", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg);
-		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
+		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	case SBG_DEBUG_LOG_TYPE_WARNING:
 		n = sprintf(errorMsg, "*WARN* %s(%"PRIu32"): %s - %s\n\r", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg); 
-		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
+		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	case SBG_DEBUG_LOG_TYPE_INFO:
 		n = sprintf(errorMsg, "*INFO* %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg); 
-		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
+		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	case SBG_DEBUG_LOG_TYPE_DEBUG:
 		n = sprintf(errorMsg, "*DBG * %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg); 
-		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
+		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	default:
 		n = sprintf(errorMsg, "*UKNW* %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg);
-		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
+		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	}
 }
