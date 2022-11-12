@@ -1,11 +1,7 @@
 // Standard headers
 #include <stdio.h>
 #include <string.h>
-// #include <unistd.h>
-// #include <fcntl.h>
 #include <errno.h>
-// #include <termios.h>
-// #include <sys/ioctl.h>
 
 // sbgCommonLib headers
 #include <sbgCommon.h>
@@ -14,8 +10,8 @@
 //----------------------------------------------------------------------//
 //- Definitions                                                        -//
 //----------------------------------------------------------------------//
-#define SBG_IF_SERIAL_TX_BUFFER_SIZE			(16)					/*!< Define the transmission buffer size for the serial port. */
-#define SBG_IF_SERIAL_RX_BUFFER_SIZE			(16)					/*!< Define the reception buffer size for the serial port. */
+#define SBG_IF_SERIAL_TX_BUFFER_SIZE			(4096u)					/*!< Define the transmission buffer size for the serial port. */
+#define SBG_IF_SERIAL_RX_BUFFER_SIZE			(4096u)					/*!< Define the reception buffer size for the serial port. */
 
 //----------------------------------------------------------------------//
 //- Private methods declarations                                       -//
@@ -41,8 +37,10 @@ static SbgErrorCode sbgInterfaceSerialDestroy(SbgInterface *pInterface)
 		//
 		// Close the port com
 		//
-		usart_os_disable(&SBG);
-
+		int32_t result = usart_os_disable(&COMPUTER); // add error handling
+		if (result < 0) {
+			return SBG_ERROR;
+		}
 		// SBG_FREE(pSerialHandle);
 		pInterface->handle = NULL;
 
@@ -73,27 +71,25 @@ static SbgErrorCode sbgInterfaceSerialFlush(SbgInterface *pInterface, uint32_t f
 	ASSERT(pInterface);
 	ASSERT(pInterface->type == SBG_IF_TYPE_SERIAL);
 
-	fd = *((int *)pInterface->handle);
-
 	if ((result == 0) && (flags & SBG_IF_FLUSH_INPUT))
 	{
-		result = usart_os_flush_rx_buffer(&SBG);
+		result = usart_os_flush_rx_buffer(&COMPUTER);
 
 		if (result != 0)
 		{
-			SBG_LOG_ERROR(SBG_READ_ERROR, "unable to flush input, error:%s", strerror(errno));
+			SBG_LOG_ERROR(SBG_READ_ERROR, "unable to flush input, error:%s");
 		}
 	}
 
 	if ((result == 0) && (flags & SBG_IF_FLUSH_OUTPUT))
 	{
 		uint8_t *empty;
-		SBG.tx_buffer = empty; // should overwrite the current buffer
-		SBG.tx_buffer_length = 0; // this may not work and needs testing 
-		if (SBG.tx_buffer_length != 0) // Possibly a better check for this. Could query the registers.
+		COMPUTER.tx_buffer = empty; // should overwrite the current buffer
+		COMPUTER.tx_buffer_length = 0; // this may not work and needs testing 
+		if (COMPUTER.tx_buffer_length != 0) // Possibly a better check for this. Could query the registers.
 		{
 			result = -1;
-			SBG_LOG_ERROR(SBG_WRITE_ERROR, "unable to flush output, error:%s", strerror(errno));
+			SBG_LOG_ERROR(SBG_WRITE_ERROR, "unable to flush output, error:%s");
 		}
 	}
 
@@ -127,17 +123,17 @@ static SbgErrorCode sbgInterfaceSerialChangeBaudrate(SbgInterface *pInterface, u
 	//
 	if (pInterface)
 	{	
-		response = usart_os_set_baud_rate(&SBG, baudRate); // may need to handle this differently 
+		response = usart_os_set_baud_rate(&COMPUTER, baudRate); // may need to handle this differently 
 		if (response != 0)
 		{
-			uint8_t errorMsg = "sbgInterfaceSerialChangeBaudrate: Unable to set speed.\n";
+			uint8_t errorMsg[] = "sbgInterfaceSerialChangeBaudrate: Unable to set speed.\n";
 			COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, sizeof(errorMsg));
 			return SBG_ERROR;
 		}
 	}
 	else
 	{
-		uint8_t errorMsg = "sbgInterfaceSerialChangeBaudrate: Invalid.\n";
+		uint8_t errorMsg[] = "sbgInterfaceSerialChangeBaudrate: Invalid.\n";
 		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, sizeof(errorMsg));
 		return SBG_ERROR;
 	}
@@ -165,11 +161,16 @@ static SbgErrorCode sbgInterfaceSerialWrite(SbgInterface *pInterface, const void
 	ASSERT(pInterface);
 	ASSERT(pInterface->type == SBG_IF_TYPE_SERIAL);
 	ASSERT(pBuffer);
-	
-	int32_t result = SBG.io.write(&SBG.io, (uint8_t *)pBuffer, bytesToWrite);
+
+	// while (numBytesLeftToWrite > 0) {
+	// 	numBytesWritten = COMPUTER.io.write(&COMPUTER.io, (uint8_t *)pCurrentBuffer, sizeof(pCurrentBuffer));
+	// 	numBytesLeftToWrite -= (size_t)numBytesWritten;
+	// 	pCurrentBuffer += (size_t)numBytesWritten;
+	// }
+	int32_t result = COMPUTER.io.write(&COMPUTER.io, (uint8_t *)pBuffer, bytesToWrite);
 
 	if (result == -8) {
-		uint8_t errorMsg = "sbgDeviceWrite: Unable to write to our device: %s\n";
+		uint8_t errorMsg[] = "sbgDeviceWrite: Unable to write to our device: %s\n";
 		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, sizeof(errorMsg));
 		return SBG_WRITE_ERROR;
 	}
@@ -198,7 +199,7 @@ static SbgErrorCode sbgInterfaceSerialRead(SbgInterface *pInterface, void *pBuff
 	//
 	// Read our buffer
 	//
-	numBytesRead = SBG.io.read(&SBG.io, (uint8_t *)pBuffer, bytesToRead);
+	numBytesRead = COMPUTER.io.read(&COMPUTER.io, (uint8_t *)pBuffer, bytesToRead);
 		
 	//
 	// Check if the read operation was successful
@@ -227,51 +228,42 @@ static SbgErrorCode sbgInterfaceSerialRead(SbgInterface *pInterface, void *pBuff
 
 SbgErrorCode sbgInterfaceSerialCreate(SbgInterface *pInterface, const char *deviceName, uint32_t baudRate)
 {
+	// struct usart_os_descriptor *pHandle; 
 	ASSERT(pInterface);
 	ASSERT(deviceName);
-
+	
 	//
 	// Always call the underlying zero init method to make sure we can correctly handle SbgInterface evolutions
 	//
 	sbgInterfaceZeroInit(pInterface);
 
-	int32_t serial = usart_os_enable(&SBG);
-			
+	// Move the driver initialization from driver init here.
+	// int32_t serial = usart_os_enable(&COMPUTER);
+
+	// (*pHandle) = COMPUTER;
+		
 	//
-	// Test that the port has been initialized
+	// The serial port is ready so create a new serial interface
 	//
-	if (serial == 0)
-	{
-		//
-		// The serial port is ready so create a new serial interface
-		//
-		pInterface->type = SBG_IF_TYPE_SERIAL;
+	pInterface->handle = 0;
+	pInterface->type = SBG_IF_TYPE_SERIAL;
 
-		//
-		// Define the interface name
-		//
-		sbgInterfaceNameSet(pInterface, deviceName);
+	//
+	// Define the interface name
+	//
+	sbgInterfaceNameSet(pInterface, deviceName);
 
-		//
-		// Define all overloaded members
-		//
-		pInterface->pDestroyFunc	= sbgInterfaceSerialDestroy;
-		pInterface->pReadFunc		= sbgInterfaceSerialRead;
-		pInterface->pWriteFunc		= sbgInterfaceSerialWrite;
-		pInterface->pFlushFunc		= sbgInterfaceSerialFlush;
-		pInterface->pSetSpeedFunc	= sbgInterfaceSerialChangeBaudrate;
+	//
+	// Define all overloaded members
+	//
+	pInterface->pDestroyFunc	= sbgInterfaceSerialDestroy;
+	pInterface->pReadFunc		= sbgInterfaceSerialRead;
+	pInterface->pWriteFunc		= sbgInterfaceSerialWrite;
+	pInterface->pFlushFunc		= sbgInterfaceSerialFlush;
+	pInterface->pSetSpeedFunc	= sbgInterfaceSerialChangeBaudrate;
 
-		//
-		// Purge the communication
-		//
-		return sbgInterfaceSerialFlush(pInterface, SBG_IF_FLUSH_ALL);
-	}
-	else // log the error
-	{
-		char errorMsg[sizeof(deviceName) + 56];
-		int n = sprintf(errorMsg, "sbgInterfaceSerialCreate: Unable to open the com port: %s\n", deviceName);
-		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, n);
-	}
-
-	return SBG_ERROR;
+	//
+	// Purge the communication
+	//
+	return sbgInterfaceSerialFlush(pInterface, SBG_IF_FLUSH_ALL);
 }

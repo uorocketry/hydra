@@ -30,8 +30,8 @@ target_sources(main PRIVATE
         sd_mmc_start.c
         diskio/sdmmc_diskio.c
         diskio_start.c
-        fatfs/src/ff.c
-        fatfs_main.c
+        # fatfs/src/ff.c
+        # fatfs_main.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/list.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/portable/MemMang/heap_4.c
         thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/event_groups.c
@@ -89,7 +89,8 @@ target_sources(main PRIVATE
         sbgECom/common/streamBuffer/sbgStreamBuffer.c
         sbgECom/common/network/sbgNetwork.c
         sbgECom/common/interfaces/sbgInterface.c
-        sbgECom/common/interfaces/sbgInterfaceFile.c
+        # sbgECom/common/interfaces/sbgInterfaceFile.c
+        sbgECom/common/interfaces/sbgInterfaceSerialSAME.c
         # windows, unix, and udp interface files removed
         driver_init.c
         atmel_start.c
@@ -119,7 +120,7 @@ target_include_directories(main PRIVATE
     hri
     sd_mmc
     diskio
-    fatfs/src
+    # fatfs/src
     thirdparty/RTOS
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0
     thirdparty/RTOS/freertos/FreeRTOSV10.0.0/Source/include

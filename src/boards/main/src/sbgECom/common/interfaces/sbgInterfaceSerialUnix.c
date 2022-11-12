@@ -405,7 +405,7 @@ static SbgErrorCode sbgInterfaceSerialRead(SbgInterface *pInterface, void *pBuff
 
 SbgErrorCode sbgInterfaceSerialCreate(SbgInterface *pInterface, const char *deviceName, uint32_t baudRate)
 {
-	int				*pSerialHandle;
+	usart_os_descriptor				*pSerialHandle;
 	struct termios	 options;
 	uint32_t		 baudRateConst;
 
