@@ -94,6 +94,6 @@ SBG_COMMON_LIB_API void sbgPlatformDebugLogMsg(const char *pFileName, const char
  *	Run time assert that is raised if the expression is false.
  *	\param[in]	expression						The boolean expression to test, the execution is interrupted if the expression is evaluated as false.
  */
-#define SBG_PLATFORM_ASSERT(expression)		assert((expression))
+#define SBG_PLATFORM_ASSERT(expression)		ASSERT((expression))
 
 #endif	/* SBG_PLATFORM_H */

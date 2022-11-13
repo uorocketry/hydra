@@ -429,12 +429,10 @@ static SbgErrorCode sbgEComProtocolSendStandardFrame(SbgEComProtocol *pProtocol,
 	const uint8_t						*crcDataStart;
 	const uint8_t						*crcDataEnd;
 	uint16_t							 crc;
-
 	ASSERT(pProtocol);
 	ASSERT((msgClass & 0x80) == 0);
 	ASSERT(size <= SBG_ECOM_MAX_PAYLOAD_SIZE);
 	ASSERT(pData || (size == 0));
-
 	sbgStreamBufferInitForWrite(&streamBuffer, buffer, sizeof(buffer));
 
 	sbgStreamBufferWriteUint8(&streamBuffer, SBG_ECOM_SYNC_1);
@@ -919,7 +917,6 @@ SbgErrorCode sbgEComProtocolPurgeIncoming(SbgEComProtocol *pProtocol)
 SbgErrorCode sbgEComProtocolSend(SbgEComProtocol *pProtocol, uint8_t msgClass, uint8_t msgId, const void *pData, size_t size)
 {
 	SbgErrorCode						 errorCode;
-
 	if (size <= SBG_ECOM_MAX_PAYLOAD_SIZE)
 	{
 		errorCode = sbgEComProtocolSendStandardFrame(pProtocol, msgClass, msgId, pData, size);

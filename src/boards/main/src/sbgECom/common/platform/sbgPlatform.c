@@ -22,9 +22,7 @@ SBG_COMMON_LIB_API uint32_t sbgGetTime(void)
 	// Return the current time in ms
 	//
 	// return now.tv_sec * 1000 + now.tv_nsec / 1000000;
-	struct calendar_date_time now;
-	calendar_get_date_time(&CALENDAR_0, &now); // fill date_time struct with current time
-	return get_UNIX_time(&CALENDAR_0, &now);
+	return xTaskGetTickCount();
 }
 
 /*!
@@ -102,23 +100,23 @@ SBG_COMMON_LIB_API void sbgPlatformDebugLogMsg(const char *pFileName, const char
 	switch (logType)
 	{
 	case SBG_DEBUG_LOG_TYPE_ERROR:
-		n = sprintf(errorMsg, "*ERR * %s(%"PRIu32"): %s - %s\n\r", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg);
+		n = sprintf(errorMsg, "*ERR * %s(%"PRIu32"): %s - %s\r\n", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg);
 		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	case SBG_DEBUG_LOG_TYPE_WARNING:
-		n = sprintf(errorMsg, "*WARN* %s(%"PRIu32"): %s - %s\n\r", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg); 
+		n = sprintf(errorMsg, "*WARN* %s(%"PRIu32"): %s - %s\r\n", pFunctionName, line, sbgErrorCodeToString(errorCode), errorMsg); 
 		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	case SBG_DEBUG_LOG_TYPE_INFO:
-		n = sprintf(errorMsg, "*INFO* %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg); 
+		n = sprintf(errorMsg, "*INFO* %s(%"PRIu32"): %s\r\n", pFunctionName, line, errorMsg); 
 		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	case SBG_DEBUG_LOG_TYPE_DEBUG:
-		n = sprintf(errorMsg, "*DBG * %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg); 
+		n = sprintf(errorMsg, "*DBG * %s(%"PRIu32"): %s\r\n", pFunctionName, line, errorMsg); 
 		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	default:
-		n = sprintf(errorMsg, "*UKNW* %s(%"PRIu32"): %s\n\r", pFunctionName, line, errorMsg);
+		n = sprintf(errorMsg, "*UKNW* %s(%"PRIu32"): %s\r\n", pFunctionName, line, errorMsg);
 		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, n);
 		break;
 	}

@@ -47,7 +47,6 @@ target_sources(main PRIVATE
         sbgECom/src/commands/sbgEComCmdLicense.c
         sbgECom/src/commands/sbgEComCmdApi.c
         sbgECom/src/commands/sbgEComCmdOdo.c
-        sbgECom/src/commands/sbgEComCmdEthernet.c
         sbgECom/src/commands/sbgEComCmdSensor.c
         sbgECom/src/commands/sbgEComCmdInterface.c
         sbgECom/src/commands/sbgEComCmdEvent.c

@@ -248,14 +248,13 @@ SbgErrorCode sbgEComReceiveCmd2(SbgEComHandle *pHandle, uint8_t msgClass, uint8_
 		}
 
 		now = sbgGetTime();
-
 		if ((now - start) >= timeOut)
 		{
 			errorCode = SBG_TIME_OUT;
 			break;
 		}
 	}
-
+	SBG_LOG_WARNING(errorCode, "");
 	return errorCode;
 }
 

@@ -34,7 +34,6 @@ SbgErrorCode sbgEComCmdGetInfo(SbgEComHandle *pHandle, SbgEComDeviceInfo *pInfo)
 		// Send the command only since this is a no-payload command
 		//
 		errorCode = sbgEComProtocolSend(&pHandle->protocolHandle, SBG_ECOM_CLASS_LOG_CMD_0, SBG_ECOM_CMD_INFO, NULL, 0);
-
 		//
 		// Make sure that the command has been sent
 		//
@@ -44,7 +43,6 @@ SbgErrorCode sbgEComCmdGetInfo(SbgEComHandle *pHandle, SbgEComDeviceInfo *pInfo)
 			// Try to read the device answer for 500 ms
 			//
 			errorCode = sbgEComReceiveCmd2(pHandle, SBG_ECOM_CLASS_LOG_CMD_0, SBG_ECOM_CMD_INFO, &receivedPayload, pHandle->cmdDefaultTimeOut);
-
 			//
 			// Test if we have correctly received a message
 			//
@@ -98,7 +96,6 @@ SbgErrorCode sbgEComCmdGetInfo(SbgEComHandle *pHandle, SbgEComDeviceInfo *pInfo)
 			break;
 		}
 	}
-
 	sbgEComProtocolPayloadDestroy(&receivedPayload);
 
 	return errorCode;

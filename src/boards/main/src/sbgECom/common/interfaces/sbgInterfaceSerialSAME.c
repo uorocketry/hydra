@@ -10,8 +10,8 @@
 //----------------------------------------------------------------------//
 //- Definitions                                                        -//
 //----------------------------------------------------------------------//
-#define SBG_IF_SERIAL_TX_BUFFER_SIZE			(4096u)					/*!< Define the transmission buffer size for the serial port. */
-#define SBG_IF_SERIAL_RX_BUFFER_SIZE			(4096u)					/*!< Define the reception buffer size for the serial port. */
+#define SBG_IF_SERIAL_TX_BUFFER_SIZE			(16)					/*!< Define the transmission buffer size for the serial port. */
+#define SBG_IF_SERIAL_RX_BUFFER_SIZE			(16)					/*!< Define the reception buffer size for the serial port. */
 
 //----------------------------------------------------------------------//
 //- Private methods declarations                                       -//
@@ -195,11 +195,11 @@ static SbgErrorCode sbgInterfaceSerialRead(SbgInterface *pInterface, void *pBuff
 	ASSERT(pInterface->type == SBG_IF_TYPE_SERIAL);
 	ASSERT(pBuffer);
 	ASSERT(pReadBytes);
-		
+
 	//
 	// Read our buffer
 	//
-	numBytesRead = COMPUTER.io.read(&COMPUTER.io, (uint8_t *)pBuffer, bytesToRead);
+	numBytesRead = COMPUTER.io.read(&COMPUTER.io, pBuffer, bytesToRead);
 		
 	//
 	// Check if the read operation was successful
@@ -218,7 +218,7 @@ static SbgErrorCode sbgInterfaceSerialRead(SbgInterface *pInterface, void *pBuff
 	// If we can, returns the number of read bytes
 	//
 	*pReadBytes = (size_t)numBytesRead;
-		
+
 	return errorCode;
 }
 
@@ -228,7 +228,7 @@ static SbgErrorCode sbgInterfaceSerialRead(SbgInterface *pInterface, void *pBuff
 
 SbgErrorCode sbgInterfaceSerialCreate(SbgInterface *pInterface, const char *deviceName, uint32_t baudRate)
 {
-	// struct usart_os_descriptor *pHandle; 
+	int *pHandle; 
 	ASSERT(pInterface);
 	ASSERT(deviceName);
 	
@@ -239,13 +239,13 @@ SbgErrorCode sbgInterfaceSerialCreate(SbgInterface *pInterface, const char *devi
 
 	// Move the driver initialization from driver init here.
 	// int32_t serial = usart_os_enable(&COMPUTER);
-
-	// (*pHandle) = COMPUTER;
+	pHandle = (int*)malloc(sizeof(int));
+	(*pHandle) = 1;
 		
 	//
 	// The serial port is ready so create a new serial interface
 	//
-	pInterface->handle = 0;
+	pInterface->handle = (void*)pHandle;
 	pInterface->type = SBG_IF_TYPE_SERIAL;
 
 	//
