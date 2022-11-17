@@ -1,0 +1,32 @@
+Standard Frame 
+--------------
+First sync char -> 0xFFu
+Second sync char -> 0x5Au
+Msg Id
+Msg class
+Msg size
+Msg data
+CRC calculated from Id, Class, Size, and Data.
+End of frame char -> 0x33u
+Example get device info:
+ff 5a 04 10 00 00 79 f7 33
+Msg Id -> 04
+Msg class -> 10
+Msg size -> 00 00
+Msg data -> 79
+CRC -> f7
+
+Captured Frames
+---------------
+-> Get product info (Standard frames)
+ff 5a 04 10 00 00 79 f7 33
+ff 5a 04 10 00 00 79 f7 33 
+ff 5a 04 10 00 00 79 f7 33 
+-> Set config log IMU data (Extended frames?)
+ff 5a 1e 10 05 00 00 03 00 08 00 97 64 33 
+ff 5a 1e 10 05 00 00 03 00 08 00 97 64 33 
+ff 5a 1e 10 05 00 00 03 00 08 00 97 64 33 
+-> Set config log roll, pitch, yaw and their accuracies on each axis (Extended frames?)
+ff 5a 1e 10 05 00 00 06 00 08 00 c0 0a 33 
+ff 5a 1e 10 05 00 00 06 00 08 00 c0 0a 33 
+ff 5a 1e 10 05 00 00 06 00 08 00 c0 0a 33 

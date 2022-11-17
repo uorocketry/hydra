@@ -37,7 +37,7 @@ static SbgErrorCode sbgInterfaceSerialDestroy(SbgInterface *pInterface)
 		//
 		// Close the port com
 		//
-		int32_t result = usart_os_disable(&COMPUTER); // add error handling
+		int32_t result = usart_os_disable(&SBG); // add error handling
 		if (result < 0) {
 			return SBG_ERROR;
 		}
@@ -73,7 +73,7 @@ static SbgErrorCode sbgInterfaceSerialFlush(SbgInterface *pInterface, uint32_t f
 
 	if ((result == 0) && (flags & SBG_IF_FLUSH_INPUT))
 	{
-		result = usart_os_flush_rx_buffer(&COMPUTER);
+		result = usart_os_flush_rx_buffer(&SBG);
 
 		if (result != 0)
 		{
@@ -83,10 +83,10 @@ static SbgErrorCode sbgInterfaceSerialFlush(SbgInterface *pInterface, uint32_t f
 
 	if ((result == 0) && (flags & SBG_IF_FLUSH_OUTPUT))
 	{
-		uint8_t *empty;
-		COMPUTER.tx_buffer = empty; // should overwrite the current buffer
-		COMPUTER.tx_buffer_length = 0; // this may not work and needs testing 
-		if (COMPUTER.tx_buffer_length != 0) // Possibly a better check for this. Could query the registers.
+		SBG.tx_buffer = NULL; // should empty the buffer
+		SBG.tx_buffer_length = 0; // this may not work and needs testing 
+		SBG.tx_por = 0;
+		if (SBG.tx_buffer_length != 0) // Possibly a better check for this. Could query the registers.
 		{
 			result = -1;
 			SBG_LOG_ERROR(SBG_WRITE_ERROR, "unable to flush output, error:%s");
@@ -123,18 +123,18 @@ static SbgErrorCode sbgInterfaceSerialChangeBaudrate(SbgInterface *pInterface, u
 	//
 	if (pInterface)
 	{	
-		response = usart_os_set_baud_rate(&COMPUTER, baudRate); // may need to handle this differently 
+		response = usart_os_set_baud_rate(&SBG, baudRate); // may need to handle this differently 
 		if (response != 0)
 		{
-			uint8_t errorMsg[] = "sbgInterfaceSerialChangeBaudrate: Unable to set speed.\n";
-			COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, sizeof(errorMsg));
+			uint8_t errorMsg[] = "sbgInterfaceSerialChangeBaudrate: Unable to set speed.\r\n";
+			SBG.io.write(&SBG.io, (uint8_t *)errorMsg, sizeof(errorMsg));
 			return SBG_ERROR;
 		}
 	}
 	else
 	{
-		uint8_t errorMsg[] = "sbgInterfaceSerialChangeBaudrate: Invalid.\n";
-		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, sizeof(errorMsg));
+		uint8_t errorMsg[] = "sbgInterfaceSerialChangeBaudrate: Invalid.\r\n";
+		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, sizeof(errorMsg));
 		return SBG_ERROR;
 	}
 	return SBG_NO_ERROR;
@@ -162,16 +162,11 @@ static SbgErrorCode sbgInterfaceSerialWrite(SbgInterface *pInterface, const void
 	ASSERT(pInterface->type == SBG_IF_TYPE_SERIAL);
 	ASSERT(pBuffer);
 
-	// while (numBytesLeftToWrite > 0) {
-	// 	numBytesWritten = COMPUTER.io.write(&COMPUTER.io, (uint8_t *)pCurrentBuffer, sizeof(pCurrentBuffer));
-	// 	numBytesLeftToWrite -= (size_t)numBytesWritten;
-	// 	pCurrentBuffer += (size_t)numBytesWritten;
-	// }
-	int32_t result = COMPUTER.io.write(&COMPUTER.io, (uint8_t *)pBuffer, bytesToWrite);
+	int32_t result = SBG.io.write(&SBG.io, (uint8_t *)pBuffer, bytesToWrite);
 
 	if (result == -8) {
-		uint8_t errorMsg[] = "sbgDeviceWrite: Unable to write to our device: %s\n";
-		COMPUTER.io.write(&COMPUTER.io, (uint8_t *)errorMsg, sizeof(errorMsg));
+		uint8_t errorMsg[] = "sbgDeviceWrite: Unable to write to our device: %s\r\n";
+		SBG.io.write(&SBG.io, (uint8_t *)errorMsg, sizeof(errorMsg));
 		return SBG_WRITE_ERROR;
 	}
 	return SBG_NO_ERROR;
@@ -196,10 +191,11 @@ static SbgErrorCode sbgInterfaceSerialRead(SbgInterface *pInterface, void *pBuff
 	ASSERT(pBuffer);
 	ASSERT(pReadBytes);
 
-	//
-	// Read our buffer
-	//
-	numBytesRead = COMPUTER.io.read(&COMPUTER.io, pBuffer, bytesToRead);
+	/*
+	* Read our buffer !!!!! (void *) is bad practice although allowed in a weakly-typed language like C. 
+	* We cannot guarantee a safe conversion to a const uint8_t const* buffer.   
+	*/
+	numBytesRead = SBG.io.read(&SBG.io, (uint8_t *)pBuffer, bytesToRead);
 		
 	//
 	// Check if the read operation was successful
@@ -210,6 +206,7 @@ static SbgErrorCode sbgInterfaceSerialRead(SbgInterface *pInterface, void *pBuff
 	}
 	else
 	{
+		// We hit here if we get -8 return for the read since -8 is enumerated to timeout error for HAL UART. 
 		errorCode = SBG_READ_ERROR;
 		numBytesRead = 0;
 	}
@@ -238,7 +235,7 @@ SbgErrorCode sbgInterfaceSerialCreate(SbgInterface *pInterface, const char *devi
 	sbgInterfaceZeroInit(pInterface);
 
 	// Move the driver initialization from driver init here.
-	// int32_t serial = usart_os_enable(&COMPUTER);
+	// int32_t serial = usart_os_enable(&SBG);
 	pHandle = (int*)malloc(sizeof(int));
 	(*pHandle) = 1;
 		

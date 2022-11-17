@@ -16,12 +16,6 @@
  */
 SBG_COMMON_LIB_API uint32_t sbgGetTime(void)
 {
-	// struct timespec now;
-	// clock_gettime(CLOCK_REALTIME, &now);
-	//
-	// Return the current time in ms
-	//
-	// return now.tv_sec * 1000 + now.tv_nsec / 1000000;
 	return xTaskGetTickCount();
 }
 
@@ -31,26 +25,6 @@ SBG_COMMON_LIB_API uint32_t sbgGetTime(void)
  */
 SBG_COMMON_LIB_API void sbgSleep(uint32_t ms)
 {
-	// struct timespec			 req;
-	// struct timespec			 rem;
-	// int						 ret;
-
-	// req.tv_sec = ms / 1000;
-	// req.tv_nsec = (ms % 1000) * 1000000L;
-
-	// for (;;)
-	// {
-	// 	ret = nanosleep(&req, &rem);
-
-	// 	if ((ret == 0) || (errno != EINTR))
-	// 	{
-	// 		break;
-	// 	}
-	// 	else
-	// 	{
-	// 		req = rem;
-	// 	}
-	// }
 	os_sleep(ms); // only valid if tick rate is 1000Hz, otherwise a conversion is needed.
 }
 

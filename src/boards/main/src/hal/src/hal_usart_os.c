@@ -285,7 +285,7 @@ static int32_t usart_os_write(struct io_descriptor *const io_descr, const uint8_
 static int32_t usart_os_read(struct io_descriptor *const io_descr, uint8_t *const buf, const uint16_t length)
 {
 	uint16_t was_read = 0;
-	uint32_t timeout  = 1;
+	uint32_t timeout  = 10;
 
 	struct usart_os_descriptor *descr = CONTAINER_OF(io_descr, struct usart_os_descriptor, io);
 
