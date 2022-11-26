@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+    "main-board"
+]
+
+[profile.dev]
+lto = true
+
+[profile.release]
+lto = true

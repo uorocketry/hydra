@@ -1,0 +1,18 @@
+[package]
+name = "main_board"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cortex-m = "^0.7.0"
+cortex-m-rt = "^0.7.0"
+panic-halt = "0.2.0"
+
+[dependencies.atsamd-hal]
+version = "0.15.1"
+features = ["same51j", "same51j-rt"]
+
+[package.metadata.docs.rs]
+targets = ["thumbv7em-none-eabihf"]
