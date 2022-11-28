@@ -1,9 +1,7 @@
 MEMORY
 {
   /* NOTE K = KiBi = 1024 bytes */
-  FLASH : ORIGIN = 0x00000000, LENGTH = 0x00040000
-  RAM   : ORIGIN = 0x20000000, LENGTH = 0x00020000
-
-  /*FLASH : ORIGIN = 0x00000000, LENGTH = 256K
-  RAM : ORIGIN = 0x20000000, LENGTH = 16K */
+  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 1024K
+  RAM (xrw)  : ORIGIN = 0x20000000, LENGTH = 256K
 }
+/* _stack_start is optional and we can define this later */

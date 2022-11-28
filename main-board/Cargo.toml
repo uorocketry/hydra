@@ -9,6 +9,7 @@ edition = "2021"
 cortex-m = "^0.7.0"
 cortex-m-rt = "^0.7.0"
 panic-halt = "0.2.0"
+sdio-host = "0.9.0"
 
 [dependencies.atsamd-hal]
 version = "0.15.1"
