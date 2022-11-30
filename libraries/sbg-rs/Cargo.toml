@@ -1,0 +1,15 @@
+[package]
+name = "sbg-rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+#tinyrlibc = "0.3.0"
+
+[build-dependencies]
+#tinyrlibc = "0.3.0"
+#libc = "0.2"
+bindgen = "0.63.0"
+cmake = "0.1"
