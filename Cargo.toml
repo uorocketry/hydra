@@ -9,3 +9,5 @@ lto = true
 
 [profile.release]
 lto = true
+strip = true
+opt-level = "s"
