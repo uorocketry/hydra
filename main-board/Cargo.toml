@@ -16,9 +16,5 @@ embedded-hal = "0.2.7"
 version = "0.15.1"
 features = ["same51j", "same51j-rt"]
 
-[dependencies.can-driver]
-path = "../can-driver"
-version = "0.1.0"
-
 [package.metadata.docs.rs]
 targets = ["thumbv7em-none-eabihf"]
