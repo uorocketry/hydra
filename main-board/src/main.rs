@@ -8,9 +8,9 @@ use panic_halt as _;
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
-use atsamd_hal::prelude::*;
 use atsamd_hal as hal;
-use hal::pac as pac;
+use atsamd_hal::prelude::*;
+use hal::pac;
 
 use hal::gpio::Pins;
 
@@ -24,7 +24,9 @@ struct TimeSink {
 }
 impl TimeSink {
     fn new() -> Self {
-        TimeSink { _marker: PhantomData }
+        TimeSink {
+            _marker: PhantomData,
+        }
     }
 }
 
@@ -50,26 +52,46 @@ fn main() -> ! {
 
     let pins = Pins::new(peripherals.PORT);
     let mut led = pins.pa14.into_push_pull_output();
-    
-    // External 32KHz clock for stability 
+
+    // External 32KHz clock for stability
     let mut clock = hal::clock::GenericClockController::with_external_32kosc(
-            peripherals.GCLK,
-            &mut peripherals.MCLK,
-            &mut peripherals.OSC32KCTRL,
-            &mut peripherals.OSCCTRL,
-            &mut peripherals.NVMCTRL);
+        peripherals.GCLK,
+        &mut peripherals.MCLK,
+        &mut peripherals.OSC32KCTRL,
+        &mut peripherals.OSCCTRL,
+        &mut peripherals.NVMCTRL,
+    );
 
-    clock.configure_gclk_divider_and_source(pac::gclk::pchctrl::GEN_A::GCLK2, 1, pac::gclk::genctrl::SRC_A::DFLL, false);
-    let gclk2 = clock.get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2).expect("Could not get gclk 2.");
+    clock.configure_gclk_divider_and_source(
+        pac::gclk::pchctrl::GEN_A::GCLK2,
+        1,
+        pac::gclk::genctrl::SRC_A::DFLL,
+        false,
+    );
+    let gclk2 = clock
+        .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
+        .expect("Could not get gclk 2.");
 
-    let mut delay = hal::delay::Delay::new(p2.SYST, &mut clock);    
+    let mut delay = hal::delay::Delay::new(p2.SYST, &mut clock);
 
     /* Start UART CDC config */
-    let uart_clk = clock.sercom5_core(&gclk2).expect("Could not configure sercom 5 clock.");
+    let uart_clk = clock
+        .sercom5_core(&gclk2)
+        .expect("Could not configure sercom 5 clock.");
 
-    let pads = hal::sercom::uart::Pads::<hal::sercom::Sercom5, _>::default().rx(pins.pb17).tx(pins.pb16);
-    let mut uart = hal::sercom::uart::Config::new(&peripherals.MCLK, peripherals.SERCOM5, pads, uart_clk.freq())
-    .baud(9600.hz(), hal::sercom::uart::BaudMode::Fractional(hal::sercom::uart::Oversampling::Bits16))
+    let pads = hal::sercom::uart::Pads::<hal::sercom::Sercom5, _>::default()
+        .rx(pins.pb17)
+        .tx(pins.pb16);
+    let mut uart = hal::sercom::uart::Config::new(
+        &peripherals.MCLK,
+        peripherals.SERCOM5,
+        pads,
+        uart_clk.freq(),
+    )
+    .baud(
+        9600.hz(),
+        hal::sercom::uart::BaudMode::Fractional(hal::sercom::uart::Oversampling::Bits16),
+    )
     .enable();
     /* End UART CDC config */
 
@@ -78,29 +100,48 @@ fn main() -> ! {
     let sck = pins.pa17.into_push_pull_output();
     let miso = pins.pa19.into_push_pull_output();
     let mosi = pins.pa16.into_push_pull_output();
-    clock.configure_gclk_divider_and_source(pac::gclk::pchctrl::GEN_A::GCLK3, 3, pac::gclk::genctrl::SRC_A::DFLL, false); // 16MHz clock
-    let gclk3 = clock.get_gclk(pac::gclk::pchctrl::GEN_A::GCLK3).expect("Cannot get gclk 3.");
-    let spi_clk = clock.sercom1_core(&gclk3).expect("Cannot configure sercom 1 clock.");
-    let pads_spi = hal::sercom::spi::Pads::<hal::sercom::Sercom1, hal::sercom::IoSet1>::default().sclk(sck).data_in(miso).data_out(mosi);
+    clock.configure_gclk_divider_and_source(
+        pac::gclk::pchctrl::GEN_A::GCLK3,
+        3,
+        pac::gclk::genctrl::SRC_A::DFLL,
+        false,
+    ); // 16MHz clock
+    let gclk3 = clock
+        .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK3)
+        .expect("Cannot get gclk 3.");
+    let spi_clk = clock
+        .sercom1_core(&gclk3)
+        .expect("Cannot configure sercom 1 clock.");
+    let pads_spi = hal::sercom::spi::Pads::<hal::sercom::Sercom1, hal::sercom::IoSet1>::default()
+        .sclk(sck)
+        .data_in(miso)
+        .data_out(mosi);
 
-    let sdmmc_spi = hal::sercom::spi::Config::new(&peripherals.MCLK, peripherals.SERCOM1, pads_spi, spi_clk.freq()).length::<hal::sercom::spi::lengths::U1>().bit_order(hal::sercom::spi::BitOrder::MsbFirst).spi_mode(hal::sercom::spi::MODE_0).enable();
+    let sdmmc_spi = hal::sercom::spi::Config::new(
+        &peripherals.MCLK,
+        peripherals.SERCOM1,
+        pads_spi,
+        spi_clk.freq(),
+    )
+    .length::<hal::sercom::spi::lengths::U1>()
+    .bit_order(hal::sercom::spi::BitOrder::MsbFirst)
+    .spi_mode(hal::sercom::spi::MODE_0)
+    .enable();
     /* End SPI config */
 
     /* Start sd controller config */
     let time_sink: TimeSink = TimeSink::new();
     let mut sd_cont = sd::Controller::new(sd::SdMmcSpi::new(sdmmc_spi, cs), time_sink);
     match sd_cont.device().init() {
-        Ok(_) => {
-            match sd_cont.device().card_size_bytes() {
-                Ok(_) => nb::block!(uart.write(b'1')).unwrap(),
-                Err(_) => nb::block!(uart.write(b'0')).unwrap(),
-            }
-        }
+        Ok(_) => match sd_cont.device().card_size_bytes() {
+            Ok(_) => nb::block!(uart.write(b'1')).unwrap(),
+            Err(_) => nb::block!(uart.write(b'0')).unwrap(),
+        },
         Err(_) => {
             for b in b"Error\r\n" {
                 nb::block!(uart.write(*b)).unwrap();
             }
-        } 
+        }
     }
 
     let mut volume = match sd_cont.get_volume(sd::VolumeIdx(0)) {
@@ -110,7 +151,7 @@ fn main() -> ! {
                 nb::block!(uart.write(*byte)).unwrap();
             }
             panic!("Cannot get volume 0");
-        },
+        }
     };
 
     let root_directory = match sd_cont.open_root_dir(&volume) {
@@ -123,15 +164,20 @@ fn main() -> ! {
         }
     };
 
-    let file = sd_cont.open_file_in_dir(&mut volume, &root_directory, "test.txt", sd::Mode::ReadWriteCreateOrTruncate);
+    let file = sd_cont.open_file_in_dir(
+        &mut volume,
+        &root_directory,
+        "test.txt",
+        sd::Mode::ReadWriteCreateOrTruncate,
+    );
     let mut file = match file {
         Ok(file) => file,
         Err(_) => {
             for byte in b"Error creating file!\r\n" {
                 nb::block!(uart.write(*byte)).unwrap();
             }
-            panic!("Cannot create file."); 
-        },
+            panic!("Cannot create file.");
+        }
     };
     /* End sd controller config */
 
@@ -141,8 +187,8 @@ fn main() -> ! {
             for byte in b"Error writing file!\r\n" {
                 nb::block!(uart.write(*byte)).unwrap();
             }
-            panic!("Cannot write file.");  
-        },
+            panic!("Cannot write file.");
+        }
     };
 
     /* Write to sd */
