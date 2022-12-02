@@ -1,22 +1,18 @@
 #![no_std]
 #![no_main]
 
-use core::marker::PhantomData;
-
-use panic_halt as _;
-
-use cortex_m::asm;
-use cortex_m_rt::entry;
-
 use atsamd_hal as hal;
 use atsamd_hal::prelude::*;
-use hal::pac;
-
-use hal::gpio::Pins;
-
-use pac::Peripherals;
-
+use core::marker::PhantomData;
+use cortex_m::asm;
+use cortex_m_rt::entry;
+use defmt::info;
+use defmt_rtt as _;
 use embedded_sdmmc as sd;
+use hal::gpio::Pins;
+use hal::pac;
+use pac::Peripherals;
+use panic_halt as _;
 
 // Could make a 1hz clock and use ticks
 struct TimeSink {
@@ -209,9 +205,7 @@ fn main() -> ! {
     loop {
         led.set_high().unwrap();
         delay.delay_ms(1000_u16);
-        for byte in b"Hello, world!\r\n" {
-            nb::block!(uart.write(*byte)).unwrap();
-        }
+        info!("Test");
         led.set_low().unwrap();
         delay.delay_ms(1000_u16);
     }
