@@ -1,0 +1,19 @@
+[workspace]
+
+members = [
+    "main-board",
+    "template",
+]
+
+[workspace.dependencies.atsamd-hal]
+version = "0.15.1"
+features = ["same51j", "same51j-rt"]
+
+[profile.dev]
+# Using LTO causes issues with GDB
+lto = false
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "s"
