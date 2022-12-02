@@ -1,0 +1,49 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "interface": "swd",
+            "rttConfig": {
+                "enabled": true,
+                "address": "0x20000000",
+                "searchSize": 262144,
+                "searchId": "SEGGER RTT",
+                "decoders": [
+                    {
+                        "label": "",
+                        "port": 0,
+                        "type": "console"
+                    }
+                ]
+            },
+            "debuggerArgs": ["load"],
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/main_board",
+            "name": "OpenOCD Debug",
+            "device": "ATSAME51J20A",
+            "searchDir": ["${workspaceFolder}/debug"],
+            "preLaunchTask": "build",
+            "configFiles": [
+                "interface/cmsis-dap.cfg",
+                "target/atsame5x.cfg",
+            ],
+            "runToEntryPoint": "main",
+            "svdFile": "${workspaceRoot}/debug/ATSAME51J20A.svd",
+            "swoConfig": {
+                "enabled": true,
+                "cpuFrequency": 120000000,
+                "swoFrequency": 2000000,
+                "source": "probe",
+                "decoders": [
+                    {"type": "console", "label": "ITM", "port": 0}
+                ]
+            }
+        }
+    ]
+}

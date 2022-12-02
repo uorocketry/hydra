@@ -12,6 +12,7 @@ features = ["same51j", "same51j-rt"]
 [profile.dev]
 # Using LTO causes issues with GDB
 lto = false
+debug = true
 
 [profile.release]
 lto = true
