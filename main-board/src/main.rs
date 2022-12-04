@@ -6,7 +6,7 @@ use atsamd_hal::prelude::*;
 use core::marker::PhantomData;
 use cortex_m::asm;
 use cortex_m_rt::entry;
-use defmt::info;
+use defmt::{info, warn, panic};
 use defmt_rtt as _;
 use embedded_sdmmc as sd;
 use hal::gpio::Pins;
@@ -45,7 +45,6 @@ fn main() -> ! {
 
     let mut peripherals = Peripherals::take().unwrap();
     let p2 = cortex_m::peripheral::Peripherals::take().unwrap();
-
     let pins = Pins::new(peripherals.PORT);
     let mut led = pins.pa14.into_push_pull_output();
 
@@ -130,22 +129,19 @@ fn main() -> ! {
     let mut sd_cont = sd::Controller::new(sd::SdMmcSpi::new(sdmmc_spi, cs), time_sink);
     match sd_cont.device().init() {
         Ok(_) => match sd_cont.device().card_size_bytes() {
-            Ok(_) => nb::block!(uart.write(b'1')).unwrap(),
-            Err(_) => nb::block!(uart.write(b'0')).unwrap(),
+            Ok(size) => info!("Card is {} bytes", size),
+            Err(_) => warn!("Cannot get card size"),
         },
         Err(_) => {
-            for b in b"Error\r\n" {
-                nb::block!(uart.write(*b)).unwrap();
-            }
+            warn!("Cannot get SD card");
+            panic!("Cannot get SD card.");
         }
     }
 
     let mut volume = match sd_cont.get_volume(sd::VolumeIdx(0)) {
         Ok(volume) => volume,
         Err(_) => {
-            for byte in b"Error getting volume!\r\n" {
-                nb::block!(uart.write(*byte)).unwrap();
-            }
+            warn!("Cannot get volume 0");
             panic!("Cannot get volume 0");
         }
     };
@@ -153,9 +149,7 @@ fn main() -> ! {
     let root_directory = match sd_cont.open_root_dir(&volume) {
         Ok(root_directory) => root_directory,
         Err(_) => {
-            for byte in b"Error getting root!\r\n" {
-                nb::block!(uart.write(*byte)).unwrap();
-            }
+            warn!("Cannot get root");
             panic!("Cannot get root");
         }
     };
@@ -169,9 +163,7 @@ fn main() -> ! {
     let mut file = match file {
         Ok(file) => file,
         Err(_) => {
-            for byte in b"Error creating file!\r\n" {
-                nb::block!(uart.write(*byte)).unwrap();
-            }
+            warn!("Cannot create file.");
             panic!("Cannot create file.");
         }
     };
@@ -180,27 +172,17 @@ fn main() -> ! {
     let bytes_written = match sd_cont.write(&mut volume, &mut file, b"Testing file write.") {
         Ok(bytes_written) => bytes_written,
         Err(_) => {
-            for byte in b"Error writing file!\r\n" {
-                nb::block!(uart.write(*byte)).unwrap();
-            }
+            warn!("Cannot write file.");
             panic!("Cannot write file.");
         }
     };
 
     /* Write to sd */
-    // Convert to litte-endian bytes.
-    let bytes_str = bytes_written.to_le_bytes();
-    for byte in bytes_str {
-        nb::block!(uart.write(byte)).unwrap();
-    }
+    info!("Bytes written: {}", bytes_written);
 
     /* Close sd */
     sd_cont.close_file(&volume, file).unwrap();
     sd_cont.close_dir(&volume, root_directory);
-
-    for byte in b"File test.txt has been written to the sd card!\r\n" {
-        nb::block!(uart.write(*byte)).unwrap();
-    }
 
     loop {
         led.set_high().unwrap();

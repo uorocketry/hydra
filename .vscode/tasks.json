@@ -5,6 +5,18 @@
             "label": "build",
             "type": "cargo",
             "command": "build",
+        },
+        {
+            "label": "release",
+            "type": "cargo",
+            "command": "build",
+            "args": ["--release"]
+        },
+        {
+            "label": "defmt",
+            "type": "shell",
+            "command": "./rttLog.sh",
+            "group": "build"
         }
     ]
 }

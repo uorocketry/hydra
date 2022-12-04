@@ -16,18 +16,15 @@
                 "searchId": "SEGGER RTT",
                 "decoders": [
                     {
-                        "label": "",
                         "port": 0,
-                        "type": "console"
-                    }
+                        "type": "console",
+                    },
                 ]
             },
-            "debuggerArgs": ["load"],
             "cwd": "${workspaceRoot}",
             "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/main_board",
             "name": "OpenOCD Debug",
             "device": "ATSAME51J20A",
-            "searchDir": ["${workspaceFolder}/debug"],
             "preLaunchTask": "build",
             "configFiles": [
                 "interface/cmsis-dap.cfg",
@@ -35,15 +32,22 @@
             ],
             "runToEntryPoint": "main",
             "svdFile": "${workspaceRoot}/debug/ATSAME51J20A.svd",
-            "swoConfig": {
-                "enabled": true,
-                "cpuFrequency": 120000000,
-                "swoFrequency": 2000000,
-                "source": "probe",
-                "decoders": [
-                    {"type": "console", "label": "ITM", "port": 0}
-                ]
-            }
+        },
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "interface": "swd",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/main_board",
+            "name": "OpenOCD Release",
+            "device": "ATSAME51J20A",
+            "preLaunchTask": "release",
+            "configFiles": [
+                "interface/cmsis-dap.cfg",
+                "target/atsame5x.cfg",
+            ],
+            "svdFile": "${workspaceRoot}/debug/ATSAME51J20A.svd",
         }
     ]
 }
