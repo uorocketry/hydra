@@ -514,12 +514,9 @@ dependencies = [
  "atsamd-hal",
  "cortex-m",
  "cortex-m-rt",
- "cortex-m-rtic",
  "defmt",
  "defmt-rtt",
- "fugit",
  "panic-halt",
- "systick-monotonic",
 ]
 
 [[package]]
