@@ -2,7 +2,7 @@
 
 members = [
     "main-board",
-    "template",
+    "examples/*",
 ]
 
 [workspace.dependencies.atsamd-hal]
