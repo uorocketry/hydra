@@ -22,13 +22,11 @@ dependencies = [
  "bitflags",
  "cortex-m",
  "embedded-hal",
- "fugit",
  "modular-bitfield",
  "nb 1.0.0",
  "num-traits",
  "paste",
  "rand_core",
- "rtic-monotonic",
  "seq-macro",
  "typenum",
  "vcell",
@@ -90,6 +88,10 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "common-arm"
+version = "0.1.0"
 
 [[package]]
 name = "cortex-m"
@@ -296,6 +298,7 @@ name = "main_board"
 version = "0.1.0"
 dependencies = [
  "atsamd-hal",
+ "common-arm",
  "cortex-m",
  "cortex-m-rt",
  "defmt",
@@ -440,6 +443,7 @@ name = "rtic_example"
 version = "0.1.0"
 dependencies = [
  "atsamd-hal",
+ "common-arm",
  "cortex-m",
  "cortex-m-rt",
  "cortex-m-rtic",
@@ -512,6 +516,7 @@ name = "simple_example"
 version = "0.1.0"
 dependencies = [
  "atsamd-hal",
+ "common-arm",
  "cortex-m",
  "cortex-m-rt",
  "defmt",

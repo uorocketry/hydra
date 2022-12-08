@@ -3,6 +3,7 @@
 members = [
     "boards/*",
     "examples/*",
+    "libraries/*"
 ]
 
 [workspace.dependencies.atsamd-hal]

@@ -14,4 +14,5 @@ fugit = "0.3.3"
 systick-monotonic = "1.0.1"
 defmt-rtt = "0.4.0"
 defmt = "0.3.2"
+common-arm = { path = "../../libraries/common-arm" }
 atsamd-hal = { workspace = true }
