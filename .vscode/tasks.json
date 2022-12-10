@@ -15,7 +15,8 @@
         {
             "label": "defmt",
             "type": "shell",
-            "command": "./rttLog.sh",
+            "command": "./logging.sh",
+            "args": ["60000, main_board"],
             "group": "build"
         }
     ]
