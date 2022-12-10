@@ -1,18 +1,22 @@
-on: pull_request
+on:
+  pull_request:
+  push:
+    branches:
+      - master
 
-name: Linter
+name: Cargo Bloat
 
 jobs:
-  clippy_check:
-    name: Clippy
+  cargo_bloat:
+    name: Cargo Bloat
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          components: clippy
           toolchain: stable
           target: thumbv7em-none-eabihf
-      - uses: actions-rs/clippy-check@v1
+      - name: Run cargo bloat
+        uses: orf/cargo-bloat-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
