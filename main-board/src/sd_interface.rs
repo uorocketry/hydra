@@ -44,7 +44,7 @@ pub struct SdInterface
 }
 
 impl SdInterface {
-    pub fn new(mclk: &pac::MCLK, sercom: hal::sercom::Sercom1, spi_clk: hal::clock::Sercom1CoreClock, cs: hal::gpio::Pin<hal::gpio::PA18, hal::gpio::Output<hal::gpio::PushPull>>, sck: hal::gpio::Pin<hal::gpio::PA17, hal::gpio::Output<hal::gpio::PushPull>>, miso: hal::gpio::Pin<hal::gpio::PA19, hal::gpio::Output<hal::gpio::PushPull>>, mosi: hal::gpio::Pin<hal::gpio::PA16, hal::gpio::Output<hal::gpio::PushPull>>) -> Self {
+    pub fn new(mclk: &pac::MCLK, sercom: pac::SERCOM1, spi_clk: hal::clock::Sercom1CoreClock, cs: hal::gpio::Pin<hal::gpio::PA18, hal::gpio::Output<hal::gpio::PushPull>>, sck: hal::gpio::Pin<hal::gpio::PA17, hal::gpio::Output<hal::gpio::PushPull>>, miso: hal::gpio::Pin<hal::gpio::PA19, hal::gpio::Output<hal::gpio::PushPull>>, mosi: hal::gpio::Pin<hal::gpio::PA16, hal::gpio::Output<hal::gpio::PushPull>>) -> Self {
         let pads_spi = hal::sercom::spi::Pads::<hal::sercom::Sercom1, hal::sercom::IoSet1>::default()
             .sclk(sck)
             .data_in(miso)
@@ -62,10 +62,12 @@ impl SdInterface {
         let time_sink: TimeSink = TimeSink::new(); // Need to give this a DateTime object for actual timing.
         let mut sd_cont = sd::Controller::new(sd::SdMmcSpi::new(sdmmc_spi, cs), time_sink);
         match sd_cont.device().init() {
-            Ok(_) => match sd_cont.device().card_size_bytes() {
-                Ok(size) => info!("Card is {} bytes", size),
-                Err(_) => warn!("Cannot get card size"),
-            },
+            Ok(_) => {
+                match sd_cont.device().card_size_bytes() {
+                    Ok(size) => info!("Card is {} bytes", size),
+                    Err(_) => warn!("Cannot get card size"),
+                }
+            }
             Err(_) => {
                 warn!("Cannot get SD card");
                 panic!("Cannot get SD card.");
