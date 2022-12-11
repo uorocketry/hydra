@@ -13,7 +13,12 @@ features = ["same51j", "same51j-rt"]
 # Using LTO causes issues with GDB
 lto = false
 
+# Only optimize dependencies for size in debug, keeping the top crate debug friendly
+[profile.dev.package."*"]
+opt-level = "s"
+
 [profile.release]
+# symbols are nice and they don't increase the size on Flash
+debug = true
 lto = true
-strip = true
 opt-level = "s"
