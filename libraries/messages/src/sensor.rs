@@ -1,0 +1,31 @@
+use defmt::Format;
+use derive_more::From;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+pub struct Sensor {
+    pub component_id: u8,
+    pub data: SensorData,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+pub enum SensorData {
+    Sbg(Sbg),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+pub struct Sbg {
+    pub accel: f32,
+    pub speed: f32,
+    pub pressure: f32,
+    pub height: f32,
+}
+
+impl Sensor {
+    pub fn new(component_id: u8, data: impl Into<SensorData>) -> Self {
+        Sensor {
+            component_id,
+            data: data.into(),
+        }
+    }
+}

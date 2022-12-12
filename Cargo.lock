@@ -90,8 +90,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "cobs"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67ba02a97a2bd10f4b59b25c7973101c79642302776489e030cd13cdab09ed15"
+
+[[package]]
 name = "common-arm"
 version = "0.1.0"
+
+[[package]]
+name = "communication"
+version = "0.1.0"
+dependencies = [
+ "atsamd-hal",
+ "common-arm",
+ "cortex-m",
+ "cortex-m-rt",
+ "cortex-m-rtic",
+ "defmt",
+ "defmt-rtt",
+ "fugit",
+ "heapless",
+ "messages",
+ "panic-halt",
+ "postcard",
+ "systick-monotonic",
+]
+
+[[package]]
+name = "convert_case"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "cortex-m"
@@ -200,6 +231,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_more"
+version = "0.99.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fb810d30a7c1953f91334de7244731fc3f3c10d7fe163338a35b9f640960321"
+dependencies = [
+ "convert_case",
+ "proc-macro2",
+ "quote",
+ "rustc_version 0.4.0",
+ "syn",
+]
+
+[[package]]
 name = "embedded-hal"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -260,6 +304,7 @@ dependencies = [
  "atomic-polyfill",
  "hash32",
  "rustc_version 0.4.0",
+ "serde",
  "spin",
  "stable_deref_trait",
 ]
@@ -307,6 +352,16 @@ dependencies = [
  "embedded-sdmmc",
  "panic-halt",
  "sdio-host",
+]
+
+[[package]]
+name = "messages"
+version = "0.1.0"
+dependencies = [
+ "defmt",
+ "derive_more",
+ "fugit",
+ "serde",
 ]
 
 [[package]]
@@ -365,6 +420,17 @@ name = "paste"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1de2e551fb905ac83f73f7aedf2f0cb4a0da7e35efa24a202a936269f1f18e1"
+
+[[package]]
+name = "postcard"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c2b180dc0bade59f03fd005cb967d3f1e5f69b13922dad0cd6e047cb8af2363"
+dependencies = [
+ "cobs",
+ "heapless",
+ "serde",
+]
 
 [[package]]
 name = "proc-macro-error"
@@ -510,6 +576,26 @@ name = "seq-macro"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0772c5c30e1a0d91f6834f8e545c69281c099dfa9a3ac58d96a9fd629c8d4898"
+
+[[package]]
+name = "serde"
+version = "1.0.149"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "256b9932320c590e707b94576e3cc1f7c9024d0ee6612dfbcf1cb106cbe8e055"
+dependencies = [
+ "serde_derive",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.149"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4eae9b04cbffdfd550eb462ed33bc6a1b68c935127d008b27444d08380f94e4"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "simple_example"
