@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 derive_more = "0.99.17"
-serde = { version = "1.0.149", default-features = false, features = ["derive"] }
+serde = { workspace = true }
 defmt = "0.3.2"
 fugit = "0.3.6"

@@ -8,6 +8,7 @@ use atsamd_hal::prelude::nb::block;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1, Sercom1};
+use common_arm::*;
 use defmt::info;
 use defmt_rtt as _;
 use hal::gpio::Pins;
@@ -31,7 +32,9 @@ mod app {
     use super::*;
 
     #[shared]
-    struct Shared {}
+    struct Shared {
+        em: ErrorManager,
+    }
 
     #[local]
     struct Local {
@@ -96,7 +99,13 @@ mod app {
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
-        (Shared {}, Local { led, uart }, init::Monotonics(mono))
+        (
+            Shared {
+                em: ErrorManager::new(),
+            },
+            Local { led, uart },
+            init::Monotonics(mono),
+        )
     }
 
     #[idle]
@@ -106,58 +115,78 @@ mod app {
         }
     }
 
-    #[task(capacity = 10, local = [uart])]
+    #[task(capacity = 10, local = [uart], shared = [&em])]
     fn send_message(cx: send_message::Context, m: Message) {
-        let uart = cx.local.uart;
+        cx.shared.em.run(|| {
+            let uart = cx.local.uart;
 
-        let payload: Vec<u8, 64> = match to_vec_cobs(&m) {
-            Ok(x) => x,
-            Err(_) => return,
-        };
+            let payload: Vec<u8, 64> = to_vec_cobs(&m)?;
 
-        for x in payload {
-            block!(uart.write(x)).ok();
-        }
+            for x in payload {
+                block!(uart.write(x))?;
+            }
 
-        info!("Sent message: {:?}", m);
+            info!("Sent message: {:?}", m);
+
+            Ok(())
+        });
     }
 
-    #[task]
-    fn state_send(_: state_send::Context) {
+    #[task(shared = [&em])]
+    fn state_send(cx: state_send::Context) {
+        let em = cx.shared.em;
+
         let state = State {
             status: Status::Uninitialized,
-            has_error: false,
+            has_error: em.has_error(),
             voltage: 12.1,
         };
 
         let message = Message::new(&monotonics::now(), MainBoard, state);
 
-        send_message::spawn(message).ok();
-        state_send::spawn_after(10.secs()).ok();
+        cx.shared.em.run(|| {
+            spawn!(send_message, message)?;
+
+            Ok(())
+        });
+
+        spawn_after!(state_send, 10.secs()).ok();
     }
 
-    #[task]
-    fn sensor_send(_: sensor_send::Context) {
-        let sbg = Sbg {
-            accel: 9.8,
-            speed: 0.0,
-            pressure: 100.1,
-            height: 200.4,
-        };
+    #[task(shared = [&em])]
+    fn sensor_send(cx: sensor_send::Context) {
+        cx.shared.em.run(|| {
+            let sbg = Sbg {
+                accel: 9.8,
+                speed: 0.0,
+                pressure: 100.1,
+                height: 200.4,
+            };
 
-        let message = Message::new(&monotonics::now(), MainBoard, Sensor::new(9, sbg));
+            let message = Message::new(&monotonics::now(), MainBoard, Sensor::new(9, sbg));
 
-        send_message::spawn(message).ok();
-        sensor_send::spawn_after(2.secs()).ok();
+            spawn!(send_message, message)?;
+
+            Ok(())
+        });
+
+        spawn_after!(sensor_send, 2.secs()).ok();
     }
 
-    #[task(local = [led])]
+    #[task(local = [led], shared = [&em])]
     fn blink(cx: blink::Context) {
-        cx.local.led.toggle().unwrap();
+        cx.shared.em.run(|| {
+            cx.local.led.toggle()?;
 
-        let time = monotonics::now().duration_since_epoch().to_secs();
-        info!("Seconds since epoch: {}", time);
+            let time = monotonics::now().duration_since_epoch().to_secs();
+            info!("Seconds since epoch: {}", time);
 
-        blink::spawn_after(1.secs()).ok();
+            if cx.shared.em.has_error() {
+                spawn_after!(blink, 200.millis())?;
+            } else {
+                spawn_after!(blink, 1.secs())?;
+            }
+            Ok(())
+        });
     }
 }
