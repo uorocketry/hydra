@@ -1,8 +1,9 @@
 [workspace]
 
 members = [
-    "main-board",
-    "template",
+    "boards/*",
+    "examples/*",
+    "libraries/*"
 ]
 
 [workspace.dependencies.atsamd-hal]
