@@ -35,6 +35,7 @@ pub struct Message {
 pub enum Data {
     State(State),
     Sensor(Sensor),
+    Log(Log),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
@@ -49,6 +50,11 @@ pub struct State {
     pub status: Status,
     pub has_error: bool,
     pub voltage: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+pub struct Log {
+    pub defmt_raw: heapless::Vec<u8, 30>,
 }
 
 impl Message {

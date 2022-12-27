@@ -10,3 +10,4 @@ derive_more = "0.99.17"
 serde = { version = "1.0.149", default-features = false, features = ["derive"] }
 defmt = "0.3.2"
 fugit = "0.3.6"
+heapless = { version = "0.7.16", features = ["serde", "defmt-impl"] }
