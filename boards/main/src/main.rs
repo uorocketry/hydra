@@ -92,11 +92,11 @@ fn main() -> ! {
     let mut test_file = micro_sd.open_file("testing.txt").expect("Cannot open file");
     micro_sd
         .write(&mut test_file, b"Hello this is a test!")
-        .unwrap();
+        .expect("Could not write file.");
     micro_sd
         .write_str(&mut test_file, "Testing Strings")
-        .unwrap();
-    micro_sd.close_file(test_file).unwrap(); // we are done with the file so destroy it
+        .expect("Could not write string");
+    micro_sd.close_file(test_file).expect("Could not close file."); // we are done with the file so destroy it
     micro_sd.close(); // we are done our test so destroy
 
     loop {
