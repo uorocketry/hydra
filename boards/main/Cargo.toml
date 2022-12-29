@@ -15,3 +15,4 @@ defmt-rtt = "0.4.0"
 defmt = "0.3.2"
 atsamd-hal = { workspace = true }
 common-arm = { path = "../../libraries/common-arm" }
+enum_dispatch = "0.3.8"
