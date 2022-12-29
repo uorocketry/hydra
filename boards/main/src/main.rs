@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+mod state_machine;
+
 use atsamd_hal as hal;
 use atsamd_hal::prelude::*;
 use common_arm;
@@ -96,7 +98,9 @@ fn main() -> ! {
     micro_sd
         .write_str(&mut test_file, "Testing Strings")
         .expect("Could not write string");
-    micro_sd.close_file(test_file).expect("Could not close file."); // we are done with the file so destroy it
+    micro_sd
+        .close_file(test_file)
+        .expect("Could not close file."); // we are done with the file so destroy it
     micro_sd.close(); // we are done our test so destroy
 
     loop {
