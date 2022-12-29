@@ -103,10 +103,12 @@ dependencies = [
  "cortex-m",
  "cortex-m-rt",
  "defmt",
+ "defmt-rtt",
  "derive_more",
  "embedded-hal",
  "embedded-sdmmc",
  "heapless",
+ "panic-halt",
  "postcard",
 ]
 
@@ -340,7 +342,6 @@ dependencies = [
  "cortex-m-rt",
  "cortex-m-rtic",
  "defmt",
- "defmt-rtt",
  "fugit",
  "heapless",
  "messages",
