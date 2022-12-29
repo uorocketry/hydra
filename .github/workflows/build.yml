@@ -33,5 +33,10 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions-rs/cargo@v1
+        name: "Build all binaries"
         with:
           command: build
+      - uses: actions-rs/cargo@v1
+        name: "Check that tests compile"
+        with:
+          command: test -p common-arm-test --no-run

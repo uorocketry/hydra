@@ -1,0 +1,36 @@
+[package]
+name = "common-arm-test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+common-arm = { path = "../common-arm" }
+atsamd-hal = { workspace = true }
+cortex-m = { workspace = true }
+cortex-m-rt = "0.7.3"
+defmt = "0.3.4"
+defmt-rtt = "0.4.0"
+defmt-test = "0.3.0"
+panic-probe = { version = "0.3.1", features = ["print-defmt" ] }
+
+# A [[test]] section is needed for each file in "tests"
+[[test]]
+name = "sd"
+harness = false
+
+[features]
+# set logging levels here
+default = [
+    # in tests, enable all logs
+    "defmt-trace",
+]
+
+# do NOT modify these features
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []
