@@ -18,3 +18,14 @@ cortex-m-rt = "^0.7.0"
 embedded-sdmmc = "0.3.0"
 embedded-hal = "0.2.7"
 panic-halt = "0.2.0"
+
+[dev-dependencies]
+defmt-test = "0.3.0"
+
+[lib]
+harness = false
+
+# A [[test]] section is needed for each file in "tests"
+[[test]]
+name = "sd"
+harness = false

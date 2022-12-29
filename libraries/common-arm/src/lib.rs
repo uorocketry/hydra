@@ -1,4 +1,5 @@
 #![no_std]
+#![no_main]
 
 //!
 //! This crate contains common code for HYDRA. Any code that is not board specific should be put in
@@ -15,3 +16,8 @@ pub use crate::sd::SdInterface;
 use defmt_rtt as _; // global logger
 
 use panic_halt as _;
+
+// Needed for testing. Adds a main function.
+#[cfg(test)]
+#[defmt_test::tests]
+mod unit_tests {}
