@@ -108,25 +108,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "communication"
-version = "0.1.0"
-dependencies = [
- "atsamd-hal",
- "common-arm",
- "cortex-m",
- "cortex-m-rt",
- "cortex-m-rtic",
- "defmt",
- "defmt-rtt",
- "fugit",
- "heapless",
- "messages",
- "panic-halt",
- "postcard",
- "systick-monotonic",
-]
-
-[[package]]
 name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -347,18 +328,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "main_board"
+name = "main"
 version = "0.1.0"
 dependencies = [
  "atsamd-hal",
  "common-arm",
  "cortex-m",
  "cortex-m-rt",
+ "cortex-m-rtic",
  "defmt",
  "defmt-rtt",
- "embedded-hal",
- "embedded-sdmmc",
+ "fugit",
+ "heapless",
+ "messages",
  "panic-halt",
+ "postcard",
+ "systick-monotonic",
 ]
 
 [[package]]
