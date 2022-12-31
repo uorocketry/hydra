@@ -10,6 +10,15 @@ members = [
 version = "0.15.1"
 features = ["same51j", "same51j-rt"]
 
+[workspace.dependencies.serde]
+version = "1.0.150"
+default-features = false
+features = ["derive"]
+
+[workspace.dependencies.cortex-m]
+version = "0.7.6"
+features = ["critical-section-single-core"]
+
 [profile.dev]
 # Using LTO causes issues with GDB
 lto = false
