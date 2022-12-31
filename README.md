@@ -34,6 +34,6 @@ The project is structured in a way to allow reuse of the code across various boa
 
 ## License
 
-This project is licensed under GPLv3.
+This project is licensed under GPLv3-only.
 
 We please ask for any derivatives of this work to be kept open-source, even if such derivative is only for internal use.
