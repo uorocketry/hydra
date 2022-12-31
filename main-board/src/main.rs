@@ -14,7 +14,7 @@ use hal::gpio::Pins;
 
 use pac::Peripherals;
 
-use sdio_host as sdio;
+use sbg_rs;
 
 #[entry]
 fn main() -> ! {
@@ -47,12 +47,15 @@ fn main() -> ! {
     .baud(9600.hz(), hal::sercom::uart::BaudMode::Fractional(hal::sercom::uart::Oversampling::Bits16))
     .enable();
 
+    let mut sbg = sbg_rs::sbg::SBG::new(uart);
+
     loop {
         led.set_high().unwrap();
         delay.delay_ms(1000_u16);
-        for byte in b"Hello, world!\r\n" {
-            nb::block!(uart.write(*byte)).unwrap();
-        }
+        // for byte in b"Hello, world!\r\n" {
+        //     nb::block!(uart.write(*byte)).unwrap();
+        // }
+        sbg.write(3).unwrap();
         led.set_low().unwrap();
         delay.delay_ms(1000_u16);
 

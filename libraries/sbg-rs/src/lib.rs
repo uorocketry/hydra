@@ -6,4 +6,4 @@
 #![allow(non_upper_case_globals)]
 mod bindings;
 
-mod sbg;
+pub mod sbg;
