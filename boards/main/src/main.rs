@@ -2,108 +2,162 @@
 #![no_main]
 
 use atsamd_hal as hal;
-use atsamd_hal::prelude::*;
-use common_arm;
-use cortex_m::asm;
-use cortex_m_rt::entry;
+use atsamd_hal::gpio::*;
+use atsamd_hal::pac;
+use atsamd_hal::prelude::nb::block;
+use atsamd_hal::sercom::uart::EightBit;
+use atsamd_hal::sercom::uart::{Duplex, Uart};
+use atsamd_hal::sercom::{uart, IoSet1, Sercom1};
 use defmt::info;
 use defmt_rtt as _;
 use hal::gpio::Pins;
-use hal::pac;
-use pac::Peripherals;
+use hal::gpio::PA14;
+use hal::gpio::{Pin, PushPullOutput};
+use hal::prelude::*;
+use hal::time::Hertz;
+use heapless::Vec;
+use messages::sender::Sender::MainBoard;
+use messages::sensor::{Sbg, Sensor};
+use messages::*;
 use panic_halt as _;
+use postcard::to_vec_cobs;
+use systick_monotonic::*;
 
-#[entry]
-fn main() -> ! {
-    asm::nop(); // To not have main optimize to abort in release mode, remove when you add code
+type Pads = uart::PadsFromIds<Sercom1, IoSet1, PA17, PA16>;
+type Config = uart::Config<Pads, EightBit>;
 
-    let mut peripherals = Peripherals::take().unwrap();
-    let p2 = cortex_m::peripheral::Peripherals::take().unwrap();
+#[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0])]
+mod app {
+    use super::*;
 
-    let pins = Pins::new(peripherals.PORT);
-    let mut led = pins.pa14.into_push_pull_output();
+    #[shared]
+    struct Shared {}
 
-    // External 32KHz clock for stability
-    let mut clock = hal::clock::GenericClockController::with_external_32kosc(
-        peripherals.GCLK,
-        &mut peripherals.MCLK,
-        &mut peripherals.OSC32KCTRL,
-        &mut peripherals.OSCCTRL,
-        &mut peripherals.NVMCTRL,
-    );
+    #[local]
+    struct Local {
+        led: Pin<PA14, PushPullOutput>,
+        uart: Uart<Config, Duplex>,
+    }
 
-    clock.configure_gclk_divider_and_source(
-        pac::gclk::pchctrl::GEN_A::GCLK2,
-        1,
-        pac::gclk::genctrl::SRC_A::DFLL,
-        false,
-    );
-    let gclk2 = clock
-        .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
-        .expect("Could not get gclk 2.");
+    #[monotonic(binds = SysTick, default = true)]
+    type SysMono = Systick<100>; // 100 Hz / 10 ms granularity
 
-    let mut delay = hal::delay::Delay::new(p2.SYST, &mut clock);
+    #[init]
+    fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
+        let mut peripherals = cx.device;
+        let core = cx.core;
 
-    /* Start UART CDC config */
-    let uart_clk = clock
-        .sercom5_core(&gclk2)
-        .expect("Could not configure sercom 5 clock.");
+        let mut clocks = hal::clock::GenericClockController::with_external_32kosc(
+            peripherals.GCLK,
+            &mut peripherals.MCLK,
+            &mut peripherals.OSC32KCTRL,
+            &mut peripherals.OSCCTRL,
+            &mut peripherals.NVMCTRL,
+        );
 
-    let pads = hal::sercom::uart::Pads::<hal::sercom::Sercom5, _>::default()
-        .rx(pins.pb17)
-        .tx(pins.pb16);
-    let mut _uart = hal::sercom::uart::Config::new(
-        &peripherals.MCLK,
-        peripherals.SERCOM5,
-        pads,
-        uart_clk.freq(),
-    )
-    .baud(
-        9600.hz(),
-        hal::sercom::uart::BaudMode::Fractional(hal::sercom::uart::Oversampling::Bits16),
-    )
-    .enable();
-    /* End UART CDC config */
+        let pins = Pins::new(peripherals.PORT);
+        let led = pins.pa14.into_push_pull_output();
 
-    /* Start SPI config */
-    clock.configure_gclk_divider_and_source(
-        pac::gclk::pchctrl::GEN_A::GCLK3,
-        3,
-        pac::gclk::genctrl::SRC_A::DFLL,
-        false,
-    ); // 16MHz clock
-    let gclk3 = clock
-        .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK3)
-        .expect("Cannot get gclk 3.");
-    let spi_clk = clock
-        .sercom1_core(&gclk3)
-        .expect("Cannot configure sercom 1 clock.");
+        clocks.configure_gclk_divider_and_source(
+            pac::gclk::pchctrl::GEN_A::GCLK2,
+            1,
+            pac::gclk::genctrl::SRC_A::DFLL,
+            false,
+        );
+        let gclk2 = clocks
+            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
+            .expect("Could not get gclk 2.");
 
-    let mut micro_sd = common_arm::SdInterface::new(
-        &peripherals.MCLK,
-        peripherals.SERCOM1,
-        spi_clk,
-        pins.pa18.into_push_pull_output(),
-        pins.pa17.into_push_pull_output(),
-        pins.pa19.into_push_pull_output(),
-        pins.pa16.into_push_pull_output(),
-    );
-    /* Test peripherals */
-    let mut test_file = micro_sd.open_file("testing.txt").expect("Cannot open file");
-    micro_sd
-        .write(&mut test_file, b"Hello this is a test!")
-        .expect("Could not write file.");
-    micro_sd
-        .write_str(&mut test_file, "Testing Strings")
-        .expect("Could not write string");
-    micro_sd.close_file(test_file).expect("Could not close file."); // we are done with the file so destroy it
-    micro_sd.close(); // we are done our test so destroy
+        /* Start UART CDC config */
+        let uart_clk = clocks
+            .sercom1_core(&gclk2)
+            .expect("Could not configure Sercom 1 clock.");
 
-    loop {
-        led.set_high().unwrap();
-        delay.delay_ms(1000_u16);
-        info!("Test");
-        led.set_low().unwrap();
-        delay.delay_ms(1000_u16);
+        let pads = uart::Pads::<Sercom1, _>::default()
+            .rx(pins.pa17)
+            .tx(pins.pa16);
+        let uart = Config::new(
+            &peripherals.MCLK,
+            peripherals.SERCOM1,
+            pads,
+            uart_clk.freq(),
+        )
+        .baud(
+            9600.hz(),
+            uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+        )
+        .enable();
+        /* End UART CDC config */
+
+        state_send::spawn().ok();
+        sensor_send::spawn().ok();
+        blink::spawn().ok();
+
+        let sysclk: Hertz = clocks.gclk0().into();
+        let mono = Systick::new(core.SYST, sysclk.0);
+
+        (Shared {}, Local { led, uart }, init::Monotonics(mono))
+    }
+
+    #[idle]
+    fn idle(_cx: idle::Context) -> ! {
+        loop {
+            rtic::export::wfi();
+        }
+    }
+
+    #[task(capacity = 10, local = [uart])]
+    fn send_message(cx: send_message::Context, m: Message) {
+        let uart = cx.local.uart;
+
+        let payload: Vec<u8, 64> = match to_vec_cobs(&m) {
+            Ok(x) => x,
+            Err(_) => return,
+        };
+
+        for x in payload {
+            block!(uart.write(x)).ok();
+        }
+
+        info!("Sent message: {:?}", m);
+    }
+
+    #[task]
+    fn state_send(_: state_send::Context) {
+        let state = State {
+            status: Status::Uninitialized,
+            has_error: false,
+            voltage: 12.1,
+        };
+
+        let message = Message::new(&monotonics::now(), MainBoard, state);
+
+        send_message::spawn(message).ok();
+        state_send::spawn_after(10.secs()).ok();
+    }
+
+    #[task]
+    fn sensor_send(_: sensor_send::Context) {
+        let sbg = Sbg {
+            accel: 9.8,
+            speed: 0.0,
+            pressure: 100.1,
+            height: 200.4,
+        };
+
+        let message = Message::new(&monotonics::now(), MainBoard, Sensor::new(9, sbg));
+
+        send_message::spawn(message).ok();
+        sensor_send::spawn_after(2.secs()).ok();
+    }
+
+    #[task(local = [led])]
+    fn blink(cx: blink::Context) {
+        cx.local.led.toggle().unwrap();
+
+        let time = monotonics::now().duration_since_epoch().to_secs();
+        info!("Seconds since epoch: {}", time);
+
+        blink::spawn_after(1.secs()).ok();
     }
 }
