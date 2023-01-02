@@ -1,0 +1,28 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+      - name: Build Documentation
+        run: cargo doc --no-deps
+      - name: Deploy to Netlify
+        if: github.ref == 'refs/heads/master'
+        run: netlify deploy --dir=target/thumbv7em-none-eabihf/doc --prod --auth=${{ secrets.NETLIFY_AUTH_TOKEN }} --site=${{ secrets.NETLIFY_SITE_ID }}
+      - name: Deploy to Netlify (staging)
+        if: github.event.pull_request && github.ref != 'refs/heads/master'
+        run: netlify deploy --dir=target/thumbv7em-none-eabihf/doc --auth=${{ secrets.NETLIFY_AUTH_TOKEN }} --site=${{ secrets.NETLIFY_SITE_ID }}
