@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 set(CMAKE_BUILD_TYPE Release CACHE STRING "build type")
-
+set(CMAKE_C_COMPILER_WORKS TRUE)
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
 project(sbgECom)
 
 #
