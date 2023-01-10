@@ -66,27 +66,19 @@
 //! ## RTIC Task Spawning
 //! Spawning software tasks in RTIC can fail for various reasons. However, the `Result` returned
 //! by spawning a task is not standard, making it challenging to transform it into a
-//! [`HydraError`] while preserving useful info like the task name that failed to spawn. The macros
-//! [`spawn`](crate::spawn!), [`spawn_after`](crate::spawn_after!), and
-//! [`spawn_all`](crate::spawn_all!) are there to facilitate handling the errors that can be returned
-//! while spawning.
+//! [`HydraError`] while preserving useful info like the task name that failed to spawn.
 //!
-//! [`spawn`](crate::spawn!) and [`spawn_after`](crate::spawn_after!) are macros that simply spawn
-//! the given task, converting the returned `Result` into a `Result<(), HydraError>`, adding in the
-//! process some useful info to the error like the task name.
+//! The macros [`spawn`](crate::spawn!) and [`spawn_after`](crate::spawn_after!) are there to facilitate
+//! handling the errors that can be returned while spawning. These simply spawn the given task,
+//! converting the returned `Result` into a `Result<(), HydraError>`, adding in the process some
+//! useful info to the error like the task name.
 //!
-//! Most of the time, even if a single task fails to spawn, we should still try spawning the
-//! remaining tasks. The [`spawn_all`](crate::spawn_all!) macro will try to spawn all the tasks
-//! given to it. If all tasks were spawned successfully, it will return `Ok(())`. However, if a task
-//! could not spawn, it will return it's associated error. Note that if multiple tasks could not spawn,
-//! only the last error will be returned.
-//!
-//! Together, those macros would be used like this:
+//! Here is an example of those macros used with the error manager:
 //! ```ignore
-//! spawn_all!(
+//! em.run(|| {
 //!     spawn!(send_message, message);
 //!     spawn_after!(sensor_send, 2.secs());
-//! )?;
+//! });
 //! ```
 //!
 
