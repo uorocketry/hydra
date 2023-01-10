@@ -1,4 +1,5 @@
 #![no_std]
+#![no_main]
 
 //!
 //! This crate contains common code for HYDRA. Any code that is not board specific should be put in
@@ -6,8 +7,17 @@
 //!
 
 mod error;
-pub mod sd;
+mod sd;
 
 pub use crate::error::error_manager::ErrorManager;
 pub use crate::error::hydra_error::SpawnError;
 pub use crate::sd::SdInterface;
+
+use defmt_rtt as _; // global logger
+
+use panic_halt as _;
+
+// Needed for testing. Adds a main function.
+#[cfg(test)]
+#[defmt_test::tests]
+mod unit_tests {}

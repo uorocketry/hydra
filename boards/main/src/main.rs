@@ -10,7 +10,6 @@ use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1, Sercom1};
 use common_arm::*;
 use defmt::info;
-use defmt_rtt as _;
 use hal::gpio::Pins;
 use hal::gpio::PA14;
 use hal::gpio::{Pin, PushPullOutput};
@@ -20,7 +19,6 @@ use heapless::Vec;
 use messages::sender::Sender::MainBoard;
 use messages::sensor::{Sbg, Sensor};
 use messages::*;
-use panic_halt as _;
 use postcard::to_vec_cobs;
 use systick_monotonic::*;
 
@@ -71,7 +69,7 @@ mod app {
             .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
             .expect("Could not get gclk 2.");
 
-        /* Start UART CDC config */
+        /* Start UART config */
         let uart_clk = clocks
             .sercom1_core(&gclk2)
             .expect("Could not configure Sercom 1 clock.");
@@ -90,7 +88,7 @@ mod app {
             uart::BaudMode::Fractional(uart::Oversampling::Bits16),
         )
         .enable();
-        /* End UART CDC config */
+        /* End UART config */
 
         state_send::spawn().ok();
         sensor_send::spawn().ok();
