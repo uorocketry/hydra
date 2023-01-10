@@ -5,7 +5,7 @@
 //! here.
 //!
 
-mod error;
+pub mod error;
 pub mod sd;
 
 pub use crate::error::error_manager::ErrorManager;
