@@ -22,7 +22,7 @@
                 ]
             },
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/main_board",
+            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/main",
             "name": "OpenOCD Debug",
             "device": "ATSAME51J20A",
             "preLaunchTask": "build",
@@ -39,7 +39,7 @@
             "servertype": "openocd",
             "interface": "swd",
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/main_board",
+            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/main",
             "name": "OpenOCD Release",
             "device": "ATSAME51J20A",
             "preLaunchTask": "release",

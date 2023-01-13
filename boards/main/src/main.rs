@@ -7,7 +7,7 @@ use atsamd_hal::pac;
 use atsamd_hal::prelude::nb::block;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
-use atsamd_hal::sercom::{uart, IoSet1, Sercom1};
+use atsamd_hal::sercom::{uart, IoSet1, Sercom1, Sercom5};
 use common_arm::*;
 use defmt::info;
 use defmt_rtt as _;
@@ -23,12 +23,15 @@ use messages::*;
 use panic_halt as _;
 use postcard::to_vec_cobs;
 use systick_monotonic::*;
-
+use sbg_rs;
 type Pads = uart::PadsFromIds<Sercom1, IoSet1, PA17, PA16>;
+type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
+type ConfigCDC = uart::Config<PadsCDC, EightBit>;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0])]
 mod app {
+
     use super::*;
 
     #[shared]
@@ -40,6 +43,7 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
+        sbg: sbg_rs::sbg::SBG<Uart<ConfigCDC, Duplex>>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -71,7 +75,7 @@ mod app {
             .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
             .expect("Could not get gclk 2.");
 
-        /* Start UART CDC config */
+        /* Start Radio config */
         let uart_clk = clocks
             .sercom1_core(&gclk2)
             .expect("Could not configure Sercom 1 clock.");
@@ -90,7 +94,37 @@ mod app {
             uart::BaudMode::Fractional(uart::Oversampling::Bits16),
         )
         .enable();
-        /* End UART CDC config */
+        /* End Radio config */
+
+        clocks.configure_gclk_divider_and_source(
+            pac::gclk::pchctrl::GEN_A::GCLK3,
+            1,
+            pac::gclk::genctrl::SRC_A::DFLL,
+            false,
+        );
+        let gclk3 = clocks
+            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK3)
+            .expect("Could not get gclk 2.");
+
+        /* Start UART CDC config */
+        let cdc_clk = clocks
+            .sercom5_core(&gclk3)
+            .expect("Could not configure Sercom 5 clock.");
+
+        let pads = uart::Pads::<Sercom5, _>::default()
+            .rx(pins.pb17)
+            .tx(pins.pb16);
+        let mut uart_cdc = ConfigCDC::new(
+            &peripherals.MCLK,
+            peripherals.SERCOM5,
+            pads,
+            uart_clk.freq(),
+        )
+        .baud(
+            9600.hz(),
+            uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+        )
+        .enable();
 
         state_send::spawn().ok();
         sensor_send::spawn().ok();
@@ -99,11 +133,13 @@ mod app {
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
+        let mut sbg = sbg_rs::sbg::SBG::new(uart_cdc);
+
         (
             Shared {
                 em: ErrorManager::new(),
             },
-            Local { led, uart },
+            Local { led, uart, sbg },
             init::Monotonics(mono),
         )
     }
