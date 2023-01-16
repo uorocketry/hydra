@@ -3,12 +3,12 @@ use core::ptr;
 use nb::{block, Error};
 use defmt::{error, info, warn, debug};
 use core::ptr::{null, null_mut};
-use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, free};
-use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc};
+use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR};
+use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle};
 use embedded_hal::{serial, serial::Read, serial::Write, timer::CountDown, timer::Periodic};
 
 struct UARTSBGInterface {
-    interface: bindings::SbgInterface
+    interface: *mut bindings::SbgInterface
 }
 
 pub struct SBG<T> where T: Read<u8> + Write<u8>{
@@ -21,7 +21,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     pub fn new(mut serial_device: T) -> Self {
         let serial_ptr: *mut T = &mut serial_device;
         let interface = UARTSBGInterface {
-            interface: _SbgInterface {
+            interface: &mut _SbgInterface {
                 handle: serial_ptr.cast(),
                 type_: 0,
                 name: [0; 48],
@@ -34,7 +34,8 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
                 pDelayFunc: None,
             },
         };
-        // run the init sequence here
+        let &mut handle: _SbgEComHandle; // initialize with dummy data then pass the handle to the init to be consumed 
+        unsafe{sbgEComInit(handle, interface.interface);} // create a safe wrapper
         SBG {
             UARTSBGInterface: interface,
             serial_device,
@@ -42,6 +43,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 
 
+    #[no_mangle]
     pub unsafe extern "C" fn SbgInterfaceReadFunc(pInterface: *mut _SbgInterface, pBuffer: *mut c_void, pBytesToRead: *mut usize, mut bytesRead: usize) -> _SbgErrorCode {
         // let mut array: &[u8] = (*pBuffer)._data;
         let serial: *mut T = *pInterface.cast();
@@ -62,7 +64,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         _SbgErrorCode_SBG_NO_ERROR
     }
 
-
+    #[no_mangle]
     pub unsafe extern "C" fn SbgInterfaceWriteFunc(pInterface: *mut _SbgInterface, pBuffer: *const c_void, bytesToWrite: usize) -> _SbgErrorCode {
         let serial: *mut T = *pInterface.cast();
         let mut array: &[u8] = todo!();
@@ -126,4 +128,4 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 }
 
-unsafe impl<T> Send for SBG<T> where T: Read<u8> + Write<u8>  {}
+unsafe impl<T> Send for SBG<T> where T: Read<u8> + Write<u8>  {} // this is wrong don't do this. Use a mutex and Arc<Mutex<SBG<T>>>! 
