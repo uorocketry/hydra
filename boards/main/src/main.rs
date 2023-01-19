@@ -23,7 +23,10 @@ use messages::*;
 use panic_halt as _;
 use postcard::to_vec_cobs;
 use systick_monotonic::*;
+/* SBG */
 use sbg_rs;
+use cortex_m::interrupt::Mutex;
+/* Type Def */
 type Pads = uart::PadsFromIds<Sercom1, IoSet1, PA17, PA16>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
@@ -43,7 +46,7 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
-        sbg: sbg_rs::sbg::SBG<Uart<ConfigCDC, Duplex>>,
+        sbg: Mutex<sbg_rs::sbg::SBG<Uart<ConfigCDC, Duplex>>>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -133,7 +136,8 @@ mod app {
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
-        let mut sbg = sbg_rs::sbg::SBG::new(uart_cdc);
+        // Put the SBG object into a mutex 
+        let mut sbg = Mutex::new(sbg_rs::sbg::SBG::new(uart_cdc));
 
         (
             Shared {

@@ -3,8 +3,8 @@ use core::ptr;
 use nb::{block, Error};
 use defmt::{error, info, warn, debug};
 use core::ptr::{null, null_mut};
-use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR};
-use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle};
+use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData};
+use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData};
 use embedded_hal::{serial, serial::Read, serial::Write, timer::CountDown, timer::Periodic};
 
 struct UARTSBGInterface {
@@ -16,6 +16,10 @@ pub struct SBG<T> where T: Read<u8> + Write<u8>{
     serial_device: T,
 } 
 
+/**
+ * Todo
+ * - Add assert def
+ */
 impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     // UART device must implement both read and write traits
     pub fn new(mut serial_device: T) -> Self {
@@ -34,8 +38,21 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
                 pDelayFunc: None,
             },
         };
-        let &mut handle: _SbgEComHandle; // initialize with dummy data then pass the handle to the init to be consumed 
-        unsafe{sbgEComInit(handle, interface.interface);} // create a safe wrapper
+
+        let mut x: u8 = 10;
+        let pLargeBuffer: *mut u8 = &mut x;
+        /**
+         * Dummy data
+         */
+        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 16, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
+        unsafe {
+        /**
+         * Dummy data
+         */
+        let handle: *mut _SbgEComHandle = &mut _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
+         // initialize with dummy data then pass the handle to the init to be consumed 
+        sbgEComInit(handle, interface.interface);
+        sbgEComProtocolSend(&mut protocol, 8, 1, null(), 0);} // create a safe wrapper
         SBG {
             UARTSBGInterface: interface,
             serial_device,
@@ -83,24 +100,13 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 
     /**
-     * 
+     * Todo
      */
-    // fn read(&mut self) -> Result<u8, Error<<T as Read<u8>>::Error>> {
-    //     self.serial_device.read()
-    // }
+    #[no_mangle]
+    pub unsafe extern "C" fn SbgEComReceiveLogFunc(pHandle: *mut _SbgEComHandle, msgClass: u32, msg: u8, pLogData: *const _SbgBinaryLogData, pUserArg: *mut c_void) -> _SbgErrorCode{
+        _SbgErrorCode_SBG_NO_ERROR
+    }
 
-    /**
-     * 
-     */
-    // pub fn write(&mut self, byte: u8) -> Result<(), Error<<T as Write<u8>>::Error>> {
-    //     self.serial_device.write(byte)
-    // }
-    /**
-     * 
-     */
-    // pub fn flush(&mut self) -> Result<(), Error<<T as Write<u8>>::Error>> {
-    //     self.serial_device.flush()
-    // }
     /**
      * 
      */

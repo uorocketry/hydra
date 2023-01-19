@@ -57,10 +57,9 @@
 // cause "defined but not used" warnings. Redefine assert() in a way that safely
 // prevents this warning, i.e. without triggering the expression side effects.
 //
-#ifdef NDEBUG
+
 #undef assert
 #define assert(expression) ((void)sizeof(expression))
-#endif // NDEBUG
 
 /*!
  * Macro used to handle export and import methods of the sbgCommon library

@@ -43,7 +43,6 @@ extern "C" {
 #include <sbgCommon.h>
 #include <crc/sbgCrc.h>
 #include <interfaces/sbgInterface.h>
-#include <interfaces/sbgInterfaceUdp.h>
 #include <interfaces/sbgInterfaceSerial.h>
 #include <interfaces/sbgInterfaceFile.h>
 #include <splitBuffer/sbgSplitBuffer.h>

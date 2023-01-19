@@ -38,13 +38,6 @@
 #ifndef SBG_PLATFORM_H
 #define SBG_PLATFORM_H
 
-// System headers
-#ifdef _WIN32
-#include <direct.h>
-#elif defined(__unix__)
-#include <unistd.h>
-#endif
-
 // sbgCommonLib headers
 #include <sbgDefines.h>
 #include <sbgErrorCodes.h>
