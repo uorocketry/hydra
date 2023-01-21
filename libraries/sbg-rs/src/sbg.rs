@@ -11,7 +11,7 @@ struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface
 }
 
-pub struct SBG<T> where T: Read<u8> + Write<u8>{
+pub struct SBG<T> where T: Read<u8> + Write<u8> {
     UARTSBGInterface: UARTSBGInterface,
     serial_device: T,
 } 
@@ -29,13 +29,13 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
                 handle: serial_ptr.cast(),
                 type_: 0,
                 name: [0; 48],
-                pDestroyFunc: None,
+                pDestroyFunc: Some(SBG::<T>::SbgDestroyFunc),
                 pWriteFunc: Some(SBG::<T>::SbgInterfaceWriteFunc),
                 pReadFunc: Some(SBG::<T>::SbgInterfaceReadFunc),
-                pFlushFunc: None,
-                pSetSpeedFunc: None,
-                pGetSpeedFunc: None,
-                pDelayFunc: None,
+                pFlushFunc: Some(SBG::<T>::SbgFlushFunc),
+                pSetSpeedFunc: Some(SBG::<T>::SbgSetSpeedFunc),
+                pGetSpeedFunc: Some(SBG::<T>::SbgGetSpeedFunc),
+                pDelayFunc: Some(SBG::<T>::SbgDelayFunc),
             },
         };
 
@@ -44,7 +44,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         /**
          * Dummy data
          */
-        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 16, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
+        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
         unsafe {
         /**
          * Dummy data
@@ -84,6 +84,9 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     #[no_mangle]
     pub unsafe extern "C" fn SbgInterfaceWriteFunc(pInterface: *mut _SbgInterface, pBuffer: *const c_void, bytesToWrite: usize) -> _SbgErrorCode {
         let serial: *mut T = *pInterface.cast();
+        /**
+         *  This is an issue
+         */
         let mut array: &[u8] = todo!();
         let mut counter: usize = 0;
         loop {
@@ -107,6 +110,32 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         _SbgErrorCode_SBG_NO_ERROR
     }
 
+    /**
+     * Todo
+     */
+    #[no_mangle]
+    pub unsafe extern "C" fn SbgDestroyFunc(pInterface: *mut _SbgInterface) -> _SbgErrorCode{
+        _SbgErrorCode_SBG_NO_ERROR
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn SbgFlushFunc(pInterface: *mut _SbgInterface, flags: u32) -> _SbgErrorCode {
+        _SbgErrorCode_SBG_NO_ERROR
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn SbgSetSpeedFunc(pInterface: *mut _SbgInterface, speed: u32) -> _SbgErrorCode {
+        _SbgErrorCode_SBG_NO_ERROR
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn SbgGetSpeedFunc(pInterface: *const _SbgInterface) -> u32 {
+        9600
+    }
+    #[no_mangle]
+    pub unsafe extern "C" fn SbgDelayFunc(pInterface: *const _SbgInterface, numBytes: usize) -> u32 {
+        200
+    }
     /**
      * 
      */
