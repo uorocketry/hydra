@@ -3,9 +3,10 @@ use core::ptr;
 use nb::{block, Error};
 use defmt::{error, info, warn, debug};
 use core::ptr::{null, null_mut};
-use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData};
+use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0};
 use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData};
 use embedded_hal::{serial, serial::Read, serial::Write, timer::CountDown, timer::Periodic};
+use core::slice::from_raw_parts;
 
 struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface
@@ -44,7 +45,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         /**
          * Dummy data
          */
-        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
+        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 2 };
         unsafe {
         /**
          * Dummy data
@@ -52,7 +53,8 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         let handle: *mut _SbgEComHandle = &mut _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
          // initialize with dummy data then pass the handle to the init to be consumed 
         sbgEComInit(handle, interface.interface);
-        sbgEComProtocolSend(&mut protocol, 8, 1, null(), 0);} // create a safe wrapper
+        let data: &[u8;3] = &[1,2,3]; 
+        sbgEComProtocolSend(&mut protocol, 0, 0, data.as_ptr() as *const c_void, 3);} // create a safe wrapper
         SBG {
             UARTSBGInterface: interface,
             serial_device,
@@ -87,13 +89,13 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         /**
          *  This is an issue
          */
-        let mut array: &[u8] = todo!();
+        let mut array: &[u8] = from_raw_parts(pBuffer as *const u8, bytesToWrite);
         let mut counter: usize = 0;
         loop {
             if bytesToWrite == counter {
                 break;
             }
-            let result = serial.as_ref().expect("Serial reference").write(array[counter]);
+            let result = serial.as_mut().expect("Serial reference").write(array[counter]);
             match result {
                 Ok(_) => counter+=1,
                 Err(_) => return _SbgErrorCode_SBG_WRITE_ERROR,
