@@ -1,10 +1,10 @@
-use core::ffi::{c_char, c_void};
+use core::ffi::{c_char, c_void, VaListImpl};
 use core::ptr;
 use nb::{block, Error};
 use defmt::{error, info, warn, debug};
 use core::ptr::{null, null_mut};
 use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0};
-use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData};
+use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType};
 use embedded_hal::{serial, serial::Read, serial::Write, timer::CountDown, timer::Periodic};
 use core::slice::from_raw_parts;
 
@@ -42,18 +42,13 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
 
         let mut x: u8 = 10;
         let pLargeBuffer: *mut u8 = &mut x;
-        /**
-         * Dummy data
-         */
+        // Create some dummy data to be able to create the struct. 
         let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 2 };
         unsafe {
-        /**
-         * Dummy data
-         */
         let handle: *mut _SbgEComHandle = &mut _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
          // initialize with dummy data then pass the handle to the init to be consumed 
         sbgEComInit(handle, interface.interface);
-        let data: &[u8;3] = &[1,2,3]; 
+        let data: &[u8;3] = &[1,2,3]; // simple test data 
         sbgEComProtocolSend(&mut protocol, 0, 0, data.as_ptr() as *const c_void, 3);} // create a safe wrapper
         SBG {
             UARTSBGInterface: interface,
@@ -105,7 +100,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 
     /**
-     * Todo
+     * Callback function for handling logs. 
      */
     #[no_mangle]
     pub unsafe extern "C" fn SbgEComReceiveLogFunc(pHandle: *mut _SbgEComHandle, msgClass: u32, msg: u8, pLogData: *const _SbgBinaryLogData, pUserArg: *mut c_void) -> _SbgErrorCode{
@@ -113,7 +108,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 
     /**
-     * Todo
+     * Unimplemented
      */
     #[no_mangle]
     pub unsafe extern "C" fn SbgDestroyFunc(pInterface: *mut _SbgInterface) -> _SbgErrorCode{
@@ -138,31 +133,44 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     pub unsafe extern "C" fn SbgDelayFunc(pInterface: *const _SbgInterface, numBytes: usize) -> u32 {
         200
     }
-    /**
-     * 
-     */
-    pub fn log(status: u8, message: &str) {
-        match status {
-            0 => error!("SBG Error {}", message),
-            1 => warn!("SBG Warning {}", message),
-            2 => info!("SBG Info {}", message),
-            3 => debug!("SBG Debug {}", message),
-            _ => info!("SBG Unknown {}", message)
-        }
-    }
+    // /**
+    //  * 
+    //  */
+    // pub fn log(status: u8, message: &str) {
+    //     match status {
+    //         0 => error!("SBG Error {}", message),
+    //         1 => warn!("SBG Warning {}", message),
+    //         2 => info!("SBG Info {}", message),
+    //         3 => debug!("SBG Debug {}", message),    
+    //         _ => info!("SBG Unknown {}", message)
+    //     }
+    // }
 
-    /**
-     * 
-     */
-    pub fn getTime(&mut self) {
-        todo!()
-    }
-    /**
-     * 
-     */
-    pub fn sleep(&mut self, duration: u32) {
-        todo!()
-    }
+
+
 }
 
 unsafe impl<T> Send for SBG<T> where T: Read<u8> + Write<u8>  {} // this is wrong don't do this. Use a mutex and Arc<Mutex<SBG<T>>>! 
+
+
+/**
+ * To be implemented 
+ */
+#[no_mangle]
+#[feature(c_variadic)]
+pub unsafe extern "C" fn sbgPlatformDebugLogMsg( pFileName: *const ::core::ffi::c_char, pFunctionName: *const ::core::ffi::c_char, line: u32, pCategory: *const ::core::ffi::c_char, logType: _SbgDebugLogType, errorCode: _SbgErrorCode, pFormat: *const ::core::ffi::c_char, args: ...) {
+
+}
+
+/**
+ * To be implemented 
+ */
+#[no_mangle] 
+pub unsafe extern "C" fn sbgGetTime() -> u32 {
+    300
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn sbgSleep(ms: u32) {
+
+}

@@ -19,15 +19,6 @@ SbgCommonLibOnLogFunc	gLogCallback = NULL;
 //- Public functions                                                   -//
 //----------------------------------------------------------------------//
 
-SBG_COMMON_LIB_API uint32_t sbgGetTime(void)
-{
-	return 200;
-}
-
-SBG_COMMON_LIB_API void sbgSleep(uint32_t ms)
-{
-
-}
 
 SBG_COMMON_LIB_API void sbgCommonLibSetLogCallback(SbgCommonLibOnLogFunc logCallback)
 {
@@ -37,7 +28,3 @@ SBG_COMMON_LIB_API void sbgCommonLibSetLogCallback(SbgCommonLibOnLogFunc logCall
 	gLogCallback = logCallback;
 }
 
-SBG_COMMON_LIB_API void sbgPlatformDebugLogMsg(const char *pFileName, const char *pFunctionName, uint32_t line, const char *pCategory, SbgDebugLogType logType, SbgErrorCode errorCode, const char *pFormat, ...)
-{
-
-}
