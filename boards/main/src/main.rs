@@ -121,7 +121,7 @@ mod app {
             &peripherals.MCLK,
             peripherals.SERCOM5,
             pads,
-            uart_clk.freq(),
+            cdc_clk.freq(),
         )
         .baud(
             9600.hz(),
@@ -213,7 +213,7 @@ mod app {
         spawn_after!(sensor_send, 2.secs()).ok();
     }
 
-    #[task(local = [led], shared = [&em])]
+    #[task(local = [led, sbg], shared = [&em])]
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
             cx.local.led.toggle()?;

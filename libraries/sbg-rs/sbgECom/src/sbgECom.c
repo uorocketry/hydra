@@ -12,7 +12,8 @@ SbgErrorCode sbgEComInit(SbgEComHandle *pHandle, SbgInterface *pInterface)
 	
 	assert(pHandle);
 	assert(pInterface);
-	
+	SBG_LOG_DEBUG("SBG LOG Test");
+
 	//
 	// Initialize the sbgECom handle
 	//

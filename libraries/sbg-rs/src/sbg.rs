@@ -3,10 +3,10 @@ use core::ptr;
 use nb::{block, Error};
 use defmt::{error, info, warn, debug};
 use core::ptr::{null, null_mut};
-use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0};
+use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING};
 use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType};
 use embedded_hal::{serial, serial::Read, serial::Write, timer::CountDown, timer::Periodic};
-use core::slice::from_raw_parts;
+use core::slice::{from_raw_parts, from_raw_parts_mut};
 
 struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface
@@ -17,12 +17,10 @@ pub struct SBG<T> where T: Read<u8> + Write<u8> {
     serial_device: T,
 } 
 
-/**
- * Todo
- * - Add assert def
- */
 impl<T> SBG<T> where T: Read<u8> + Write<u8> {
-    // UART device must implement both read and write traits
+    /**
+     * Creates a new SBG instance to control the desired UART peripheral. 
+     */
     pub fn new(mut serial_device: T) -> Self {
         let serial_ptr: *mut T = &mut serial_device;
         let interface = UARTSBGInterface {
@@ -56,18 +54,25 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         }
     }
 
-
+    /**
+     * Allows the SBG interface to read data from the serial ports. 
+     * The ability to fill the new buffer must be implemented 
+     */
     #[no_mangle]
     pub unsafe extern "C" fn SbgInterfaceReadFunc(pInterface: *mut _SbgInterface, pBuffer: *mut c_void, pBytesToRead: *mut usize, mut bytesRead: usize) -> _SbgErrorCode {
         // let mut array: &[u8] = (*pBuffer)._data;
         let serial: *mut T = *pInterface.cast();
         let mut counter: usize = 0;
-        let mut array: [u8;250] = todo!();
+        let bytesToRead = match pBytesToRead.as_ref() {
+            None => 0,
+            Some(num) => *num,
+        };
+        let mut array: &mut [u8] = from_raw_parts_mut(pBuffer as *mut u8, bytesToRead);
         loop {
-            if counter == 250 {
+            if counter == bytesToRead {
                 break;
             }
-            let result = serial.as_ref().expect("Serial reference").read();
+            let result = nb::block!(serial.as_mut().expect("Serial reference").read());
             match result {
                 Ok(word) => array[counter] = word,
                 Err(_) => return _SbgErrorCode_SBG_READ_ERROR,
@@ -75,22 +80,24 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
             counter+=1;
         }
         bytesRead = counter;
+        // fill the pBuffer with the temp buffer.
         _SbgErrorCode_SBG_NO_ERROR
     }
 
+    /**
+     * Allows the SBG interface to write to the UART peripheral 
+     */
     #[no_mangle]
     pub unsafe extern "C" fn SbgInterfaceWriteFunc(pInterface: *mut _SbgInterface, pBuffer: *const c_void, bytesToWrite: usize) -> _SbgErrorCode {
         let serial: *mut T = *pInterface.cast();
-        /**
-         *  This is an issue
-         */
         let mut array: &[u8] = from_raw_parts(pBuffer as *const u8, bytesToWrite);
         let mut counter: usize = 0;
         loop {
             if bytesToWrite == counter {
                 break;
             }
-            let result = serial.as_mut().expect("Serial reference").write(array[counter]);
+            // The block is needed otherwise the operation will not complete. 
+            let result = nb::block!(serial.as_mut().expect("Serial reference").write(array[counter]));
             match result {
                 Ok(_) => counter+=1,
                 Err(_) => return _SbgErrorCode_SBG_WRITE_ERROR,
@@ -101,6 +108,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
 
     /**
      * Callback function for handling logs. 
+     * To be implemented
      */
     #[no_mangle]
     pub unsafe extern "C" fn SbgEComReceiveLogFunc(pHandle: *mut _SbgEComHandle, msgClass: u32, msg: u8, pLogData: *const _SbgBinaryLogData, pUserArg: *mut c_void) -> _SbgErrorCode{
@@ -108,49 +116,55 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 
     /**
-     * Unimplemented
+     * To be implemented 
      */
     #[no_mangle]
     pub unsafe extern "C" fn SbgDestroyFunc(pInterface: *mut _SbgInterface) -> _SbgErrorCode{
         _SbgErrorCode_SBG_NO_ERROR
     }
 
+    /**
+     * To be implemented 
+     */
     #[no_mangle]
     pub unsafe extern "C" fn SbgFlushFunc(pInterface: *mut _SbgInterface, flags: u32) -> _SbgErrorCode {
-        _SbgErrorCode_SBG_NO_ERROR
+        let serial: *mut T = *pInterface.cast();
+        let result = serial.as_mut().expect("Serial flush failed.").flush();
+        match result {
+            Ok(_) => return _SbgErrorCode_SBG_NO_ERROR,
+            Err(_) => return _SbgErrorCode_SBG_READ_ERROR,
+        }
     }
 
+    /**
+     * To be implemented 
+     */
     #[no_mangle]
     pub unsafe extern "C" fn SbgSetSpeedFunc(pInterface: *mut _SbgInterface, speed: u32) -> _SbgErrorCode {
         _SbgErrorCode_SBG_NO_ERROR
     }
 
+    /**
+     * To be implemented 
+     */
     #[no_mangle]
     pub unsafe extern "C" fn SbgGetSpeedFunc(pInterface: *const _SbgInterface) -> u32 {
         9600
     }
+
+    /**
+     * To be implemented 
+     */
     #[no_mangle]
     pub unsafe extern "C" fn SbgDelayFunc(pInterface: *const _SbgInterface, numBytes: usize) -> u32 {
         200
     }
-    // /**
-    //  * 
-    //  */
-    // pub fn log(status: u8, message: &str) {
-    //     match status {
-    //         0 => error!("SBG Error {}", message),
-    //         1 => warn!("SBG Warning {}", message),
-    //         2 => info!("SBG Info {}", message),
-    //         3 => debug!("SBG Debug {}", message),    
-    //         _ => info!("SBG Unknown {}", message)
-    //     }
-    // }
-
-
-
 }
 
-unsafe impl<T> Send for SBG<T> where T: Read<u8> + Write<u8>  {} // this is wrong don't do this. Use a mutex and Arc<Mutex<SBG<T>>>! 
+/**
+ * This is very wrong and a Arc<Mutex<SBG<T>>> should be used to facilitate the send!!!!!!
+ */
+unsafe impl<T> Send for SBG<T> where T: Read<u8> + Write<u8>  {} 
 
 
 /**
@@ -158,8 +172,15 @@ unsafe impl<T> Send for SBG<T> where T: Read<u8> + Write<u8>  {} // this is wron
  */
 #[no_mangle]
 #[feature(c_variadic)]
-pub unsafe extern "C" fn sbgPlatformDebugLogMsg( pFileName: *const ::core::ffi::c_char, pFunctionName: *const ::core::ffi::c_char, line: u32, pCategory: *const ::core::ffi::c_char, logType: _SbgDebugLogType, errorCode: _SbgErrorCode, pFormat: *const ::core::ffi::c_char, args: ...) {
-
+pub unsafe extern "C" fn sbgPlatformDebugLogMsg(pFileName: *const ::core::ffi::c_char, pFunctionName: *const ::core::ffi::c_char, line: u32, pCategory: *const ::core::ffi::c_char, logType: _SbgDebugLogType, errorCode: _SbgErrorCode, pFormat: *const ::core::ffi::c_char, args: ...) {
+    // using defmt logs
+    match logType {
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info"),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug"),
+        _ => (),
+    }
 }
 
 /**
@@ -167,10 +188,15 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg( pFileName: *const ::core::ffi::
  */
 #[no_mangle] 
 pub unsafe extern "C" fn sbgGetTime() -> u32 {
-    300
+    // call a clock function 
+    200
 }
 
+/**
+ * To be implemented 
+ */
 #[no_mangle]
 pub unsafe extern "C" fn sbgSleep(ms: u32) {
 
 }
+
