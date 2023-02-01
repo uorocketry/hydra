@@ -1,5 +1,6 @@
 use core::ffi::{c_char, c_void, VaListImpl};
 use core::ptr;
+use atsamd_hal::timer::TimerCounter2;
 use nb::{block, Error};
 use defmt::{error, info, warn, debug};
 use core::ptr::{null, null_mut};
@@ -7,6 +8,11 @@ use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_E
 use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType};
 use embedded_hal::{serial, serial::Read, serial::Write, timer::CountDown, timer::Periodic};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
+use atsamd_hal::rtc;
+use atsamd_hal::pac::TC2;
+// use cortex_m_rt::interrupt;
+
+pub static mut SBG_COUNT: u32 = 0;
 
 struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface
@@ -189,14 +195,21 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(pFileName: *const ::core::ffi::c
 #[no_mangle] 
 pub unsafe extern "C" fn sbgGetTime() -> u32 {
     // call a clock function 
-    200
+    // store the interrupt counter here
+    SBG_COUNT
 }
+
+
 
 /**
  * To be implemented 
  */
 #[no_mangle]
 pub unsafe extern "C" fn sbgSleep(ms: u32) {
-
+    
 }
 
+// #[interrupt]
+// unsafe fn TIM2() {
+//     SBG_COUNT += 1;
+// }

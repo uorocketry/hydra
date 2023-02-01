@@ -694,6 +694,8 @@ dependencies = [
  "atsamd-hal",
  "bindgen",
  "cmake",
+ "cortex-m",
+ "cortex-m-rt",
  "defmt",
  "embedded-hal",
  "nb 1.0.0",

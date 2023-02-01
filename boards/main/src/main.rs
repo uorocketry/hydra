@@ -8,6 +8,8 @@ use atsamd_hal::prelude::nb::block;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1, Sercom1, Sercom5};
+use atsamd_hal::timer::TimerCounter;
+use hal::timer;
 use common_arm::*;
 use defmt::info;
 use defmt_rtt as _;
@@ -25,15 +27,27 @@ use postcard::to_vec_cobs;
 use systick_monotonic::*;
 /* SBG */
 use sbg_rs;
+use sbg_rs::sbg::SBG_COUNT;
 use cortex_m::interrupt::Mutex;
+// use cortex_m_rt::interrupt;
+use pac::interrupt;
+use pac::interrupt::TC2;
 /* Type Def */
 type Pads = uart::PadsFromIds<Sercom1, IoSet1, PA17, PA16>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
 type ConfigCDC = uart::Config<PadsCDC, EightBit>;
 
+#[interrupt]
+unsafe fn TC2() {
+    SBG_COUNT += 1;
+}
+
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0])]
 mod app {
+
+    use hal::pac::TC2;
+    use sbg_rs::sbg;
 
     use super::*;
 
@@ -74,6 +88,17 @@ mod app {
             pac::gclk::genctrl::SRC_A::DFLL,
             false,
         );
+
+        // let rtc = hal::rtc::Rtc::count32_mode(rtc, rtc_clock_freq, &mut peripherals.MCLK);
+
+        let gclk4 = clocks.get_gclk(pac::gclk::pchctrl::GEN_A::GCLK4).expect("Could not get gclk 4.");
+        let tc2_clk = clocks.tc2_tc3(&gclk4).expect("Could not configure the TC2 clock");
+        let mut sbg_timer: TimerCounter<TC2> = TimerCounter::tc2_(&tc2_clk, peripherals.TC2, &mut peripherals.MCLK);
+        // Could use an interrupt timer 
+        sbg_timer.enable_interrupt();
+        sbg_timer.start(0.ms());
+        
+        // UART
         let gclk2 = clocks
             .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
             .expect("Could not get gclk 2.");
