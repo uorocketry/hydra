@@ -56,7 +56,6 @@ mod app {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
         sbg: Mutex<sbg_rs::sbg::SBG<Uart<ConfigCDC, Duplex>>>,
-        sbg_timer: TimerCounter<pac::TC2>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -170,7 +169,7 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
             },
-            Local { led, uart, sbg, sbg_timer },
+            Local { led, uart, sbg },
             init::Monotonics(mono),
         )
     }
@@ -259,9 +258,8 @@ mod app {
         });
     }
 
-    #[task(binds = TC2, priority = 2, local = [sbg_timer], shared = [&em])] 
-    fn tc2(cx: tc2::Context) {
+    #[task(binds = TC2, priority = 2)] 
+    fn tc2(_: tc2::Context) {
         unsafe {SBG_COUNT += 1;}
-        let timer = cx.local.sbg_timer;
     }
 }
