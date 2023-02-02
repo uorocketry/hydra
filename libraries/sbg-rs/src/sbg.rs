@@ -11,7 +11,6 @@ use core::slice::{from_raw_parts, from_raw_parts_mut};
 use atsamd_hal::rtc;
 use atsamd_hal::pac::TC2;
 // use cortex_m_rt::interrupt;
-
 pub static mut SBG_COUNT: u32 = 0;
 
 struct UARTSBGInterface {

@@ -30,24 +30,19 @@ use sbg_rs;
 use sbg_rs::sbg::SBG_COUNT;
 use cortex_m::interrupt::Mutex;
 // use cortex_m_rt::interrupt;
-use pac::interrupt;
 use pac::interrupt::TC2;
 /* Type Def */
 type Pads = uart::PadsFromIds<Sercom1, IoSet1, PA17, PA16>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
 type ConfigCDC = uart::Config<PadsCDC, EightBit>;
-
-#[interrupt]
-unsafe fn TC2() {
-    SBG_COUNT += 1;
-}
+use hal::{time::{Nanoseconds, Milliseconds}};
+use sbg_rs::sbg;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0])]
 mod app {
 
     use hal::pac::TC2;
-    use sbg_rs::sbg;
 
     use super::*;
 
@@ -61,6 +56,7 @@ mod app {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
         sbg: Mutex<sbg_rs::sbg::SBG<Uart<ConfigCDC, Duplex>>>,
+        sbg_timer: TimerCounter<pac::TC2>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -90,13 +86,18 @@ mod app {
         );
 
         // let rtc = hal::rtc::Rtc::count32_mode(rtc, rtc_clock_freq, &mut peripherals.MCLK);
-
+        clocks.configure_gclk_divider_and_source(
+            pac::gclk::pchctrl::GEN_A::GCLK4,
+            32,
+            pac::gclk::genctrl::SRC_A::GCLKGEN1,
+            false,
+        );
         let gclk4 = clocks.get_gclk(pac::gclk::pchctrl::GEN_A::GCLK4).expect("Could not get gclk 4.");
         let tc2_clk = clocks.tc2_tc3(&gclk4).expect("Could not configure the TC2 clock");
-        let mut sbg_timer: TimerCounter<TC2> = TimerCounter::tc2_(&tc2_clk, peripherals.TC2, &mut peripherals.MCLK);
-        // Could use an interrupt timer 
+        let mut sbg_timer = TimerCounter::tc2_(&tc2_clk, peripherals.TC2, &mut peripherals.MCLK);
+        // Could use an interrupt timer
         sbg_timer.enable_interrupt();
-        sbg_timer.start(0.ms());
+        sbg_timer.start(Milliseconds(1));
         
         // UART
         let gclk2 = clocks
@@ -157,18 +158,19 @@ mod app {
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
+        // rtic::pend(); // equivalent to NVIC::pend
 
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
         // Put the SBG object into a mutex 
         let mut sbg = Mutex::new(sbg_rs::sbg::SBG::new(uart_cdc));
-
+        rtic::pend(pac::Interrupt::TC2);
         (
             Shared {
                 em: ErrorManager::new(),
             },
-            Local { led, uart, sbg },
+            Local { led, uart, sbg, sbg_timer },
             init::Monotonics(mono),
         )
     }
@@ -176,6 +178,8 @@ mod app {
     #[idle]
     fn idle(_cx: idle::Context) -> ! {
         loop {
+            rtic::pend(pac::Interrupt::TC2);
+
             rtic::export::wfi();
         }
     }
@@ -253,5 +257,11 @@ mod app {
             }
             Ok(())
         });
+    }
+
+    #[task(binds = TC2, priority = 2, local = [sbg_timer], shared = [&em])] 
+    fn tc2(cx: tc2::Context) {
+        unsafe {SBG_COUNT += 1;}
+        let timer = cx.local.sbg_timer;
     }
 }
