@@ -6,27 +6,28 @@ pub const SBG_CONFIG_ENABLE_LOG_ERROR: u32 = 1;
 pub const SBG_CONFIG_ENABLE_LOG_WARNING: u32 = 1;
 pub const SBG_CONFIG_ENABLE_LOG_INFO: u32 = 1;
 pub const SBG_CONFIG_ENABLE_LOG_DEBUG: u32 = 1;
-pub const __error_t_defined: u32 = 1;
 pub const __NEWLIB_H__: u32 = 1;
 pub const _NEWLIB_VERSION_H__: u32 = 1;
-pub const _NEWLIB_VERSION: &[u8; 17usize] = b"@NEWLIB_VERSION@\0";
-pub const _ATEXIT_DYNAMIC_ALLOC: u32 = 1;
-pub const _FSEEK_OPTIMIZATION: u32 = 1;
-pub const _FVWRITE_IN_STREAMIO: u32 = 1;
-pub const _HAVE_CC_INHIBIT_LOOP_TO_LIBCALL: u32 = 1;
-pub const _HAVE_INITFINI_ARRAY: u32 = 1;
-pub const _HAVE_LONG_DOUBLE: u32 = 1;
-pub const _LDBL_EQ_DBL: u32 = 1;
-pub const _MB_CAPABLE: u32 = 1;
-pub const _MB_LEN_MAX: u32 = 8;
-pub const _REENT_CHECK_VERIFY: u32 = 1;
-pub const _RETARGETABLE_LOCKING: u32 = 1;
-pub const _UNBUF_STREAM_OPT: u32 = 1;
+pub const _NEWLIB_VERSION: &[u8; 6usize] = b"4.2.0\0";
+pub const __NEWLIB__: u32 = 4;
+pub const __NEWLIB_MINOR__: u32 = 2;
+pub const __NEWLIB_PATCHLEVEL__: u32 = 0;
 pub const _WANT_IO_C99_FORMATS: u32 = 1;
 pub const _WANT_IO_LONG_LONG: u32 = 1;
 pub const _WANT_REGISTER_FINI: u32 = 1;
-pub const _WANT_USE_GDTOA: u32 = 1;
+pub const _REENT_CHECK_VERIFY: u32 = 1;
+pub const _MB_LEN_MAX: u32 = 1;
+pub const HAVE_INITFINI_ARRAY: u32 = 1;
+pub const _ATEXIT_DYNAMIC_ALLOC: u32 = 1;
+pub const _HAVE_LONG_DOUBLE: u32 = 1;
+pub const _HAVE_CC_INHIBIT_LOOP_TO_LIBCALL: u32 = 1;
+pub const _LDBL_EQ_DBL: u32 = 1;
+pub const _FVWRITE_IN_STREAMIO: u32 = 1;
+pub const _FSEEK_OPTIMIZATION: u32 = 1;
 pub const _WIDE_ORIENT: u32 = 1;
+pub const _UNBUF_STREAM_OPT: u32 = 1;
+pub const _RETARGETABLE_LOCKING: u32 = 1;
+pub const _WANT_USE_GDTOA: u32 = 1;
 pub const __OBSOLETE_MATH_DEFAULT: u32 = 1;
 pub const __OBSOLETE_MATH: u32 = 1;
 pub const _DEFAULT_SOURCE: u32 = 1;
@@ -44,6 +45,7 @@ pub const __SVID_VISIBLE: u32 = 1;
 pub const __XSI_VISIBLE: u32 = 0;
 pub const __SSP_FORTIFY_LEVEL: u32 = 0;
 pub const __RAND_MAX: u32 = 2147483647;
+pub const __error_t_defined: u32 = 1;
 pub const __have_longlong64: u32 = 1;
 pub const __have_long32: u32 = 1;
 pub const ___int8_t_defined: u32 = 1;
@@ -66,6 +68,7 @@ pub const _RAND48_ADD: u32 = 11;
 pub const _REENT_EMERGENCY_SIZE: u32 = 25;
 pub const _REENT_ASCTIME_SIZE: u32 = 26;
 pub const _REENT_SIGNAL_SIZE: u32 = 24;
+pub const _N_LISTS: u32 = 30;
 pub const EPERM: u32 = 1;
 pub const ENOENT: u32 = 2;
 pub const ESRCH: u32 = 3;
@@ -179,6 +182,7 @@ pub const WINT_MIN: u32 = 0;
 pub const _LIBC_LIMITS_H_: u32 = 1;
 pub const __GNUCLIKE_ASM: u32 = 3;
 pub const __GNUCLIKE___TYPEOF: u32 = 1;
+pub const __GNUCLIKE___OFFSETOF: u32 = 1;
 pub const __GNUCLIKE___SECTION: u32 = 1;
 pub const __GNUCLIKE_CTOR_SECTION_HANDLING: u32 = 1;
 pub const __GNUCLIKE_BUILTIN_CONSTANT_P: u32 = 1;
@@ -214,7 +218,7 @@ pub const COLL_WEIGHTS_MAX: u32 = 0;
 pub const EXPR_NEST_MAX: u32 = 32;
 pub const LINE_MAX: u32 = 2048;
 pub const RE_DUP_MAX: u32 = 255;
-pub const MB_LEN_MAX: u32 = 8;
+pub const MB_LEN_MAX: u32 = 1;
 pub const NL_ARGMAX: u32 = 32;
 pub const _POSIX2_RE_DUP_MAX: u32 = 255;
 pub const CHAR_MIN: u32 = 0;
@@ -254,6 +258,27 @@ pub const false_: u32 = 0;
 pub const EXIT_FAILURE: u32 = 1;
 pub const EXIT_SUCCESS: u32 = 0;
 pub const RAND_MAX: u32 = 2147483647;
+pub const __BIT_TYPES_DEFINED__: u32 = 1;
+pub const _LITTLE_ENDIAN: u32 = 1234;
+pub const _BIG_ENDIAN: u32 = 4321;
+pub const _PDP_ENDIAN: u32 = 3412;
+pub const _BYTE_ORDER: u32 = 1234;
+pub const _QUAD_HIGHWORD: u32 = 1;
+pub const _QUAD_LOWWORD: u32 = 0;
+pub const LITTLE_ENDIAN: u32 = 1234;
+pub const BIG_ENDIAN: u32 = 4321;
+pub const PDP_ENDIAN: u32 = 3412;
+pub const BYTE_ORDER: u32 = 1234;
+pub const FD_SETSIZE: u32 = 64;
+pub const SCHED_OTHER: u32 = 0;
+pub const SCHED_FIFO: u32 = 1;
+pub const SCHED_RR: u32 = 2;
+pub const PTHREAD_SCOPE_PROCESS: u32 = 0;
+pub const PTHREAD_SCOPE_SYSTEM: u32 = 1;
+pub const PTHREAD_INHERIT_SCHED: u32 = 1;
+pub const PTHREAD_EXPLICIT_SCHED: u32 = 2;
+pub const PTHREAD_CREATE_DETACHED: u32 = 0;
+pub const PTHREAD_CREATE_JOINABLE: u32 = 1;
 pub const __SLBF: u32 = 1;
 pub const __SNBF: u32 = 2;
 pub const __SRD: u32 = 4;
@@ -288,27 +313,6 @@ pub const L_ctermid: u32 = 16;
 pub const _CLOCKS_PER_SEC_: u32 = 100;
 pub const CLOCKS_PER_SEC: u32 = 100;
 pub const CLK_TCK: u32 = 100;
-pub const __BIT_TYPES_DEFINED__: u32 = 1;
-pub const _LITTLE_ENDIAN: u32 = 1234;
-pub const _BIG_ENDIAN: u32 = 4321;
-pub const _PDP_ENDIAN: u32 = 3412;
-pub const _BYTE_ORDER: u32 = 1234;
-pub const _QUAD_HIGHWORD: u32 = 1;
-pub const _QUAD_LOWWORD: u32 = 0;
-pub const LITTLE_ENDIAN: u32 = 1234;
-pub const BIG_ENDIAN: u32 = 4321;
-pub const PDP_ENDIAN: u32 = 3412;
-pub const BYTE_ORDER: u32 = 1234;
-pub const FD_SETSIZE: u32 = 64;
-pub const SCHED_OTHER: u32 = 0;
-pub const SCHED_FIFO: u32 = 1;
-pub const SCHED_RR: u32 = 2;
-pub const PTHREAD_SCOPE_PROCESS: u32 = 0;
-pub const PTHREAD_SCOPE_SYSTEM: u32 = 1;
-pub const PTHREAD_INHERIT_SCHED: u32 = 1;
-pub const PTHREAD_EXPLICIT_SCHED: u32 = 2;
-pub const PTHREAD_CREATE_DETACHED: u32 = 0;
-pub const PTHREAD_CREATE_JOINABLE: u32 = 1;
 pub const CLOCK_ENABLED: u32 = 1;
 pub const CLOCK_DISABLED: u32 = 0;
 pub const CLOCK_ALLOWED: u32 = 1;
@@ -341,6 +345,7 @@ pub const SBG_IF_TYPE_ETH_UDP: u32 = 2;
 pub const SBG_IF_TYPE_ETH_TCP_IP: u32 = 3;
 pub const SBG_IF_TYPE_FILE: u32 = 4;
 pub const SBG_IF_TYPE_LAST_RESERVED: u32 = 999;
+pub const SBG_NETWORK_IPV4_STRING_SIZE: u32 = 16;
 pub const SBG_ECOM_MAX_BUFFER_SIZE: u32 = 4096;
 pub const SBG_ECOM_MAX_PAYLOAD_SIZE: u32 = 4086;
 pub const SBG_ECOM_MAX_EXTENDED_PAYLOAD_SIZE: u32 = 4081;
@@ -516,6 +521,57 @@ pub const SBG_ECOM_CLOCK_UTC_STATUS_SHIFT: u32 = 6;
 pub const SBG_ECOM_CLOCK_UTC_STATUS_MASK: u32 = 15;
 pub const SBG_ECOM_CLOCK_STABLE_INPUT: u32 = 1;
 pub const SBG_ECOM_CLOCK_UTC_SYNC: u32 = 32;
+pub const SBG_ECOM_DEFAULT_CMD_TIME_OUT: u32 = 500;
+pub const SBG_ECOM_SENSOR_FEATURE_IMU: u32 = 1;
+pub const SBG_ECOM_SENSOR_FEATURE_AHRS: u32 = 2;
+pub const SBG_ECOM_SENSOR_FEATURE_NAVIGATION: u32 = 4;
+pub const SBG_ECOM_SENSOR_FEATURE_SHIP_MOTION: u32 = 8;
+pub const SBG_ECOM_GNSS_SIGNAL_GPS_L1: u32 = 1;
+pub const SBG_ECOM_GNSS_SIGNAL_GPS_L2: u32 = 2;
+pub const SBG_ECOM_GNSS_SIGNAL_GPS_L5: u32 = 4;
+pub const SBG_ECOM_GNSS_SIGNAL_GLONASS_L1: u32 = 8;
+pub const SBG_ECOM_GNSS_SIGNAL_GLONASS_L2: u32 = 16;
+pub const SBG_ECOM_GNSS_SIGNAL_BEIDOU_B1: u32 = 32;
+pub const SBG_ECOM_GNSS_SIGNAL_BEIDOU_B2: u32 = 64;
+pub const SBG_ECOM_GNSS_SIGNAL_BEIDOU_B3: u32 = 128;
+pub const SBG_ECOM_GNSS_SIGNAL_GALILEO_E1: u32 = 256;
+pub const SBG_ECOM_GNSS_SIGNAL_GALILEO_E5: u32 = 512;
+pub const SBG_ECOM_GNSS_SIGNAL_GALILEO_E6: u32 = 1024;
+pub const SBG_ECOM_GNSS_SIGNAL_QZSS: u32 = 2048;
+pub const SBG_ECOM_GNSS_SIGNAL_SBAS: u32 = 4096;
+pub const SBG_ECOM_GNSS_SIGNAL_L_BAND: u32 = 8192;
+pub const SBG_ECOM_GNSS_FEATURE_DUAL_ANT: u32 = 1;
+pub const SBG_ECOM_GNSS_FEATURE_RTK_LIMITED: u32 = 2;
+pub const SBG_ECOM_GNSS_FEATURE_RTK: u32 = 4;
+pub const SBG_ECOM_GNSS_FEATURE_PPP: u32 = 8;
+pub const SBG_ECOM_GNSS_FEATURE_RAW_DATA: u32 = 16;
+pub const SBG_ECOM_GNSS_FEATURE_RAIM: u32 = 32;
+pub const SBG_ECOM_GNSS_FEATURE_HIGH_SPEED: u32 = 64;
+pub const SBG_ECOM_INFO_PRODUCT_CODE_LENGTH: u32 = 32;
+pub const SBG_ECOM_MAG_CALIB_NOT_ENOUGH_POINTS: u32 = 1;
+pub const SBG_ECOM_MAG_CALIB_TOO_MUCH_DISTORTIONS: u32 = 2;
+pub const SBG_ECOM_MAG_CALIB_X_MOTION_ISSUE: u32 = 4;
+pub const SBG_ECOM_MAG_CALIB_Y_MOTION_ISSUE: u32 = 8;
+pub const SBG_ECOM_MAG_CALIB_Z_MOTION_ISSUE: u32 = 16;
+pub const SBG_ECOM_MAG_CALIB_ALIGNMENT_ISSUE: u32 = 32;
+pub const SBG_E_COM_VERSION_MAJOR: u32 = 3;
+pub const SBG_E_COM_VERSION_MINOR: u32 = 2;
+pub const SBG_E_COM_VERSION_REV: u32 = 4011;
+extern "C" {
+    pub fn __assert(
+        arg1: *const ::core::ffi::c_char,
+        arg2: ::core::ffi::c_int,
+        arg3: *const ::core::ffi::c_char,
+    ) -> !;
+}
+extern "C" {
+    pub fn __assert_func(
+        arg1: *const ::core::ffi::c_char,
+        arg2: ::core::ffi::c_int,
+        arg3: *const ::core::ffi::c_char,
+        arg4: *const ::core::ffi::c_char,
+    ) -> !;
+}
 pub type error_t = ::core::ffi::c_int;
 pub type wchar_t = ::core::ffi::c_uint;
 #[repr(C)]
@@ -687,7 +743,6 @@ pub type _iconv_t = *mut ::core::ffi::c_void;
 pub type __clock_t = ::core::ffi::c_ulong;
 pub type __time_t = __int_least64_t;
 pub type __clockid_t = ::core::ffi::c_ulong;
-pub type __daddr_t = ::core::ffi::c_long;
 pub type __timer_t = ::core::ffi::c_ulong;
 pub type __sa_family_t = __uint8_t;
 pub type __socklen_t = __uint32_t;
@@ -1419,9 +1474,6 @@ fn bindgen_test_layout___sFILE() {
     );
 }
 pub type __FILE = __sFILE;
-extern "C" {
-    pub static mut __sf: [__FILE; 3usize];
-}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct _glue {
@@ -1473,9 +1525,6 @@ fn bindgen_test_layout__glue() {
             stringify!(_iobs)
         )
     );
-}
-extern "C" {
-    pub static mut __sglue: _glue;
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1538,7 +1587,9 @@ pub struct _reent {
     pub _stderr: *mut __FILE,
     pub _inc: ::core::ffi::c_int,
     pub _emergency: [::core::ffi::c_char; 25usize],
+    pub _unspecified_locale_info: ::core::ffi::c_int,
     pub _locale: *mut __locale_t,
+    pub __sdidinit: ::core::ffi::c_int,
     pub __cleanup: ::core::option::Option<unsafe extern "C" fn(arg1: *mut _reent)>,
     pub _result: *mut _Bigint,
     pub _result_k: ::core::ffi::c_int,
@@ -1547,16 +1598,22 @@ pub struct _reent {
     pub _cvtlen: ::core::ffi::c_int,
     pub _cvtbuf: *mut ::core::ffi::c_char,
     pub _new: _reent__bindgen_ty_1,
+    pub _atexit: *mut _atexit,
+    pub _atexit0: _atexit,
     pub _sig_func: *mut ::core::option::Option<unsafe extern "C" fn(arg1: ::core::ffi::c_int)>,
+    pub __sglue: _glue,
+    pub __sf: [__FILE; 3usize],
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub union _reent__bindgen_ty_1 {
     pub _reent: _reent__bindgen_ty_1__bindgen_ty_1,
+    pub _unused: _reent__bindgen_ty_1__bindgen_ty_2,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct _reent__bindgen_ty_1__bindgen_ty_1 {
+    pub _unused_rand: ::core::ffi::c_uint,
     pub _strtok_last: *mut ::core::ffi::c_char,
     pub _asctime_buf: [::core::ffi::c_char; 26usize],
     pub _localtime_buf: __tm,
@@ -1583,7 +1640,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     let ptr = UNINIT.as_ptr();
     assert_eq!(
         ::core::mem::size_of::<_reent__bindgen_ty_1__bindgen_ty_1>(),
-        200usize,
+        208usize,
         concat!("Size of: ", stringify!(_reent__bindgen_ty_1__bindgen_ty_1))
     );
     assert_eq!(
@@ -1595,8 +1652,18 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
         )
     );
     assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr)._strtok_last) as usize - ptr as usize },
+        unsafe { ::core::ptr::addr_of!((*ptr)._unused_rand) as usize - ptr as usize },
         0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
+            "::",
+            stringify!(_unused_rand)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr)._strtok_last) as usize - ptr as usize },
+        4usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1606,7 +1673,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._asctime_buf) as usize - ptr as usize },
-        4usize,
+        8usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1616,7 +1683,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._localtime_buf) as usize - ptr as usize },
-        32usize,
+        36usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1626,7 +1693,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._gamma_signgam) as usize - ptr as usize },
-        68usize,
+        72usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1636,7 +1703,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._rand_next) as usize - ptr as usize },
-        72usize,
+        80usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1646,7 +1713,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._r48) as usize - ptr as usize },
-        80usize,
+        88usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1656,7 +1723,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._mblen_state) as usize - ptr as usize },
-        96usize,
+        104usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1666,7 +1733,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._mbtowc_state) as usize - ptr as usize },
-        104usize,
+        112usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1676,7 +1743,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._wctomb_state) as usize - ptr as usize },
-        112usize,
+        120usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1686,7 +1753,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._l64a_buf) as usize - ptr as usize },
-        120usize,
+        128usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1696,7 +1763,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._signal_buf) as usize - ptr as usize },
-        128usize,
+        136usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1706,7 +1773,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._getdate_err) as usize - ptr as usize },
-        152usize,
+        160usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1716,7 +1783,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._mbrlen_state) as usize - ptr as usize },
-        156usize,
+        164usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1726,7 +1793,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._mbrtowc_state) as usize - ptr as usize },
-        164usize,
+        172usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1736,7 +1803,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._mbsrtowcs_state) as usize - ptr as usize },
-        172usize,
+        180usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1746,7 +1813,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._wcrtomb_state) as usize - ptr as usize },
-        180usize,
+        188usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1756,7 +1823,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._wcsrtombs_state) as usize - ptr as usize },
-        188usize,
+        196usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
@@ -1766,12 +1833,57 @@ fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_1() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._h_errno) as usize - ptr as usize },
-        196usize,
+        204usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent__bindgen_ty_1__bindgen_ty_1),
             "::",
             stringify!(_h_errno)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _reent__bindgen_ty_1__bindgen_ty_2 {
+    pub _nextf: [*mut ::core::ffi::c_uchar; 30usize],
+    pub _nmalloc: [::core::ffi::c_uint; 30usize],
+}
+#[test]
+fn bindgen_test_layout__reent__bindgen_ty_1__bindgen_ty_2() {
+    const UNINIT: ::core::mem::MaybeUninit<_reent__bindgen_ty_1__bindgen_ty_2> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_reent__bindgen_ty_1__bindgen_ty_2>(),
+        240usize,
+        concat!("Size of: ", stringify!(_reent__bindgen_ty_1__bindgen_ty_2))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_reent__bindgen_ty_1__bindgen_ty_2>(),
+        4usize,
+        concat!(
+            "Alignment of ",
+            stringify!(_reent__bindgen_ty_1__bindgen_ty_2)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr)._nextf) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent__bindgen_ty_1__bindgen_ty_2),
+            "::",
+            stringify!(_nextf)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr)._nmalloc) as usize - ptr as usize },
+        120usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent__bindgen_ty_1__bindgen_ty_2),
+            "::",
+            stringify!(_nmalloc)
         )
     );
 }
@@ -1782,7 +1894,7 @@ fn bindgen_test_layout__reent__bindgen_ty_1() {
     let ptr = UNINIT.as_ptr();
     assert_eq!(
         ::core::mem::size_of::<_reent__bindgen_ty_1>(),
-        200usize,
+        240usize,
         concat!("Size of: ", stringify!(_reent__bindgen_ty_1))
     );
     assert_eq!(
@@ -1800,6 +1912,16 @@ fn bindgen_test_layout__reent__bindgen_ty_1() {
             stringify!(_reent)
         )
     );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr)._unused) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent__bindgen_ty_1),
+            "::",
+            stringify!(_unused)
+        )
+    );
 }
 #[test]
 fn bindgen_test_layout__reent() {
@@ -1807,7 +1929,7 @@ fn bindgen_test_layout__reent() {
     let ptr = UNINIT.as_ptr();
     assert_eq!(
         ::core::mem::size_of::<_reent>(),
-        288usize,
+        1064usize,
         concat!("Size of: ", stringify!(_reent))
     );
     assert_eq!(
@@ -1876,8 +1998,18 @@ fn bindgen_test_layout__reent() {
         )
     );
     assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr)._locale) as usize - ptr as usize },
+        unsafe { ::core::ptr::addr_of!((*ptr)._unspecified_locale_info) as usize - ptr as usize },
         48usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent),
+            "::",
+            stringify!(_unspecified_locale_info)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr)._locale) as usize - ptr as usize },
+        52usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1886,8 +2018,18 @@ fn bindgen_test_layout__reent() {
         )
     );
     assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).__sdidinit) as usize - ptr as usize },
+        56usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent),
+            "::",
+            stringify!(__sdidinit)
+        )
+    );
+    assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr).__cleanup) as usize - ptr as usize },
-        52usize,
+        60usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1897,7 +2039,7 @@ fn bindgen_test_layout__reent() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._result) as usize - ptr as usize },
-        56usize,
+        64usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1907,7 +2049,7 @@ fn bindgen_test_layout__reent() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._result_k) as usize - ptr as usize },
-        60usize,
+        68usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1917,7 +2059,7 @@ fn bindgen_test_layout__reent() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._p5s) as usize - ptr as usize },
-        64usize,
+        72usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1927,7 +2069,7 @@ fn bindgen_test_layout__reent() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._freelist) as usize - ptr as usize },
-        68usize,
+        76usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1937,7 +2079,7 @@ fn bindgen_test_layout__reent() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._cvtlen) as usize - ptr as usize },
-        72usize,
+        80usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1947,7 +2089,7 @@ fn bindgen_test_layout__reent() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._cvtbuf) as usize - ptr as usize },
-        76usize,
+        84usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1957,7 +2099,7 @@ fn bindgen_test_layout__reent() {
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._new) as usize - ptr as usize },
-        80usize,
+        88usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1966,8 +2108,28 @@ fn bindgen_test_layout__reent() {
         )
     );
     assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr)._atexit) as usize - ptr as usize },
+        328usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent),
+            "::",
+            stringify!(_atexit)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr)._atexit0) as usize - ptr as usize },
+        332usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent),
+            "::",
+            stringify!(_atexit0)
+        )
+    );
+    assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr)._sig_func) as usize - ptr as usize },
-        280usize,
+        732usize,
         concat!(
             "Offset of field: ",
             stringify!(_reent),
@@ -1975,33 +2137,35 @@ fn bindgen_test_layout__reent() {
             stringify!(_sig_func)
         )
     );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).__sglue) as usize - ptr as usize },
+        736usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent),
+            "::",
+            stringify!(__sglue)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).__sf) as usize - ptr as usize },
+        748usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_reent),
+            "::",
+            stringify!(__sf)
+        )
+    );
 }
 extern "C" {
     pub static mut _impure_ptr: *mut _reent;
 }
 extern "C" {
-    pub static mut _impure_data: _reent;
-}
-extern "C" {
-    pub static mut __atexit: *mut _atexit;
-}
-extern "C" {
-    pub static mut __atexit0: _atexit;
-}
-extern "C" {
-    pub static mut __stdio_exit_handler: ::core::option::Option<unsafe extern "C" fn()>;
+    pub static _global_impure_ptr: *mut _reent;
 }
 extern "C" {
     pub fn _reclaim_reent(arg1: *mut _reent);
-}
-extern "C" {
-    pub fn _fwalk_sglue(
-        arg1: *mut _reent,
-        arg2: ::core::option::Option<
-            unsafe extern "C" fn(arg1: *mut _reent, arg2: *mut __FILE) -> ::core::ffi::c_int,
-        >,
-        arg3: *mut _glue,
-    ) -> ::core::ffi::c_int;
 }
 extern "C" {
     pub fn __errno() -> *mut ::core::ffi::c_int;
@@ -3526,9 +3690,487 @@ extern "C" {
 extern "C" {
     pub fn quick_exit(arg1: ::core::ffi::c_int);
 }
+pub type u_int8_t = __uint8_t;
+pub type u_int16_t = __uint16_t;
+pub type u_int32_t = __uint32_t;
+pub type u_int64_t = __uint64_t;
+pub type register_t = __intptr_t;
+pub type __sigset_t = ::core::ffi::c_ulong;
+pub type suseconds_t = __suseconds_t;
+pub type time_t = __int_least64_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct timeval {
+    pub tv_sec: time_t,
+    pub tv_usec: suseconds_t,
+}
+#[test]
+fn bindgen_test_layout_timeval() {
+    const UNINIT: ::core::mem::MaybeUninit<timeval> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<timeval>(),
+        16usize,
+        concat!("Size of: ", stringify!(timeval))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<timeval>(),
+        8usize,
+        concat!("Alignment of ", stringify!(timeval))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).tv_sec) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(timeval),
+            "::",
+            stringify!(tv_sec)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).tv_usec) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(timeval),
+            "::",
+            stringify!(tv_usec)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct timespec {
+    pub tv_sec: time_t,
+    pub tv_nsec: ::core::ffi::c_long,
+}
+#[test]
+fn bindgen_test_layout_timespec() {
+    const UNINIT: ::core::mem::MaybeUninit<timespec> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<timespec>(),
+        16usize,
+        concat!("Size of: ", stringify!(timespec))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<timespec>(),
+        8usize,
+        concat!("Alignment of ", stringify!(timespec))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).tv_sec) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(timespec),
+            "::",
+            stringify!(tv_sec)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).tv_nsec) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(timespec),
+            "::",
+            stringify!(tv_nsec)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct itimerspec {
+    pub it_interval: timespec,
+    pub it_value: timespec,
+}
+#[test]
+fn bindgen_test_layout_itimerspec() {
+    const UNINIT: ::core::mem::MaybeUninit<itimerspec> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<itimerspec>(),
+        32usize,
+        concat!("Size of: ", stringify!(itimerspec))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<itimerspec>(),
+        8usize,
+        concat!("Alignment of ", stringify!(itimerspec))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).it_interval) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(itimerspec),
+            "::",
+            stringify!(it_interval)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).it_value) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(itimerspec),
+            "::",
+            stringify!(it_value)
+        )
+    );
+}
+pub type sigset_t = __sigset_t;
+pub type __fd_mask = ::core::ffi::c_ulong;
+pub type fd_mask = __fd_mask;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct fd_set {
+    pub __fds_bits: [__fd_mask; 2usize],
+}
+#[test]
+fn bindgen_test_layout_fd_set() {
+    const UNINIT: ::core::mem::MaybeUninit<fd_set> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<fd_set>(),
+        8usize,
+        concat!("Size of: ", stringify!(fd_set))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<fd_set>(),
+        4usize,
+        concat!("Alignment of ", stringify!(fd_set))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).__fds_bits) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(fd_set),
+            "::",
+            stringify!(__fds_bits)
+        )
+    );
+}
+extern "C" {
+    pub fn select(
+        __n: ::core::ffi::c_int,
+        __readfds: *mut fd_set,
+        __writefds: *mut fd_set,
+        __exceptfds: *mut fd_set,
+        __timeout: *mut timeval,
+    ) -> ::core::ffi::c_int;
+}
+extern "C" {
+    pub fn pselect(
+        __n: ::core::ffi::c_int,
+        __readfds: *mut fd_set,
+        __writefds: *mut fd_set,
+        __exceptfds: *mut fd_set,
+        __timeout: *const timespec,
+        __set: *const sigset_t,
+    ) -> ::core::ffi::c_int;
+}
+pub type in_addr_t = __uint32_t;
+pub type in_port_t = __uint16_t;
+pub type u_register_t = __uintptr_t;
+pub type u_char = ::core::ffi::c_uchar;
+pub type u_short = ::core::ffi::c_ushort;
+pub type u_int = ::core::ffi::c_uint;
+pub type u_long = ::core::ffi::c_ulong;
+pub type ushort = ::core::ffi::c_ushort;
+pub type uint = ::core::ffi::c_uint;
+pub type ulong = ::core::ffi::c_ulong;
+pub type blkcnt_t = __blkcnt_t;
+pub type blksize_t = __blksize_t;
+pub type clock_t = ::core::ffi::c_ulong;
+pub type daddr_t = ::core::ffi::c_long;
+pub type caddr_t = *mut ::core::ffi::c_char;
+pub type fsblkcnt_t = __fsblkcnt_t;
+pub type fsfilcnt_t = __fsfilcnt_t;
+pub type id_t = __id_t;
+pub type ino_t = __ino_t;
+pub type off_t = __off_t;
+pub type dev_t = __dev_t;
+pub type uid_t = __uid_t;
+pub type gid_t = __gid_t;
+pub type pid_t = __pid_t;
+pub type key_t = __key_t;
+pub type mode_t = __mode_t;
+pub type nlink_t = __nlink_t;
+pub type clockid_t = __clockid_t;
+pub type timer_t = __timer_t;
+pub type useconds_t = __useconds_t;
+pub type sbintime_t = __int64_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct sched_param {
+    pub sched_priority: ::core::ffi::c_int,
+}
+#[test]
+fn bindgen_test_layout_sched_param() {
+    const UNINIT: ::core::mem::MaybeUninit<sched_param> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<sched_param>(),
+        4usize,
+        concat!("Size of: ", stringify!(sched_param))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<sched_param>(),
+        4usize,
+        concat!("Alignment of ", stringify!(sched_param))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).sched_priority) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(sched_param),
+            "::",
+            stringify!(sched_priority)
+        )
+    );
+}
+pub type pthread_t = __uint32_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct pthread_attr_t {
+    pub is_initialized: ::core::ffi::c_int,
+    pub stackaddr: *mut ::core::ffi::c_void,
+    pub stacksize: ::core::ffi::c_int,
+    pub contentionscope: ::core::ffi::c_int,
+    pub inheritsched: ::core::ffi::c_int,
+    pub schedpolicy: ::core::ffi::c_int,
+    pub schedparam: sched_param,
+    pub detachstate: ::core::ffi::c_int,
+}
+#[test]
+fn bindgen_test_layout_pthread_attr_t() {
+    const UNINIT: ::core::mem::MaybeUninit<pthread_attr_t> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<pthread_attr_t>(),
+        32usize,
+        concat!("Size of: ", stringify!(pthread_attr_t))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<pthread_attr_t>(),
+        4usize,
+        concat!("Alignment of ", stringify!(pthread_attr_t))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).is_initialized) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_attr_t),
+            "::",
+            stringify!(is_initialized)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).stackaddr) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_attr_t),
+            "::",
+            stringify!(stackaddr)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).stacksize) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_attr_t),
+            "::",
+            stringify!(stacksize)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).contentionscope) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_attr_t),
+            "::",
+            stringify!(contentionscope)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).inheritsched) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_attr_t),
+            "::",
+            stringify!(inheritsched)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).schedpolicy) as usize - ptr as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_attr_t),
+            "::",
+            stringify!(schedpolicy)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).schedparam) as usize - ptr as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_attr_t),
+            "::",
+            stringify!(schedparam)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).detachstate) as usize - ptr as usize },
+        28usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_attr_t),
+            "::",
+            stringify!(detachstate)
+        )
+    );
+}
+pub type pthread_mutex_t = __uint32_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct pthread_mutexattr_t {
+    pub is_initialized: ::core::ffi::c_int,
+    pub recursive: ::core::ffi::c_int,
+}
+#[test]
+fn bindgen_test_layout_pthread_mutexattr_t() {
+    const UNINIT: ::core::mem::MaybeUninit<pthread_mutexattr_t> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<pthread_mutexattr_t>(),
+        8usize,
+        concat!("Size of: ", stringify!(pthread_mutexattr_t))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<pthread_mutexattr_t>(),
+        4usize,
+        concat!("Alignment of ", stringify!(pthread_mutexattr_t))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).is_initialized) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_mutexattr_t),
+            "::",
+            stringify!(is_initialized)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).recursive) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_mutexattr_t),
+            "::",
+            stringify!(recursive)
+        )
+    );
+}
+pub type pthread_cond_t = __uint32_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct pthread_condattr_t {
+    pub is_initialized: ::core::ffi::c_int,
+    pub clock: clock_t,
+}
+#[test]
+fn bindgen_test_layout_pthread_condattr_t() {
+    const UNINIT: ::core::mem::MaybeUninit<pthread_condattr_t> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<pthread_condattr_t>(),
+        8usize,
+        concat!("Size of: ", stringify!(pthread_condattr_t))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<pthread_condattr_t>(),
+        4usize,
+        concat!("Alignment of ", stringify!(pthread_condattr_t))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).is_initialized) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_condattr_t),
+            "::",
+            stringify!(is_initialized)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).clock) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_condattr_t),
+            "::",
+            stringify!(clock)
+        )
+    );
+}
+pub type pthread_key_t = __uint32_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct pthread_once_t {
+    pub is_initialized: ::core::ffi::c_int,
+    pub init_executed: ::core::ffi::c_int,
+}
+#[test]
+fn bindgen_test_layout_pthread_once_t() {
+    const UNINIT: ::core::mem::MaybeUninit<pthread_once_t> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<pthread_once_t>(),
+        8usize,
+        concat!("Size of: ", stringify!(pthread_once_t))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<pthread_once_t>(),
+        4usize,
+        concat!("Alignment of ", stringify!(pthread_once_t))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).is_initialized) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_once_t),
+            "::",
+            stringify!(is_initialized)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).init_executed) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(pthread_once_t),
+            "::",
+            stringify!(init_executed)
+        )
+    );
+}
 pub type FILE = __FILE;
 pub type fpos_t = _fpos_t;
-pub type off_t = __off_t;
 extern "C" {
     pub fn ctermid(arg1: *mut ::core::ffi::c_char) -> *mut ::core::ffi::c_char;
 }
@@ -4989,484 +5631,6 @@ extern "C" {
 extern "C" {
     pub fn strsignal(__signo: ::core::ffi::c_int) -> *mut ::core::ffi::c_char;
 }
-pub type u_int8_t = __uint8_t;
-pub type u_int16_t = __uint16_t;
-pub type u_int32_t = __uint32_t;
-pub type u_int64_t = __uint64_t;
-pub type register_t = __intptr_t;
-pub type __sigset_t = ::core::ffi::c_ulong;
-pub type suseconds_t = __suseconds_t;
-pub type time_t = __int_least64_t;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct timeval {
-    pub tv_sec: time_t,
-    pub tv_usec: suseconds_t,
-}
-#[test]
-fn bindgen_test_layout_timeval() {
-    const UNINIT: ::core::mem::MaybeUninit<timeval> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<timeval>(),
-        16usize,
-        concat!("Size of: ", stringify!(timeval))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<timeval>(),
-        8usize,
-        concat!("Alignment of ", stringify!(timeval))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).tv_sec) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(timeval),
-            "::",
-            stringify!(tv_sec)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).tv_usec) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(timeval),
-            "::",
-            stringify!(tv_usec)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct timespec {
-    pub tv_sec: time_t,
-    pub tv_nsec: ::core::ffi::c_long,
-}
-#[test]
-fn bindgen_test_layout_timespec() {
-    const UNINIT: ::core::mem::MaybeUninit<timespec> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<timespec>(),
-        16usize,
-        concat!("Size of: ", stringify!(timespec))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<timespec>(),
-        8usize,
-        concat!("Alignment of ", stringify!(timespec))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).tv_sec) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(timespec),
-            "::",
-            stringify!(tv_sec)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).tv_nsec) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(timespec),
-            "::",
-            stringify!(tv_nsec)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct itimerspec {
-    pub it_interval: timespec,
-    pub it_value: timespec,
-}
-#[test]
-fn bindgen_test_layout_itimerspec() {
-    const UNINIT: ::core::mem::MaybeUninit<itimerspec> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<itimerspec>(),
-        32usize,
-        concat!("Size of: ", stringify!(itimerspec))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<itimerspec>(),
-        8usize,
-        concat!("Alignment of ", stringify!(itimerspec))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).it_interval) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(itimerspec),
-            "::",
-            stringify!(it_interval)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).it_value) as usize - ptr as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(itimerspec),
-            "::",
-            stringify!(it_value)
-        )
-    );
-}
-pub type sigset_t = __sigset_t;
-pub type __fd_mask = ::core::ffi::c_ulong;
-pub type fd_mask = __fd_mask;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct fd_set {
-    pub __fds_bits: [__fd_mask; 2usize],
-}
-#[test]
-fn bindgen_test_layout_fd_set() {
-    const UNINIT: ::core::mem::MaybeUninit<fd_set> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<fd_set>(),
-        8usize,
-        concat!("Size of: ", stringify!(fd_set))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<fd_set>(),
-        4usize,
-        concat!("Alignment of ", stringify!(fd_set))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).__fds_bits) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(fd_set),
-            "::",
-            stringify!(__fds_bits)
-        )
-    );
-}
-extern "C" {
-    pub fn select(
-        __n: ::core::ffi::c_int,
-        __readfds: *mut fd_set,
-        __writefds: *mut fd_set,
-        __exceptfds: *mut fd_set,
-        __timeout: *mut timeval,
-    ) -> ::core::ffi::c_int;
-}
-extern "C" {
-    pub fn pselect(
-        __n: ::core::ffi::c_int,
-        __readfds: *mut fd_set,
-        __writefds: *mut fd_set,
-        __exceptfds: *mut fd_set,
-        __timeout: *const timespec,
-        __set: *const sigset_t,
-    ) -> ::core::ffi::c_int;
-}
-pub type in_addr_t = __uint32_t;
-pub type in_port_t = __uint16_t;
-pub type u_register_t = __uintptr_t;
-pub type u_char = ::core::ffi::c_uchar;
-pub type u_short = ::core::ffi::c_ushort;
-pub type u_int = ::core::ffi::c_uint;
-pub type u_long = ::core::ffi::c_ulong;
-pub type ushort = ::core::ffi::c_ushort;
-pub type uint = ::core::ffi::c_uint;
-pub type ulong = ::core::ffi::c_ulong;
-pub type blkcnt_t = __blkcnt_t;
-pub type blksize_t = __blksize_t;
-pub type clock_t = ::core::ffi::c_ulong;
-pub type daddr_t = __daddr_t;
-pub type caddr_t = *mut ::core::ffi::c_char;
-pub type fsblkcnt_t = __fsblkcnt_t;
-pub type fsfilcnt_t = __fsfilcnt_t;
-pub type id_t = __id_t;
-pub type ino_t = __ino_t;
-pub type dev_t = __dev_t;
-pub type uid_t = __uid_t;
-pub type gid_t = __gid_t;
-pub type pid_t = __pid_t;
-pub type key_t = __key_t;
-pub type mode_t = __mode_t;
-pub type nlink_t = __nlink_t;
-pub type clockid_t = __clockid_t;
-pub type timer_t = __timer_t;
-pub type useconds_t = __useconds_t;
-pub type sbintime_t = __int64_t;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct sched_param {
-    pub sched_priority: ::core::ffi::c_int,
-}
-#[test]
-fn bindgen_test_layout_sched_param() {
-    const UNINIT: ::core::mem::MaybeUninit<sched_param> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<sched_param>(),
-        4usize,
-        concat!("Size of: ", stringify!(sched_param))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<sched_param>(),
-        4usize,
-        concat!("Alignment of ", stringify!(sched_param))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).sched_priority) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(sched_param),
-            "::",
-            stringify!(sched_priority)
-        )
-    );
-}
-pub type pthread_t = __uint32_t;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct pthread_attr_t {
-    pub is_initialized: ::core::ffi::c_int,
-    pub stackaddr: *mut ::core::ffi::c_void,
-    pub stacksize: ::core::ffi::c_int,
-    pub contentionscope: ::core::ffi::c_int,
-    pub inheritsched: ::core::ffi::c_int,
-    pub schedpolicy: ::core::ffi::c_int,
-    pub schedparam: sched_param,
-    pub detachstate: ::core::ffi::c_int,
-}
-#[test]
-fn bindgen_test_layout_pthread_attr_t() {
-    const UNINIT: ::core::mem::MaybeUninit<pthread_attr_t> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<pthread_attr_t>(),
-        32usize,
-        concat!("Size of: ", stringify!(pthread_attr_t))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<pthread_attr_t>(),
-        4usize,
-        concat!("Alignment of ", stringify!(pthread_attr_t))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).is_initialized) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_attr_t),
-            "::",
-            stringify!(is_initialized)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).stackaddr) as usize - ptr as usize },
-        4usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_attr_t),
-            "::",
-            stringify!(stackaddr)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).stacksize) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_attr_t),
-            "::",
-            stringify!(stacksize)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).contentionscope) as usize - ptr as usize },
-        12usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_attr_t),
-            "::",
-            stringify!(contentionscope)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).inheritsched) as usize - ptr as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_attr_t),
-            "::",
-            stringify!(inheritsched)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).schedpolicy) as usize - ptr as usize },
-        20usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_attr_t),
-            "::",
-            stringify!(schedpolicy)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).schedparam) as usize - ptr as usize },
-        24usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_attr_t),
-            "::",
-            stringify!(schedparam)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).detachstate) as usize - ptr as usize },
-        28usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_attr_t),
-            "::",
-            stringify!(detachstate)
-        )
-    );
-}
-pub type pthread_mutex_t = __uint32_t;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct pthread_mutexattr_t {
-    pub is_initialized: ::core::ffi::c_int,
-    pub recursive: ::core::ffi::c_int,
-}
-#[test]
-fn bindgen_test_layout_pthread_mutexattr_t() {
-    const UNINIT: ::core::mem::MaybeUninit<pthread_mutexattr_t> =
-        ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<pthread_mutexattr_t>(),
-        8usize,
-        concat!("Size of: ", stringify!(pthread_mutexattr_t))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<pthread_mutexattr_t>(),
-        4usize,
-        concat!("Alignment of ", stringify!(pthread_mutexattr_t))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).is_initialized) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_mutexattr_t),
-            "::",
-            stringify!(is_initialized)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).recursive) as usize - ptr as usize },
-        4usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_mutexattr_t),
-            "::",
-            stringify!(recursive)
-        )
-    );
-}
-pub type pthread_cond_t = __uint32_t;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct pthread_condattr_t {
-    pub is_initialized: ::core::ffi::c_int,
-    pub clock: clock_t,
-}
-#[test]
-fn bindgen_test_layout_pthread_condattr_t() {
-    const UNINIT: ::core::mem::MaybeUninit<pthread_condattr_t> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<pthread_condattr_t>(),
-        8usize,
-        concat!("Size of: ", stringify!(pthread_condattr_t))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<pthread_condattr_t>(),
-        4usize,
-        concat!("Alignment of ", stringify!(pthread_condattr_t))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).is_initialized) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_condattr_t),
-            "::",
-            stringify!(is_initialized)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).clock) as usize - ptr as usize },
-        4usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_condattr_t),
-            "::",
-            stringify!(clock)
-        )
-    );
-}
-pub type pthread_key_t = __uint32_t;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct pthread_once_t {
-    pub is_initialized: ::core::ffi::c_int,
-    pub init_executed: ::core::ffi::c_int,
-}
-#[test]
-fn bindgen_test_layout_pthread_once_t() {
-    const UNINIT: ::core::mem::MaybeUninit<pthread_once_t> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<pthread_once_t>(),
-        8usize,
-        concat!("Size of: ", stringify!(pthread_once_t))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<pthread_once_t>(),
-        4usize,
-        concat!("Alignment of ", stringify!(pthread_once_t))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).is_initialized) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_once_t),
-            "::",
-            stringify!(is_initialized)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).init_executed) as usize - ptr as usize },
-        4usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(pthread_once_t),
-            "::",
-            stringify!(init_executed)
-        )
-    );
-}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct tm {
@@ -6305,6 +6469,455 @@ extern "C" {
     #[doc = "\tTell if the library is compiled in debug mode or not\n\t\\return\t\t\t\t\t\tTrue if it's compiled in debug, False otherwise"]
     pub fn sbgCommonLibIsDebug() -> bool;
 }
+pub type SbgCrc32 = u32;
+pub type SbgCrc16 = u16;
+extern "C" {
+    #[doc = "\tInitialize the 32 bit CRC computation system.\n\t\\param[in]\tpInstance\t\t\t\tPointer on an allocated but non initialized Crc32 object."]
+    pub fn sbgCrc32Initialize(pInstance: *mut SbgCrc32);
+}
+extern "C" {
+    #[doc = "\tCompute a 32 bit CRC using an Ethernet polynome.\n\tWarning: the buffer size should be at least 4 bytes long.\n\t\\param[in]\tpInstance\t\t\t\tRead only pointer on a valid Crc32 object.\n\t\\param[in]\tpData\t\t\t\t\tRead only pointer on the data buffer to compute CRC on.\n\t\\param[in]\tdataSize\t\t\t\tData size in bytes of the buffer, has to be greater or equals to 4."]
+    pub fn sbgCrc32Update(
+        pInstance: *mut SbgCrc32,
+        pData: *const ::core::ffi::c_void,
+        dataSize: usize,
+    );
+}
+extern "C" {
+    #[doc = "\tCompute a 32 Bit CRC using an Ethernet polynome.\n\tWarning: the buffer size should be at least 4 bytes long.\n\t\\param[in]\tpData\t\t\t\t\tRead only pointer on the data buffer to compute CRC on.\n\t\\param[in]\tdataSize\t\t\t\tData size in bytes of the buffer, has to be greater or equals to 4.\n\t\\return\t\t\t\t\t\t\t\tThe computed CRC."]
+    pub fn sbgCrc32Compute(pData: *const ::core::ffi::c_void, dataSize: usize) -> u32;
+}
+extern "C" {
+    #[doc = "\tInitialize the 16 bit CRC computation system.\n\t\\param[in]\tpInstance\t\t\t\tPointer on an allocated but non initialized Crc16 object."]
+    pub fn sbgCrc16Initialize(pInstance: *mut SbgCrc16);
+}
+extern "C" {
+    #[doc = "\tCompute a 16 bit CRC using an the polynome 0x8408.\n\t\\param[in]\tpInstance\t\t\t\tRead only pointer on a valid Crc16 object.\n\t\\param[in]\tpData\t\t\t\t\tRead only pointer on the data buffer to compute CRC on.\n\t\\param[in]\tdataSize\t\t\t\tData size in bytes of the buffer."]
+    pub fn sbgCrc16Update(
+        pInstance: *mut SbgCrc16,
+        pData: *const ::core::ffi::c_void,
+        dataSize: usize,
+    );
+}
+extern "C" {
+    #[doc = "\tCompute a 32 Bit CRC using an the polynome 0x8408.\n\t\\param[in]\tpData\t\t\t\t\tRead only pointer on the data buffer to compute CRC on.\n\t\\param[in]\tdataSize\t\t\t\tData size in bytes of the buffer.\n\t\\return\t\t\t\t\t\t\t\tThe computed CRC."]
+    pub fn sbgCrc16Compute(pData: *const ::core::ffi::c_void, dataSize: usize) -> u16;
+}
+#[doc = " Interface definition that stores methods used to communicate on the interface.\n\n The interface class is designed to allow custom user implementations. The type member stores\n a type identifier allowing the identification of the underlying type, including custom\n implementations. Standard interfaces provided by this library use types from 1 up to\n and including SBG_IF_TYPE_LAST_RESERVED. Greater values are intended to identify custom\n types that are normally specific to the project using this library. The value 0 identifies\n an unknown interface type, usually indicating that the interface was not correctly initialized."]
+pub type SbgInterface = _SbgInterface;
+#[doc = " Handle that stores the internal interface handle (ie Serial or Ethernet)"]
+pub type SbgInterfaceHandle = *mut ::core::ffi::c_void;
+#[doc = " Method to implement that close and destroy an interface.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the interface has been closed successfully."]
+pub type SbgInterfaceDestroyFunc =
+    ::core::option::Option<unsafe extern "C" fn(pInterface: *mut SbgInterface) -> SbgErrorCode>;
+#[doc = " Method to implement to write a buffer to an interface.\n\n This method should return an error only if all bytes were not written successfully.\n If you try to write zero byte, the method shouldn't return any error.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tpBuffer\t\t\t\t\t\t\t\t\tPointer on an allocated buffer that contains the data to write\n \\param[in]\tbytesToWrite\t\t\t\t\t\t\tNumber of bytes we would like to write (can be zero).\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if exactly bytesToWrite have been written successfully."]
+pub type SbgInterfaceWriteFunc = ::core::option::Option<
+    unsafe extern "C" fn(
+        pInterface: *mut SbgInterface,
+        pBuffer: *const ::core::ffi::c_void,
+        bytesToWrite: usize,
+    ) -> SbgErrorCode,
+>;
+#[doc = " Method to implement to read data from an interface.\n\n This method returns an error only if there is a 'low level' error on the interface.\n If no byte is read at all or less bytes than bytesToRead, this method returns SBG_NO_ERROR.\n You have to check pReadBytes field to know the number of bytes actually read.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tpBuffer\t\t\t\t\t\t\t\t\tPointer on an allocated buffer that can hold at least bytesToRead bytes of data.\n \\param[out]\tpReadBytes\t\t\t\t\t\t\t\tReturns the number of bytes actually read (can be zero and up to bytesToRead).\n \\param[in]\tbytesToRead\t\t\t\t\t\t\t\tMaximum number of bytes to try to read on the interface.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if zero or some bytes have been read successfully."]
+pub type SbgInterfaceReadFunc = ::core::option::Option<
+    unsafe extern "C" fn(
+        pInterface: *mut SbgInterface,
+        pBuffer: *mut ::core::ffi::c_void,
+        pReadBytes: *mut usize,
+        bytesToRead: usize,
+    ) -> SbgErrorCode,
+>;
+#[doc = " Make an interface flush pending input and/or output data.\n\n If flags include SBG_IF_FLUSH_INPUT, all pending input data is discarded.\n If flags include SBG_IF_FLUSH_OUTPUT, the function blocks until all output data has been written out.\n\n WARNING: The method has no action if not applicable for a type of interface\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tflags\t\t\t\t\t\t\t\t\tCombination of the SBG_IF_FLUSH_INPUT and SBG_IF_FLUSH_OUTPUT flags.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful."]
+pub type SbgInterfaceFlushFunc = ::core::option::Option<
+    unsafe extern "C" fn(pInterface: *mut SbgInterface, flags: u32) -> SbgErrorCode,
+>;
+#[doc = " Change an interface input and output speed in bps (bit per second)\n\n This method will try to change the speed immediately even if there are\n pending bytes in the send buffer.\n\n If you would like to make sure that all bytes in the Tx buffer have been\n sent before changing the speed, please flush the interface before.\n\n WARNING: The method has no action if not applicable for a type of interface\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tspeed\t\t\t\t\t\t\t\t\tThe new interface speed to set in bps.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful."]
+pub type SbgInterfaceSetSpeed = ::core::option::Option<
+    unsafe extern "C" fn(pInterface: *mut SbgInterface, speed: u32) -> SbgErrorCode,
+>;
+#[doc = " Returns the current interface baud rate in bps (bit per second)\n\n WARNING: The method will returns zero if not applicable for a type of interface\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tThe current interface baud rate in bps or zero if not applicable."]
+pub type SbgInterfaceGetSpeed =
+    ::core::option::Option<unsafe extern "C" fn(pInterface: *const SbgInterface) -> u32>;
+#[doc = " Compute and return the delay needed by the interface to transmit / receive X number of bytes.\n\n WARNING: The method will returns zero if not applicable for a type of interface.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tnumBytes\t\t\t\t\t\t\t\tThe number of bytes to transmit / receive to evaluate the needed delay.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tThe expected delay in us needed to transmit / receive the specified number of bytes or 0 if not applicable."]
+pub type SbgInterfaceGetDelayFunc = ::core::option::Option<
+    unsafe extern "C" fn(pInterface: *const SbgInterface, numBytes: usize) -> u32,
+>;
+#[doc = " Interface definition that stores methods used to communicate on the interface.\n\n The interface class is designed to allow custom user implementations. The type member stores\n a type identifier allowing the identification of the underlying type, including custom\n implementations. Standard interfaces provided by this library use types from 1 up to\n and including SBG_IF_TYPE_LAST_RESERVED. Greater values are intended to identify custom\n types that are normally specific to the project using this library. The value 0 identifies\n an unknown interface type, usually indicating that the interface was not correctly initialized."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgInterface {
+    #[doc = "< Internal interface handle used to access the media."]
+    pub handle: SbgInterfaceHandle,
+    #[doc = "< Opaque interface type."]
+    pub type_: u32,
+    #[doc = "< The interface name as passed during the creation"]
+    pub name: [::core::ffi::c_char; 48usize],
+    #[doc = "< Optional method used to destroy an interface."]
+    pub pDestroyFunc: SbgInterfaceDestroyFunc,
+    #[doc = "< Optional method used to write some data to this interface."]
+    pub pWriteFunc: SbgInterfaceWriteFunc,
+    #[doc = "< Optional method used to read some data to this interface."]
+    pub pReadFunc: SbgInterfaceReadFunc,
+    #[doc = "< Optional method used to make this interface flush all pending data."]
+    pub pFlushFunc: SbgInterfaceFlushFunc,
+    #[doc = "< Optional method used to set the interface speed in bps."]
+    pub pSetSpeedFunc: SbgInterfaceSetSpeed,
+    #[doc = "< Optional method used to retrieve the interface speed in bps."]
+    pub pGetSpeedFunc: SbgInterfaceGetSpeed,
+    #[doc = "< Optional method used to compute an expected delay to transmit/receive X bytes"]
+    pub pDelayFunc: SbgInterfaceGetDelayFunc,
+}
+#[test]
+fn bindgen_test_layout__SbgInterface() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgInterface> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgInterface>(),
+        84usize,
+        concat!("Size of: ", stringify!(_SbgInterface))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgInterface>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgInterface))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).handle) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(handle)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).type_) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(type_)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).name) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(name)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pDestroyFunc) as usize - ptr as usize },
+        56usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(pDestroyFunc)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pWriteFunc) as usize - ptr as usize },
+        60usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(pWriteFunc)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pReadFunc) as usize - ptr as usize },
+        64usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(pReadFunc)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pFlushFunc) as usize - ptr as usize },
+        68usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(pFlushFunc)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pSetSpeedFunc) as usize - ptr as usize },
+        72usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(pSetSpeedFunc)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pGetSpeedFunc) as usize - ptr as usize },
+        76usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(pGetSpeedFunc)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pDelayFunc) as usize - ptr as usize },
+        80usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgInterface),
+            "::",
+            stringify!(pDelayFunc)
+        )
+    );
+}
+extern "C" {
+    #[doc = " Initialize an interface instance to zero.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tThe interface instance."]
+    pub fn sbgInterfaceZeroInit(pInterface: *mut SbgInterface);
+}
+extern "C" {
+    #[doc = " Close and destroy the interface gracefully.\n\n This method will call the specialized interface destructor if any.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tThe interface instance.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the interface has been destroyed successfully."]
+    pub fn sbgInterfaceDestroy(pInterface: *mut SbgInterface) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Returns the interface as string.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance\n \\return\t\t\t\t\t\t\t\t\t\t\t\tThe interface type."]
+    pub fn sbgInterfaceTypeGetAsString(
+        pInterface: *const SbgInterface,
+    ) -> *const ::core::ffi::c_char;
+}
+extern "C" {
+    #[doc = " Define the interface name as a NULL terminated C string.\n\n This method make sure that the provided string will always fit within\n the allocated name buffer.\n\n If the interface name you would like to set is too long, only the end\n of the string will be kept.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance\n \\param[in]\tpName\t\t\t\t\t\t\t\t\tThe interface name to set as a NULL terminated C string"]
+    pub fn sbgInterfaceNameSet(pInterface: *mut SbgInterface, pName: *const ::core::ffi::c_char);
+}
+extern "C" {
+    #[doc = "\tInitialize a serial interface for read and write operations.\n\n\t\\param[in]\tpInterface\t\t\t\t\t\tPointer on an allocated interface instance to initialize.\n\t\\param[in]\tdeviceName\t\t\t\t\t\tSerial interface location (COM21 , /dev/ttys0, depending on platform).\n\t\\param[in]\tbaudRate\t\t\t\t\t\tSerial interface baud rate in bps.\n\t\\return\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the interface has been created."]
+    pub fn sbgInterfaceSerialCreate(
+        pInterface: *mut SbgInterface,
+        deviceName: *const ::core::ffi::c_char,
+        baudRate: u32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = "\tOpen a file as an interface for read only operations.\n\n\t\\param[in]\tpInterface\t\t\t\t\t\tPointer on an allocated interface instance to initialize.\n\t\\param[in]\tfilePath\t\t\t\t\t\tFile path to open.\n\t\\return\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the interface has been created."]
+    pub fn sbgInterfaceFileOpen(
+        pInterface: *mut SbgInterface,
+        filePath: *const ::core::ffi::c_char,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = "\tOpen a file as an interface for write only operations.\n\n\t\\param[in]\tpInterface\t\t\t\t\t\tPointer on an allocated interface instance to initialize.\n\t\\param[in]\tfilePath\t\t\t\t\t\tFile path to open.\n\t\\return\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the interface has been created."]
+    pub fn sbgInterfaceFileWriteOpen(
+        pInterface: *mut SbgInterface,
+        filePath: *const ::core::ffi::c_char,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = "\tReturns the file size in bytes.\n\n\t\\param[in]\tpInterface\t\t\t\t\t\tValid handle on an initialized interface.\n\t\\return\t\t\t\t\t\t\t\t\t\tThe file size in bytes."]
+    pub fn sbgInterfaceFileGetSize(pInterface: *mut SbgInterface) -> usize;
+}
+extern "C" {
+    #[doc = "\tReturns the current cursor position in the file in bytes.\n\n\t\\param[in]\tpInterface\t\t\t\t\t\tValid handle on an initialized interface.\n\t\\return\t\t\t\t\t\t\t\t\t\tThe current cursor position in bytes."]
+    pub fn sbgInterfaceFileGetCursor(pInterface: *const SbgInterface) -> usize;
+}
+#[doc = " Defines the ECom transfer states"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgSplitBuffer {
+    #[doc = "< Pointer on the buffer that needs to be split"]
+    pub pLinkedBuffer: *mut u8,
+    #[doc = "< Size of the original buffer"]
+    pub linkedBufferSize: usize,
+    #[doc = "< The size of the sub buffers"]
+    pub subBufferSize: usize,
+    #[doc = "< The number of sub buffers in this split buffer"]
+    pub subBufferNbr: usize,
+}
+#[test]
+fn bindgen_test_layout__SbgSplitBuffer() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgSplitBuffer> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgSplitBuffer>(),
+        16usize,
+        concat!("Size of: ", stringify!(_SbgSplitBuffer))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgSplitBuffer>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgSplitBuffer))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pLinkedBuffer) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgSplitBuffer),
+            "::",
+            stringify!(pLinkedBuffer)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).linkedBufferSize) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgSplitBuffer),
+            "::",
+            stringify!(linkedBufferSize)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).subBufferSize) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgSplitBuffer),
+            "::",
+            stringify!(subBufferSize)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).subBufferNbr) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgSplitBuffer),
+            "::",
+            stringify!(subBufferNbr)
+        )
+    );
+}
+#[doc = " Defines the ECom transfer states"]
+pub type SbgSplitBuffer = _SbgSplitBuffer;
+#[doc = "< This stream buffer can perform read operations."]
+pub const _SbgSBMode_SB_MODE_READ: _SbgSBMode = 0;
+#[doc = "< This stream buffer can perform write operations."]
+pub const _SbgSBMode_SB_MODE_WRITE: _SbgSBMode = 1;
+#[doc = " Stream buffer modes."]
+pub type _SbgSBMode = ::core::ffi::c_uint;
+#[doc = " Stream buffer modes."]
+pub use self::_SbgSBMode as SbgSBMode;
+#[doc = "< The offset is referenced to the begining of the stream."]
+pub const _SbgSBSeekOrigin_SB_SEEK_SET: _SbgSBSeekOrigin = 0;
+#[doc = "< The offset is referenced to the current cursor position and increment the current cursor."]
+pub const _SbgSBSeekOrigin_SB_SEEK_CUR_INC: _SbgSBSeekOrigin = 1;
+#[doc = "< The offset is referenced to the current cursor position and decrement the current cursor."]
+pub const _SbgSBSeekOrigin_SB_SEEK_CUR_DEC: _SbgSBSeekOrigin = 2;
+#[doc = "< The offset is referenced to the end of the stream."]
+pub const _SbgSBSeekOrigin_SB_SEEK_END: _SbgSBSeekOrigin = 3;
+#[doc = " Enum used to define all seek modes"]
+pub type _SbgSBSeekOrigin = ::core::ffi::c_uint;
+#[doc = " Enum used to define all seek modes"]
+pub use self::_SbgSBSeekOrigin as SbgSBSeekOrigin;
+#[doc = " Defines a stream buffer."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgStreamBuffer {
+    #[doc = "< Defines the stream buffer modes (read/write)."]
+    pub modes: SbgSBMode,
+    #[doc = "< Size in bytes of the linked buffer."]
+    pub bufferSize: usize,
+    #[doc = "< Pointer to the buffer linked with this stream."]
+    pub pBufferPtr: *mut u8,
+    #[doc = "< Current pointer within the buffer."]
+    pub pCurrentPtr: *mut u8,
+    #[doc = "< Current error code on stream buffer."]
+    pub errorCode: SbgErrorCode,
+}
+#[test]
+fn bindgen_test_layout__SbgStreamBuffer() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgStreamBuffer> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgStreamBuffer>(),
+        20usize,
+        concat!("Size of: ", stringify!(_SbgStreamBuffer))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgStreamBuffer>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgStreamBuffer))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).modes) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgStreamBuffer),
+            "::",
+            stringify!(modes)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).bufferSize) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgStreamBuffer),
+            "::",
+            stringify!(bufferSize)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pBufferPtr) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgStreamBuffer),
+            "::",
+            stringify!(pBufferPtr)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pCurrentPtr) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgStreamBuffer),
+            "::",
+            stringify!(pCurrentPtr)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).errorCode) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgStreamBuffer),
+            "::",
+            stringify!(errorCode)
+        )
+    );
+}
+#[doc = " Defines a stream buffer."]
+pub type SbgStreamBuffer = _SbgStreamBuffer;
+extern "C" {
+    #[doc = " Convert an ip to a string of the form A.B.C.D\n \\param[in]\tipAddr\t\t\t\t\t\tIP address to convert to a string.\n \\param[out]\tpBuffer\t\t\t\t\t\tPointer on an allocated buffer than can hold ip address as a string.\n \\param[in]\tmaxSize\t\t\t\t\t\tMaximum number of chars that can be stored in pBuffer including the NULL char."]
+    pub fn sbgNetworkIpToString(
+        ipAddr: sbgIpAddress,
+        pBuffer: *mut ::core::ffi::c_char,
+        maxSize: usize,
+    );
+}
+extern "C" {
+    #[doc = " Convert an ip address stored in a string of the form A.B.C.D to an sbgIpAddress object.\n \\param[in]\tpBuffer\t\t\t\t\t\tIP address as a string of the form A.B.C.D\n \\return\t\t\t\t\t\t\t\t\tIP address parsed from the string or 0.0.0.0 if the IP is invalid."]
+    pub fn sbgNetworkIpFromString(pBuffer: *const ::core::ffi::c_char) -> sbgIpAddress;
+}
+extern "C" {
+    #[doc = " Check if an IpV4 netmask is valid, the mask should be contiguous (1111 followed by 0)\n \\param[in]\tnetmask\t\t\t\t\t\t\tThe netmask stored in an uint32_t (host endianness).\n \\return\t\t\t\t\t\t\t\t\t\ttrue if the netmask is valid ie contiguous."]
+    pub fn sbgIpNetMaskValid(netmask: sbgIpAddress) -> bool;
+}
 pub const _SbgECanMessageId_SBG_ECAN_MSG_STATUS_01: _SbgECanMessageId = 256;
 pub const _SbgECanMessageId_SBG_ECAN_MSG_STATUS_02: _SbgECanMessageId = 257;
 pub const _SbgECanMessageId_SBG_ECAN_MSG_STATUS_03: _SbgECanMessageId = 258;
@@ -6693,305 +7306,6 @@ pub type _SbgEComCmd = ::core::ffi::c_uint;
 pub use self::_SbgEComCmd as SbgEComCmd;
 #[doc = "\tThis type defines any message identifier.\n\tBecause message identifiers enum will be different with each class id, we use a generic uint8_t rather than an enum."]
 pub type SbgEComMsgId = u8;
-#[doc = " Interface definition that stores methods used to communicate on the interface.\n\n The interface class is designed to allow custom user implementations. The type member stores\n a type identifier allowing the identification of the underlying type, including custom\n implementations. Standard interfaces provided by this library use types from 1 up to\n and including SBG_IF_TYPE_LAST_RESERVED. Greater values are intended to identify custom\n types that are normally specific to the project using this library. The value 0 identifies\n an unknown interface type, usually indicating that the interface was not correctly initialized."]
-pub type SbgInterface = _SbgInterface;
-#[doc = " Handle that stores the internal interface handle (ie Serial or Ethernet)"]
-pub type SbgInterfaceHandle = *mut ::core::ffi::c_void;
-#[doc = " Method to implement that close and destroy an interface.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the interface has been closed successfully."]
-pub type SbgInterfaceDestroyFunc =
-    ::core::option::Option<unsafe extern "C" fn(pInterface: *mut SbgInterface) -> SbgErrorCode>;
-#[doc = " Method to implement to write a buffer to an interface.\n\n This method should return an error only if all bytes were not written successfully.\n If you try to write zero byte, the method shouldn't return any error.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tpBuffer\t\t\t\t\t\t\t\t\tPointer on an allocated buffer that contains the data to write\n \\param[in]\tbytesToWrite\t\t\t\t\t\t\tNumber of bytes we would like to write (can be zero).\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if exactly bytesToWrite have been written successfully."]
-pub type SbgInterfaceWriteFunc = ::core::option::Option<
-    unsafe extern "C" fn(
-        pInterface: *mut SbgInterface,
-        pBuffer: *const ::core::ffi::c_void,
-        bytesToWrite: usize,
-    ) -> SbgErrorCode,
->;
-#[doc = " Method to implement to read data from an interface.\n\n This method returns an error only if there is a 'low level' error on the interface.\n If no byte is read at all or less bytes than bytesToRead, this method returns SBG_NO_ERROR.\n You have to check pReadBytes field to know the number of bytes actually read.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tpBuffer\t\t\t\t\t\t\t\t\tPointer on an allocated buffer that can hold at least bytesToRead bytes of data.\n \\param[out]\tpReadBytes\t\t\t\t\t\t\t\tReturns the number of bytes actually read (can be zero and up to bytesToRead).\n \\param[in]\tbytesToRead\t\t\t\t\t\t\t\tMaximum number of bytes to try to read on the interface.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if zero or some bytes have been read successfully."]
-pub type SbgInterfaceReadFunc = ::core::option::Option<
-    unsafe extern "C" fn(
-        pInterface: *mut SbgInterface,
-        pBuffer: *mut ::core::ffi::c_void,
-        pReadBytes: *mut usize,
-        bytesToRead: usize,
-    ) -> SbgErrorCode,
->;
-#[doc = " Make an interface flush pending input and/or output data.\n\n If flags include SBG_IF_FLUSH_INPUT, all pending input data is discarded.\n If flags include SBG_IF_FLUSH_OUTPUT, the function blocks until all output data has been written out.\n\n WARNING: The method has no action if not applicable for a type of interface\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tflags\t\t\t\t\t\t\t\t\tCombination of the SBG_IF_FLUSH_INPUT and SBG_IF_FLUSH_OUTPUT flags.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful."]
-pub type SbgInterfaceFlushFunc = ::core::option::Option<
-    unsafe extern "C" fn(pInterface: *mut SbgInterface, flags: u32) -> SbgErrorCode,
->;
-#[doc = " Change an interface input and output speed in bps (bit per second)\n\n This method will try to change the speed immediately even if there are\n pending bytes in the send buffer.\n\n If you would like to make sure that all bytes in the Tx buffer have been\n sent before changing the speed, please flush the interface before.\n\n WARNING: The method has no action if not applicable for a type of interface\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tspeed\t\t\t\t\t\t\t\t\tThe new interface speed to set in bps.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful."]
-pub type SbgInterfaceSetSpeed = ::core::option::Option<
-    unsafe extern "C" fn(pInterface: *mut SbgInterface, speed: u32) -> SbgErrorCode,
->;
-#[doc = " Returns the current interface baud rate in bps (bit per second)\n\n WARNING: The method will returns zero if not applicable for a type of interface\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tThe current interface baud rate in bps or zero if not applicable."]
-pub type SbgInterfaceGetSpeed =
-    ::core::option::Option<unsafe extern "C" fn(pInterface: *const SbgInterface) -> u32>;
-#[doc = " Compute and return the delay needed by the interface to transmit / receive X number of bytes.\n\n WARNING: The method will returns zero if not applicable for a type of interface.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance.\n \\param[in]\tnumBytes\t\t\t\t\t\t\t\tThe number of bytes to transmit / receive to evaluate the needed delay.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tThe expected delay in us needed to transmit / receive the specified number of bytes or 0 if not applicable."]
-pub type SbgInterfaceGetDelayFunc = ::core::option::Option<
-    unsafe extern "C" fn(pInterface: *const SbgInterface, numBytes: usize) -> u32,
->;
-#[doc = " Interface definition that stores methods used to communicate on the interface.\n\n The interface class is designed to allow custom user implementations. The type member stores\n a type identifier allowing the identification of the underlying type, including custom\n implementations. Standard interfaces provided by this library use types from 1 up to\n and including SBG_IF_TYPE_LAST_RESERVED. Greater values are intended to identify custom\n types that are normally specific to the project using this library. The value 0 identifies\n an unknown interface type, usually indicating that the interface was not correctly initialized."]
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct _SbgInterface {
-    #[doc = "< Internal interface handle used to access the media."]
-    pub handle: SbgInterfaceHandle,
-    #[doc = "< Opaque interface type."]
-    pub type_: u32,
-    #[doc = "< The interface name as passed during the creation"]
-    pub name: [::core::ffi::c_char; 48usize],
-    #[doc = "< Optional method used to destroy an interface."]
-    pub pDestroyFunc: SbgInterfaceDestroyFunc,
-    #[doc = "< Optional method used to write some data to this interface."]
-    pub pWriteFunc: SbgInterfaceWriteFunc,
-    #[doc = "< Optional method used to read some data to this interface."]
-    pub pReadFunc: SbgInterfaceReadFunc,
-    #[doc = "< Optional method used to make this interface flush all pending data."]
-    pub pFlushFunc: SbgInterfaceFlushFunc,
-    #[doc = "< Optional method used to set the interface speed in bps."]
-    pub pSetSpeedFunc: SbgInterfaceSetSpeed,
-    #[doc = "< Optional method used to retrieve the interface speed in bps."]
-    pub pGetSpeedFunc: SbgInterfaceGetSpeed,
-    #[doc = "< Optional method used to compute an expected delay to transmit/receive X bytes"]
-    pub pDelayFunc: SbgInterfaceGetDelayFunc,
-}
-#[test]
-fn bindgen_test_layout__SbgInterface() {
-    const UNINIT: ::core::mem::MaybeUninit<_SbgInterface> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<_SbgInterface>(),
-        84usize,
-        concat!("Size of: ", stringify!(_SbgInterface))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<_SbgInterface>(),
-        4usize,
-        concat!("Alignment of ", stringify!(_SbgInterface))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).handle) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(handle)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).type_) as usize - ptr as usize },
-        4usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(type_)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).name) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(name)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).pDestroyFunc) as usize - ptr as usize },
-        56usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(pDestroyFunc)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).pWriteFunc) as usize - ptr as usize },
-        60usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(pWriteFunc)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).pReadFunc) as usize - ptr as usize },
-        64usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(pReadFunc)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).pFlushFunc) as usize - ptr as usize },
-        68usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(pFlushFunc)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).pSetSpeedFunc) as usize - ptr as usize },
-        72usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(pSetSpeedFunc)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).pGetSpeedFunc) as usize - ptr as usize },
-        76usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(pGetSpeedFunc)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).pDelayFunc) as usize - ptr as usize },
-        80usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgInterface),
-            "::",
-            stringify!(pDelayFunc)
-        )
-    );
-}
-extern "C" {
-    #[doc = " Initialize an interface instance to zero.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tThe interface instance."]
-    pub fn sbgInterfaceZeroInit(pInterface: *mut SbgInterface);
-}
-extern "C" {
-    #[doc = " Close and destroy the interface gracefully.\n\n This method will call the specialized interface destructor if any.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tThe interface instance.\n \\return\t\t\t\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the interface has been destroyed successfully."]
-    pub fn sbgInterfaceDestroy(pInterface: *mut SbgInterface) -> SbgErrorCode;
-}
-extern "C" {
-    #[doc = " Returns the interface as string.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance\n \\return\t\t\t\t\t\t\t\t\t\t\t\tThe interface type."]
-    pub fn sbgInterfaceTypeGetAsString(
-        pInterface: *const SbgInterface,
-    ) -> *const ::core::ffi::c_char;
-}
-extern "C" {
-    #[doc = " Define the interface name as a NULL terminated C string.\n\n This method make sure that the provided string will always fit within\n the allocated name buffer.\n\n If the interface name you would like to set is too long, only the end\n of the string will be kept.\n\n \\param[in]\tpInterface\t\t\t\t\t\t\t\tInterface instance\n \\param[in]\tpName\t\t\t\t\t\t\t\t\tThe interface name to set as a NULL terminated C string"]
-    pub fn sbgInterfaceNameSet(pInterface: *mut SbgInterface, pName: *const ::core::ffi::c_char);
-}
-#[doc = "< This stream buffer can perform read operations."]
-pub const _SbgSBMode_SB_MODE_READ: _SbgSBMode = 0;
-#[doc = "< This stream buffer can perform write operations."]
-pub const _SbgSBMode_SB_MODE_WRITE: _SbgSBMode = 1;
-#[doc = " Stream buffer modes."]
-pub type _SbgSBMode = ::core::ffi::c_uint;
-#[doc = " Stream buffer modes."]
-pub use self::_SbgSBMode as SbgSBMode;
-#[doc = "< The offset is referenced to the begining of the stream."]
-pub const _SbgSBSeekOrigin_SB_SEEK_SET: _SbgSBSeekOrigin = 0;
-#[doc = "< The offset is referenced to the current cursor position and increment the current cursor."]
-pub const _SbgSBSeekOrigin_SB_SEEK_CUR_INC: _SbgSBSeekOrigin = 1;
-#[doc = "< The offset is referenced to the current cursor position and decrement the current cursor."]
-pub const _SbgSBSeekOrigin_SB_SEEK_CUR_DEC: _SbgSBSeekOrigin = 2;
-#[doc = "< The offset is referenced to the end of the stream."]
-pub const _SbgSBSeekOrigin_SB_SEEK_END: _SbgSBSeekOrigin = 3;
-#[doc = " Enum used to define all seek modes"]
-pub type _SbgSBSeekOrigin = ::core::ffi::c_uint;
-#[doc = " Enum used to define all seek modes"]
-pub use self::_SbgSBSeekOrigin as SbgSBSeekOrigin;
-#[doc = " Defines a stream buffer."]
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct _SbgStreamBuffer {
-    #[doc = "< Defines the stream buffer modes (read/write)."]
-    pub modes: SbgSBMode,
-    #[doc = "< Size in bytes of the linked buffer."]
-    pub bufferSize: usize,
-    #[doc = "< Pointer to the buffer linked with this stream."]
-    pub pBufferPtr: *mut u8,
-    #[doc = "< Current pointer within the buffer."]
-    pub pCurrentPtr: *mut u8,
-    #[doc = "< Current error code on stream buffer."]
-    pub errorCode: SbgErrorCode,
-}
-#[test]
-fn bindgen_test_layout__SbgStreamBuffer() {
-    const UNINIT: ::core::mem::MaybeUninit<_SbgStreamBuffer> = ::core::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::core::mem::size_of::<_SbgStreamBuffer>(),
-        20usize,
-        concat!("Size of: ", stringify!(_SbgStreamBuffer))
-    );
-    assert_eq!(
-        ::core::mem::align_of::<_SbgStreamBuffer>(),
-        4usize,
-        concat!("Alignment of ", stringify!(_SbgStreamBuffer))
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).modes) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgStreamBuffer),
-            "::",
-            stringify!(modes)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).bufferSize) as usize - ptr as usize },
-        4usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgStreamBuffer),
-            "::",
-            stringify!(bufferSize)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).pBufferPtr) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgStreamBuffer),
-            "::",
-            stringify!(pBufferPtr)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).pCurrentPtr) as usize - ptr as usize },
-        12usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgStreamBuffer),
-            "::",
-            stringify!(pCurrentPtr)
-        )
-    );
-    assert_eq!(
-        unsafe { ::core::ptr::addr_of!((*ptr).errorCode) as usize - ptr as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(_SbgStreamBuffer),
-            "::",
-            stringify!(errorCode)
-        )
-    );
-}
-#[doc = " Defines a stream buffer."]
-pub type SbgStreamBuffer = _SbgStreamBuffer;
 #[doc = " Payload.\n\n This class is used to abstract whether some payload is received from a single\n or multiple frames."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -10848,4 +11162,2864 @@ extern "C" {
 extern "C" {
     #[doc = "\tConvert an error code into a human readable string.\n\n\t\\param[in]\terrorCode\t\t\t\t\t\tThe errorCode to convert into a string.\n\t\\param[out]\terrorMsg\t\t\t\t\t\tString buffer used to hold the error string."]
     pub fn sbgEComErrorToString(errorCode: SbgErrorCode, errorMsg: *mut ::core::ffi::c_char);
+}
+#[doc = "< The device is running it's internal clock without any time reference."]
+pub const _SbgEComTimeReferenceSrc_SBG_ECOM_TIME_REF_DISABLED: _SbgEComTimeReferenceSrc = 0;
+#[doc = "< The main port sync in A is used as a time reference."]
+pub const _SbgEComTimeReferenceSrc_SBG_ECOM_TIME_REF_SYNC_IN_A: _SbgEComTimeReferenceSrc = 1;
+#[doc = "< The GPS 1 module is used to provide both time reference and UTC data."]
+pub const _SbgEComTimeReferenceSrc_SBG_ECOM_TIME_REF_UTC_GPS_1: _SbgEComTimeReferenceSrc = 2;
+#[doc = " List of available time reference source."]
+pub type _SbgEComTimeReferenceSrc = ::core::ffi::c_uint;
+#[doc = " List of available time reference source."]
+pub use self::_SbgEComTimeReferenceSrc as SbgEComTimeReferenceSrc;
+#[doc = " Structure containing all the info for advanced configuration."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComAdvancedConf {
+    #[doc = "< Time reference source for clock alignment."]
+    pub timeReference: SbgEComTimeReferenceSrc,
+    #[doc = "< Advanced GNSS options - contact SBG Systems."]
+    pub gnssOptions: u32,
+    #[doc = "< Advanced NMEA output options."]
+    pub nmeaOptions: u32,
+}
+#[test]
+fn bindgen_test_layout__SbgEComAdvancedConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComAdvancedConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComAdvancedConf>(),
+        12usize,
+        concat!("Size of: ", stringify!(_SbgEComAdvancedConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComAdvancedConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComAdvancedConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).timeReference) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAdvancedConf),
+            "::",
+            stringify!(timeReference)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gnssOptions) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAdvancedConf),
+            "::",
+            stringify!(gnssOptions)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).nmeaOptions) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAdvancedConf),
+            "::",
+            stringify!(nmeaOptions)
+        )
+    );
+}
+#[doc = " Structure containing all the info for advanced configuration."]
+pub type SbgEComAdvancedConf = _SbgEComAdvancedConf;
+#[doc = " Structure containing all validity thresholds (status outputs)\n Setting these thresholds to 0.0 will keep default configuration"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComValidityThresholds {
+    #[doc = "< Norm of the position standard deviation threshold to raise position valid flag (m)"]
+    pub positionThreshold: f32,
+    #[doc = "< Norm of the velocity standard deviation threshold to raise velocity valid flag  (m/s)"]
+    pub velocityThreshold: f32,
+    #[doc = "< Max of the roll/pitch standard deviations threshold to raise attitude valid flag (rad)"]
+    pub attitudeThreshold: f32,
+    #[doc = "< Heading standard deviations threshold to raise heading valid flag (rad)"]
+    pub headingThreshold: f32,
+}
+#[test]
+fn bindgen_test_layout__SbgEComValidityThresholds() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComValidityThresholds> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComValidityThresholds>(),
+        16usize,
+        concat!("Size of: ", stringify!(_SbgEComValidityThresholds))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComValidityThresholds>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComValidityThresholds))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).positionThreshold) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComValidityThresholds),
+            "::",
+            stringify!(positionThreshold)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).velocityThreshold) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComValidityThresholds),
+            "::",
+            stringify!(velocityThreshold)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).attitudeThreshold) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComValidityThresholds),
+            "::",
+            stringify!(attitudeThreshold)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).headingThreshold) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComValidityThresholds),
+            "::",
+            stringify!(headingThreshold)
+        )
+    );
+}
+#[doc = " Structure containing all validity thresholds (status outputs)\n Setting these thresholds to 0.0 will keep default configuration"]
+pub type SbgEComValidityThresholds = _SbgEComValidityThresholds;
+extern "C" {
+    #[doc = " Retrieve the advanced configurations.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpConf\t\t\t\t\t\tPointer to a SbgEComAdvancedConf to contain the current configuration.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAdvancedGetConf(
+        pHandle: *mut SbgEComHandle,
+        pConf: *mut SbgEComAdvancedConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the advanced configurations.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpConf\t\t\t\t\t\tPointer to a SbgEComAdvancedConf that contains the new configuration.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAdvancedSetConf(
+        pHandle: *mut SbgEComHandle,
+        pConf: *const SbgEComAdvancedConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the current validity thresholds\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpConf\t\t\t\t\t\tPointer to a SbgEComValidityThresholds to contain the current configuration.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAdvancedGetThresholds(
+        pHandle: *mut SbgEComHandle,
+        pConf: *mut SbgEComValidityThresholds,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the validity thresholds\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpConf\t\t\t\t\t\tPointer to a SbgEComValidityThresholds that contains the new configuration.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAdvancedSetThresholds(
+        pHandle: *mut SbgEComHandle,
+        pConf: *const SbgEComValidityThresholds,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Measurement is not taken into account."]
+pub const _SbgEComRejectionMode_SBG_ECOM_NEVER_ACCEPT_MODE: _SbgEComRejectionMode = 0;
+#[doc = "< Measurement is accepted and rejected automatically depending on consistency checks"]
+pub const _SbgEComRejectionMode_SBG_ECOM_AUTOMATIC_MODE: _SbgEComRejectionMode = 1;
+#[doc = "< Measurement is always accepted. Should be used with caution"]
+pub const _SbgEComRejectionMode_SBG_ECOM_ALWAYS_ACCEPT_MODE: _SbgEComRejectionMode = 2;
+#[doc = " List of all rejection modes for aiding inputs."]
+pub type _SbgEComRejectionMode = ::core::ffi::c_uint;
+#[doc = " List of all rejection modes for aiding inputs."]
+pub use self::_SbgEComRejectionMode as SbgEComRejectionMode;
+#[doc = "< IMU/module Axis is turned in vehicle's forward direction."]
+pub const _SbgEComAxisDirection_SBG_ECOM_ALIGNMENT_FORWARD: _SbgEComAxisDirection = 0;
+#[doc = "< IMU/module Axis is turned in vehicle's backward direction."]
+pub const _SbgEComAxisDirection_SBG_ECOM_ALIGNMENT_BACKWARD: _SbgEComAxisDirection = 1;
+#[doc = "< IMU/module Axis is turned in vehicle's left direction."]
+pub const _SbgEComAxisDirection_SBG_ECOM_ALIGNMENT_LEFT: _SbgEComAxisDirection = 2;
+#[doc = "< IMU/module Axis is turned in vehicle's right direction."]
+pub const _SbgEComAxisDirection_SBG_ECOM_ALIGNMENT_RIGHT: _SbgEComAxisDirection = 3;
+#[doc = "< IMU/module Axis is turned in vehicle's up direction."]
+pub const _SbgEComAxisDirection_SBG_ECOM_ALIGNMENT_UP: _SbgEComAxisDirection = 4;
+#[doc = "< IMU/module Axis is turned in vehicle's down direction."]
+pub const _SbgEComAxisDirection_SBG_ECOM_ALIGNMENT_DOWN: _SbgEComAxisDirection = 5;
+#[doc = " List of all axis directions for modules/sensor alignment."]
+pub type _SbgEComAxisDirection = ::core::ffi::c_uint;
+#[doc = " List of all axis directions for modules/sensor alignment."]
+pub use self::_SbgEComAxisDirection as SbgEComAxisDirection;
+extern "C" {
+    #[doc = " Receive a command message.\n\n All binary logs received are handled trough the standard callback system.\n\n \\param[in]\tpHandle\t\t\t\t\tSbgECom handle.\n \\param[out]\tpMsgClass\t\t\t\tMessage class.\n \\param[out]\tpMsgId\t\t\t\t\tMessage ID.\n \\param[out]\tpData\t\t\t\t\tData buffer, may be NULL.\n \\param[out]\tpSize\t\t\t\t\tNumber of bytes received, in bytes, may be NULL.\n \\param[in]\tmaxSize\t\t\t\t\tData buffer size, in bytes.\n \\param[in]\ttimeOut\t\t\t\t\tTime-out, in ms.\n \\return\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful,\n\t\t\t\t\t\t\t\t\t\tSBG_NOT_READY if no command message has been received,\n\t\t\t\t\t\t\t\t\t\tSBG_BUFFER_OVERFLOW if the payload of the received frame couldn't fit into the buffer,\n\t\t\t\t\t\t\t\t\t\tSBG_TIME_OUT if no command message was received within the specified time out."]
+    pub fn sbgEComReceiveAnyCmd(
+        pHandle: *mut SbgEComHandle,
+        pMsgClass: *mut u8,
+        pMsgId: *mut u8,
+        pData: *mut ::core::ffi::c_void,
+        pSize: *mut usize,
+        maxSize: usize,
+        timeOut: u32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Receive a command message.\n\n All binary logs received are handled trough the standard callback system.\n\n This function is equivalent to sbgEComReceiveAnyCmd() with two exceptions :\n  - the use of a payload object allows handling payloads not limited by the size of a user-provided buffer\n  - the payload object allows direct access to the protocol work buffer to avoid an extra copy per call\n\n Any allocated resource associated with the given payload is released when calling this function.\n\n Because the payload buffer may directly refer to the protocol work buffer on return, it is only valid until\n the next attempt to receive a frame, with any of the receive functions.\n\n \\param[in]\tpHandle\t\t\t\t\tSbgECom handle.\n \\param[out]\tpMsgClass\t\t\t\tMessage class.\n \\param[out]\tpMsgId\t\t\t\t\tMessage ID.\n \\param[out]\tpPayload\t\t\t\tPayload.\n \\param[in]\ttimeOut\t\t\t\t\tTime-out, in ms.\n \\return\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful,\n\t\t\t\t\t\t\t\t\t\tSBG_NOT_READY if no command message has been received,\n\t\t\t\t\t\t\t\t\t\tSBG_TIME_OUT if no command message was received within the specified time out."]
+    pub fn sbgEComReceiveAnyCmd2(
+        pHandle: *mut SbgEComHandle,
+        pMsgClass: *mut u8,
+        pMsgId: *mut u8,
+        pPayload: *mut SbgEComProtocolPayload,
+        timeOut: u32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Receive a specific command message.\n\n This function also processes ACK messages for the given class and ID.\n\n All binary logs received during this time are handled trough the standard callback system.\n\n \\param[in]\tpHandle\t\t\t\t\tSbgECom handle.\n \\param[in]\tmsgClass\t\t\t\tMessage class.\n \\param[in]\tmsgId\t\t\t\t\tMessage ID.\n \\param[out]\tpData\t\t\t\t\tData buffer.\n \\param[out]\tpSize\t\t\t\t\tNumber of bytes received, in bytes.\n \\param[in]\tmaxSize\t\t\t\t\tData buffer size, in bytes.\n \\param[in]\ttimeOut\t\t\t\t\tTime-out, in ms.\n \\return\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful,\n\t\t\t\t\t\t\t\t\t\tSBG_NOT_READY if no command message has been received,\n\t\t\t\t\t\t\t\t\t\tSBG_BUFFER_OVERFLOW if the payload of the received frame couldn't fit into the buffer,\n\t\t\t\t\t\t\t\t\t\tSBG_TIME_OUT if no command message was received within the specified time out,\n\t\t\t\t\t\t\t\t\t\tany error code reported by an ACK message for the given class and ID."]
+    pub fn sbgEComReceiveCmd(
+        pHandle: *mut SbgEComHandle,
+        msgClass: u8,
+        msgId: u8,
+        pData: *mut ::core::ffi::c_void,
+        pSize: *mut usize,
+        maxSize: usize,
+        timeOut: u32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Receive a specific command message.\n\n This function also processes ACK messages for the given class and ID.\n\n All binary logs received during this time are handled trough the standard callback system.\n\n This function is equivalent to sbgEComReceiveCmd() with two exceptions :\n  - the use of a payload object allows handling payloads not limited by the size of a user-provided buffer\n  - the payload object allows direct access to the protocol work buffer to avoid an extra copy per call\n\n Any allocated resource associated with the given payload is released when calling this function.\n\n Because the payload buffer may directly refer to the protocol work buffer on return, it is only valid until\n the next attempt to receive a frame, with any of the receive functions.\n\n \\param[in]\tpHandle\t\t\t\t\tSbgECom handle.\n \\param[in]\tmsgClass\t\t\t\tMessage class.\n \\param[in]\tmsgId\t\t\t\t\tMessage ID.\n \\param[out]\tpPayload\t\t\t\tPayload.\n \\param[in]\ttimeOut\t\t\t\t\tTime-out, in ms.\n \\return\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful,\n\t\t\t\t\t\t\t\t\t\tSBG_NOT_READY if no command message has been received,\n\t\t\t\t\t\t\t\t\t\tSBG_TIME_OUT if no command message was received within the specified time out,\n\t\t\t\t\t\t\t\t\t\tany error code reported by an ACK message for the given class and ID."]
+    pub fn sbgEComReceiveCmd2(
+        pHandle: *mut SbgEComHandle,
+        msgClass: u8,
+        msgId: u8,
+        pPayload: *mut SbgEComProtocolPayload,
+        timeOut: u32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Wait for an ACK for a specified amount of time.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tmsgClass\t\t\t\t\tThe message class that we want to check\n \\param[in]\tmsg\t\t\t\t\t\t\tThe message ID that we want to check\n \\param[in]\ttimeOut\t\t\t\t\t\tTime out in ms during which we can receive the ACK.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the ACK has been received."]
+    pub fn sbgEComWaitForAck(
+        pHandle: *mut SbgEComHandle,
+        msgClass: u8,
+        msg: u8,
+        timeOut: u32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Send an ACK for a specific command with an associated error code.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tmsgClass\t\t\t\t\tThe message class that we want to send\n \\param[in]\tmsg\t\t\t\t\t\t\tThe message ID that we want to send.\n \\param[in]\tcmdError\t\t\t\t\tThe associated error code.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the ACK has been sent."]
+    pub fn sbgEComSendAck(
+        pHandle: *mut SbgEComHandle,
+        msgClass: u8,
+        msg: u8,
+        cmdError: SbgErrorCode,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Generic function to set an error model ID\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tmsgClass\t\t\t\t\tOriginal message class\n \\param[in]\tmsg\t\t\t\t\t\t\tOriginal message ID\n \\param[in]\tmodelId\t\t\t\t\t\tModel ID to set\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGenericSetModelId(
+        pHandle: *mut SbgEComHandle,
+        msgClass: u8,
+        msg: u8,
+        modelId: u32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Generic function to get an error model ID\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tmsgClass\t\t\t\t\tOriginal message class\n \\param[in]\tmsg\t\t\t\t\t\t\tOriginal message ID\n \\param[out]\tpModelId\t\t\t\t\tReturns the currently used model ID.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGenericGetModelId(
+        pHandle: *mut SbgEComHandle,
+        msgClass: u8,
+        msg: u8,
+        pModelId: *mut u32,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Use the internal barometer sensor if available."]
+pub const _SbgEComAirDataModelsIds_SBG_ECOM_AIR_DATA_MODEL_INTERNAL: _SbgEComAirDataModelsIds = 1;
+#[doc = "< Generic AirData model using sbgECom input protocol format."]
+pub const _SbgEComAirDataModelsIds_SBG_ECOM_AIR_DATA_MODEL_GENERIC_ECOM: _SbgEComAirDataModelsIds =
+    2;
+#[doc = "< Crossbow AHRS-500 compatible input for barometric altitude and airspeed."]
+pub const _SbgEComAirDataModelsIds_SBG_ECOM_AIR_DATA_MODEL_AHRS_500: _SbgEComAirDataModelsIds = 3;
+#[doc = " This enum defines the different AirData model IDs available in standard"]
+pub type _SbgEComAirDataModelsIds = ::core::ffi::c_uint;
+#[doc = " This enum defines the different AirData model IDs available in standard"]
+pub use self::_SbgEComAirDataModelsIds as SbgEComAirDataModelsIds;
+#[doc = " Holds all necessary information for AirData module data rejection."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComAirDataRejectionConf {
+    #[doc = "< Rejection mode for the true air speed measurement."]
+    pub airspeed: SbgEComRejectionMode,
+    #[doc = "< Rejection mode for the barometric altitude measurement."]
+    pub altitude: SbgEComRejectionMode,
+}
+#[test]
+fn bindgen_test_layout__SbgEComAirDataRejectionConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComAirDataRejectionConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComAirDataRejectionConf>(),
+        8usize,
+        concat!("Size of: ", stringify!(_SbgEComAirDataRejectionConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComAirDataRejectionConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComAirDataRejectionConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).airspeed) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAirDataRejectionConf),
+            "::",
+            stringify!(airspeed)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).altitude) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAirDataRejectionConf),
+            "::",
+            stringify!(altitude)
+        )
+    );
+}
+#[doc = " Holds all necessary information for AirData module data rejection."]
+pub type SbgEComAirDataRejectionConf = _SbgEComAirDataRejectionConf;
+extern "C" {
+    #[doc = " Set the AirData model to use that both defines the protocol as well as the associated error model.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tmodelId\t\t\t\t\t\tAirData model ID to set\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAirDataSetModelId(
+        pHandle: *mut SbgEComHandle,
+        modelId: SbgEComAirDataModelsIds,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the AirData model id currently in use by the device.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpModelId\t\t\t\t\tReturns the AirData model ID currently in use by the device.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAirDataGetModelId(
+        pHandle: *mut SbgEComHandle,
+        pModelId: *mut SbgEComAirDataModelsIds,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the lever arm configuration of the AirData module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpLeverArm\t\t\t\t\tThe X, Y, Z airspeed sensor lever arm in meters from the pitot sensor to the IMU.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAirDataSetLeverArm(
+        pHandle: *mut SbgEComHandle,
+        pLeverArm: *const f32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the lever arm configuration of the AirData module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpLeverArm\t\t\t\t\tReturns the airspeed sensor X,Y,Z lever arm in meters from the pitot sensor to the IMU.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAirDataGetLeverArm(
+        pHandle: *mut SbgEComHandle,
+        pLeverArm: *mut f32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the rejection configuration of the AirData module (this command doesn't need a reboot to be applied)\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpRejectConf\t\t\t\t\tThe new rejection configuration to set.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAirDataSetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *const SbgEComAirDataRejectionConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the current rejection configuration of the AirData module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpRejectConf\t\t\t\t\tReturn the rejection configuration currently in use.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdAirDataGetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *mut SbgEComAirDataRejectionConf,
+    ) -> SbgErrorCode;
+}
+#[doc = " Reply to REST API commands.\n\n The reply content is a null-terminated string, normally in JSON format.\n\n The content directly refers to data inside the payload."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComCmdApiReply {
+    #[doc = "< Payload."]
+    pub payload: SbgEComProtocolPayload,
+    #[doc = "< Status code."]
+    pub statusCode: u16,
+    #[doc = "< Content."]
+    pub pContent: *const ::core::ffi::c_char,
+}
+#[test]
+fn bindgen_test_layout__SbgEComCmdApiReply() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComCmdApiReply> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComCmdApiReply>(),
+        20usize,
+        concat!("Size of: ", stringify!(_SbgEComCmdApiReply))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComCmdApiReply>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComCmdApiReply))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).payload) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdApiReply),
+            "::",
+            stringify!(payload)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).statusCode) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdApiReply),
+            "::",
+            stringify!(statusCode)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pContent) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdApiReply),
+            "::",
+            stringify!(pContent)
+        )
+    );
+}
+#[doc = " Reply to REST API commands.\n\n The reply content is a null-terminated string, normally in JSON format.\n\n The content directly refers to data inside the payload."]
+pub type SbgEComCmdApiReply = _SbgEComCmdApiReply;
+extern "C" {
+    #[doc = " REST API reply constructor.\n\n \\param[in]\tpReply\t\t\t\t\t\tREST API reply."]
+    pub fn sbgEComCmdApiReplyConstruct(pReply: *mut SbgEComCmdApiReply);
+}
+extern "C" {
+    #[doc = " REST API reply destructor.\n\n \\param[in]\tpReply\t\t\t\t\t\tREST API reply."]
+    pub fn sbgEComCmdApiReplyDestroy(pReply: *mut SbgEComCmdApiReply);
+}
+extern "C" {
+    #[doc = " Check if a reply indicates successful command execution.\n\n \\param[in]\tpReply\t\t\t\t\t\tREST API reply.\n \\return\t\t\t\t\t\t\t\t\tTrue if the reply indicates successful command execution."]
+    pub fn sbgEComCmdApiReplySuccessful(pReply: *const SbgEComCmdApiReply) -> bool;
+}
+extern "C" {
+    #[doc = " Send a GET command.\n\n The reply must be destroyed before the next attempt to receive data, either logs or command replies.\n\n \\param[in]\tpHandle\t\t\t\t\t\tECom handle.\n \\param[in]\tpPath\t\t\t\t\t\tURI path component.\n \\param[in]\tpQuery\t\t\t\t\t\tQuery string, may be NULL.\n \\param[out]\tpReply\t\t\t\t\t\tReply.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful."]
+    pub fn sbgEComCmdApiGet(
+        pHandle: *mut SbgEComHandle,
+        pPath: *const ::core::ffi::c_char,
+        pQuery: *const ::core::ffi::c_char,
+        pReply: *mut SbgEComCmdApiReply,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Send a POST command.\n\n The reply must be destroyed before the next attempt to receive data, either logs or command replies.\n\n \\param[in]\tpHandle\t\t\t\t\t\tECom handle.\n \\param[in]\tpPath\t\t\t\t\t\tURI path component.\n \\param[in]\tpQuery\t\t\t\t\t\tQuery string, may be NULL.\n \\param[in]\tpBody\t\t\t\t\t\tBody, may be NULL.\n \\param[out]\tpReply\t\t\t\t\t\tReply.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if successful."]
+    pub fn sbgEComCmdApiPost(
+        pHandle: *mut SbgEComHandle,
+        pPath: *const ::core::ffi::c_char,
+        pQuery: *const ::core::ffi::c_char,
+        pBody: *const ::core::ffi::c_char,
+        pReply: *mut SbgEComCmdApiReply,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Generic DVL using PD6 protocol format."]
+pub const _SbgEComDvlModelsIds_SBG_ECOM_DVL_MODEL_GENERIC_PD6: _SbgEComDvlModelsIds = 202;
+#[doc = "< Teledyne Wayfinder DVL using proprietary protocol."]
+pub const _SbgEComDvlModelsIds_SBG_ECOM_DVL_MODEL_WAYFINDER: _SbgEComDvlModelsIds = 203;
+#[doc = " This enum defines the different DVL model IDs available in standard"]
+pub type _SbgEComDvlModelsIds = ::core::ffi::c_uint;
+#[doc = " This enum defines the different DVL model IDs available in standard"]
+pub use self::_SbgEComDvlModelsIds as SbgEComDvlModelsIds;
+#[doc = " DVL mechanical installation parameters such as lever arm and alignment"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComDvlInstallation {
+    #[doc = "< X, Y, Z DVL lever arm in meters expressed from the DVL to the IMU."]
+    pub leverArm: [f32; 3usize],
+    #[doc = "< Roll, pitch, yaw DVL alignment expressed in radians."]
+    pub alignment: [f32; 3usize],
+    #[doc = "< Set to true if both the DVL lever arm and DVL alignment are precise and don't require in-run estimation."]
+    pub preciseInstallation: bool,
+}
+#[test]
+fn bindgen_test_layout__SbgEComDvlInstallation() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComDvlInstallation> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComDvlInstallation>(),
+        28usize,
+        concat!("Size of: ", stringify!(_SbgEComDvlInstallation))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComDvlInstallation>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComDvlInstallation))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).leverArm) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDvlInstallation),
+            "::",
+            stringify!(leverArm)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).alignment) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDvlInstallation),
+            "::",
+            stringify!(alignment)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).preciseInstallation) as usize - ptr as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDvlInstallation),
+            "::",
+            stringify!(preciseInstallation)
+        )
+    );
+}
+#[doc = " DVL mechanical installation parameters such as lever arm and alignment"]
+pub type SbgEComDvlInstallation = _SbgEComDvlInstallation;
+#[doc = " Holds all necessary information for DVL module data rejection."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComDvlRejectionConf {
+    #[doc = "< Rejection mode for the bottom tracking (ie when the velocity  measurement is in respect to the seabed)."]
+    pub bottomLayer: SbgEComRejectionMode,
+    #[doc = "< Rejection mode for the water tracking (ie when the velocity measurement is relative to a water layer)."]
+    pub waterLayer: SbgEComRejectionMode,
+}
+#[test]
+fn bindgen_test_layout__SbgEComDvlRejectionConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComDvlRejectionConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComDvlRejectionConf>(),
+        8usize,
+        concat!("Size of: ", stringify!(_SbgEComDvlRejectionConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComDvlRejectionConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComDvlRejectionConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).bottomLayer) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDvlRejectionConf),
+            "::",
+            stringify!(bottomLayer)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).waterLayer) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDvlRejectionConf),
+            "::",
+            stringify!(waterLayer)
+        )
+    );
+}
+#[doc = " Holds all necessary information for DVL module data rejection."]
+pub type SbgEComDvlRejectionConf = _SbgEComDvlRejectionConf;
+extern "C" {
+    #[doc = " Set the DVL model to use that both defines the protocol as well as the associated error model.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tmodelId\t\t\t\t\t\tDVL model ID to set\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdDvlSetModelId(
+        pHandle: *mut SbgEComHandle,
+        modelId: SbgEComDvlModelsIds,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the DVL model id currently in use by the device.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpModelId\t\t\t\t\tReturns the DVL model ID currently in use by the device.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdDvlGetModelId(
+        pHandle: *mut SbgEComHandle,
+        pModelId: *mut SbgEComDvlModelsIds,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the lever arm and alignment configuration of the DVL module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpDvlInstallation\t\t\tThe DVL lever arm and alignment configuration to apply.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdDvlInstallationSet(
+        pHandle: *mut SbgEComHandle,
+        pDvlInstallation: *const SbgEComDvlInstallation,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the lever arm and alignment configuration of the DVL module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpDvlInstallation\t\t\tReturns the DVL lever arm and alignment configuration currently in use.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdDvlInstallationGet(
+        pHandle: *mut SbgEComHandle,
+        pDvlInstallation: *mut SbgEComDvlInstallation,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the rejection configuration of the DVL module (this command doesn't need a reboot to be applied)\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpRejectConf\t\t\t\t\tThe new DVL rejection configuration to set.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdDvlSetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *const SbgEComDvlRejectionConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the current rejection configuration of the DVL module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpRejectConf\t\t\t\t\tReturn the DVL rejection configuration currently in use.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdDvlGetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *mut SbgEComDvlRejectionConf,
+    ) -> SbgErrorCode;
+}
+#[doc = "< The TCP/IP configuration should be acquired from a DHCP server."]
+pub const _SbgEComEthernetMode_SBG_ECOM_ETHERNET_DHCP: _SbgEComEthernetMode = 0;
+#[doc = "< The TCP/IP configuration is manually defined."]
+pub const _SbgEComEthernetMode_SBG_ECOM_ETHERNET_STATIC: _SbgEComEthernetMode = 1;
+#[doc = " Enum that defines the different type of IP acquisition method."]
+pub type _SbgEComEthernetMode = ::core::ffi::c_uint;
+#[doc = " Enum that defines the different type of IP acquisition method."]
+pub use self::_SbgEComEthernetMode as SbgEComEthernetMode;
+#[doc = " Structure that contains all Ethernet configuration or settings."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComEthernetConf {
+    #[doc = "< Define how the device will acquiere its IP address, either DHCP or Static."]
+    pub mode: SbgEComEthernetMode,
+    #[doc = "< For static mode, defines the device IP address."]
+    pub ipAddress: sbgIpAddress,
+    #[doc = "< For static mode, defines the device net mask."]
+    pub netmask: sbgIpAddress,
+    #[doc = "< For static mode, defines the gateway to use."]
+    pub gateway: sbgIpAddress,
+    #[doc = "< For static mode, defines the primary DNS to use."]
+    pub dns1: sbgIpAddress,
+    #[doc = "< For static mode, defines the secondary DNS to use."]
+    pub dns2: sbgIpAddress,
+}
+#[test]
+fn bindgen_test_layout__SbgEComEthernetConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComEthernetConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComEthernetConf>(),
+        24usize,
+        concat!("Size of: ", stringify!(_SbgEComEthernetConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComEthernetConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComEthernetConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).mode) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComEthernetConf),
+            "::",
+            stringify!(mode)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).ipAddress) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComEthernetConf),
+            "::",
+            stringify!(ipAddress)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).netmask) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComEthernetConf),
+            "::",
+            stringify!(netmask)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gateway) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComEthernetConf),
+            "::",
+            stringify!(gateway)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).dns1) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComEthernetConf),
+            "::",
+            stringify!(dns1)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).dns2) as usize - ptr as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComEthernetConf),
+            "::",
+            stringify!(dns2)
+        )
+    );
+}
+#[doc = " Structure that contains all Ethernet configuration or settings."]
+pub type SbgEComEthernetConf = _SbgEComEthernetConf;
+extern "C" {
+    #[doc = " Get the configuration for the Ethernet interface.\n\n Warning: this method only returns the Ethernet configuration and NOT the ip address currently used by the device.\n You should rather use sbgEComEthernetInfo to retreive the current assigned IP.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpEthernetConf\t\t\t\tPoiner to a SbgEComEthernetConf struct that holds the read configuration from the device.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComEthernetGetConf(
+        pHandle: *mut SbgEComHandle,
+        pEthernetConf: *mut SbgEComEthernetConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the configuration for the Ethernet interface.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpEthernetConf\t\t\t\tPoiner to a SbgEComEthernetConf struct that holds the new configuration to apply.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComEthernetSetConf(
+        pHandle: *mut SbgEComHandle,
+        pEthernetConf: *const SbgEComEthernetConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Get the current assigned and used IP address as well as network inforamtion.\n\n In opposition to sbgEComEthernetGetConf, this method will not return the Ethernet configuration.\n It will rather return the IP address currently used by the device.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpEthernetConf\t\t\t\tPoiner to a SbgEComEthernetConf struct that holds the read IP settings from the device.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComEthernetInfo(
+        pHandle: *mut SbgEComHandle,
+        pEthernetConf: *mut SbgEComEthernetConf,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Sync IN A"]
+pub const _SbgEComSyncInId_SBG_ECOM_SYNC_IN_A: _SbgEComSyncInId = 0;
+#[doc = "< Sync IN B"]
+pub const _SbgEComSyncInId_SBG_ECOM_SYNC_IN_B: _SbgEComSyncInId = 1;
+#[doc = "< Sync IN C"]
+pub const _SbgEComSyncInId_SBG_ECOM_SYNC_IN_C: _SbgEComSyncInId = 2;
+#[doc = "< Sync IN D"]
+pub const _SbgEComSyncInId_SBG_ECOM_SYNC_IN_D: _SbgEComSyncInId = 3;
+#[doc = " List of sync in signals available."]
+pub type _SbgEComSyncInId = ::core::ffi::c_uint;
+#[doc = " List of sync in signals available."]
+pub use self::_SbgEComSyncInId as SbgEComSyncInId;
+#[doc = "< This trigger is turned OFF."]
+pub const _SbgEComSyncInSensitivity_SBG_ECOM_SYNC_IN_DISABLED: _SbgEComSyncInSensitivity = 0;
+#[doc = "< The trigger will be activated by a falling edge."]
+pub const _SbgEComSyncInSensitivity_SBG_ECOM_SYNC_IN_FALLING_EDGE: _SbgEComSyncInSensitivity = 1;
+#[doc = "< The trigger will be activated by a rising edge."]
+pub const _SbgEComSyncInSensitivity_SBG_ECOM_SYNC_IN_RISING_EDGE: _SbgEComSyncInSensitivity = 2;
+#[doc = "< The trigger is activated by a level change (rising or falling edge)."]
+pub const _SbgEComSyncInSensitivity_SBG_ECOM_SYNC_IN_BOTH_EDGES: _SbgEComSyncInSensitivity = 3;
+#[doc = " List of available sensitivities for sync in signals."]
+pub type _SbgEComSyncInSensitivity = ::core::ffi::c_uint;
+#[doc = " List of available sensitivities for sync in signals."]
+pub use self::_SbgEComSyncInSensitivity as SbgEComSyncInSensitivity;
+#[doc = "< Synchronization output A"]
+pub const _SbgEComSyncOutId_SBG_ECOM_SYNC_OUT_A: _SbgEComSyncOutId = 0;
+#[doc = "< Synchronization output B"]
+pub const _SbgEComSyncOutId_SBG_ECOM_SYNC_OUT_B: _SbgEComSyncOutId = 1;
+#[doc = " List of sync out signals available."]
+pub type _SbgEComSyncOutId = ::core::ffi::c_uint;
+#[doc = " List of sync out signals available."]
+pub use self::_SbgEComSyncOutId as SbgEComSyncOutId;
+#[doc = "< Output is disabled."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_DISABLED: _SbgEComSyncOutFunction = 0;
+#[doc = "< Output is generated at 200Hz."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_MAIN_LOOP: _SbgEComSyncOutFunction = 1;
+#[doc = "< Output is generated at 100Hz."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_DIV_2: _SbgEComSyncOutFunction = 2;
+#[doc = "< Output is generated at 50Hz."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_DIV_4: _SbgEComSyncOutFunction = 4;
+#[doc = "< Output is generated at 25Hz."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_DIV_8: _SbgEComSyncOutFunction = 8;
+#[doc = "< Output is generated at 20Hz."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_DIV_10: _SbgEComSyncOutFunction = 10;
+#[doc = "< Output is generated at 10Hz."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_DIV_20: _SbgEComSyncOutFunction = 20;
+#[doc = "< Output is generated at 5Hz."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_DIV_40: _SbgEComSyncOutFunction = 40;
+#[doc = "< Output is generated at 1Hz."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_DIV_200: _SbgEComSyncOutFunction = 200;
+#[doc = "< Pulse Per Second. Same mode as above."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_PPS: _SbgEComSyncOutFunction = 10000;
+#[doc = "< Output is generated on a Sync In A event."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_EVENT_IN_A: _SbgEComSyncOutFunction =
+    10003;
+#[doc = "< Output is generated on a Sync In B event."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_EVENT_IN_B: _SbgEComSyncOutFunction =
+    10004;
+#[doc = "< Output is generated on a Sync In C event."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_EVENT_IN_C: _SbgEComSyncOutFunction =
+    10005;
+#[doc = "< Output is generated on a Sync In D event."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_EVENT_IN_D: _SbgEComSyncOutFunction =
+    10006;
+#[doc = "< The internal GNSS PPS signal is directly routed to the Sync Out.\nThis mode is only valid for ELLIPSE-N with hardware revisions above 1.2.1.0.\nPolarity and duration parameters are ignored with this specific mode."]
+pub const _SbgEComSyncOutFunction_SBG_ECOM_SYNC_OUT_MODE_DIRECT_PPS: _SbgEComSyncOutFunction =
+    10100;
+#[doc = " Logic and synchronization output types"]
+pub type _SbgEComSyncOutFunction = ::core::ffi::c_uint;
+#[doc = " Logic and synchronization output types"]
+pub use self::_SbgEComSyncOutFunction as SbgEComSyncOutFunction;
+#[doc = "< The output pin will generate a falling edge"]
+pub const _SbgEComSyncOutPolarity_SBG_ECOM_SYNC_OUT_FALLING_EDGE: _SbgEComSyncOutPolarity = 0;
+#[doc = "< The output pin will generate a rising edge"]
+pub const _SbgEComSyncOutPolarity_SBG_ECOM_SYNC_OUT_RISING_EDGE: _SbgEComSyncOutPolarity = 1;
+#[doc = "< The pulse is a level change"]
+pub const _SbgEComSyncOutPolarity_SBG_ECOM_SYNC_OUT_TOGGLE: _SbgEComSyncOutPolarity = 2;
+#[doc = " Logic output polarity"]
+pub type _SbgEComSyncOutPolarity = ::core::ffi::c_uint;
+#[doc = " Logic output polarity"]
+pub use self::_SbgEComSyncOutPolarity as SbgEComSyncOutPolarity;
+#[doc = " Helper structure for sync in configuration."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComSyncInConf {
+    #[doc = "< Sensitivity of the sync in."]
+    pub sensitivity: SbgEComSyncInSensitivity,
+    #[doc = "< Delay to take into account for the sync in. (in us)"]
+    pub delay: i32,
+}
+#[test]
+fn bindgen_test_layout__SbgEComSyncInConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComSyncInConf> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComSyncInConf>(),
+        8usize,
+        concat!("Size of: ", stringify!(_SbgEComSyncInConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComSyncInConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComSyncInConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).sensitivity) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSyncInConf),
+            "::",
+            stringify!(sensitivity)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).delay) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSyncInConf),
+            "::",
+            stringify!(delay)
+        )
+    );
+}
+#[doc = " Helper structure for sync in configuration."]
+pub type SbgEComSyncInConf = _SbgEComSyncInConf;
+#[doc = " Helper structure for sync out configuration."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComSyncOutConf {
+    #[doc = "< Output function of the sync out pin"]
+    pub outputFunction: SbgEComSyncOutFunction,
+    #[doc = "< Polarity of the sync out."]
+    pub polarity: SbgEComSyncOutPolarity,
+    #[doc = "< Pulse width for the sync out (in ns)."]
+    pub duration: u32,
+}
+#[test]
+fn bindgen_test_layout__SbgEComSyncOutConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComSyncOutConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComSyncOutConf>(),
+        12usize,
+        concat!("Size of: ", stringify!(_SbgEComSyncOutConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComSyncOutConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComSyncOutConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).outputFunction) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSyncOutConf),
+            "::",
+            stringify!(outputFunction)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).polarity) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSyncOutConf),
+            "::",
+            stringify!(polarity)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).duration) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSyncOutConf),
+            "::",
+            stringify!(duration)
+        )
+    );
+}
+#[doc = " Helper structure for sync out configuration."]
+pub type SbgEComSyncOutConf = _SbgEComSyncOutConf;
+extern "C" {
+    #[doc = "\tRetrieve the configuration of a Sync In.\n\n\t\\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n\t\\param[in]\tsyncInId\t\t\t\t\tThe id of the sync whose configuration is to be retrieved.\n\t\\param[out]\tpConf\t\t\t\t\t\tPointer to a SbgEComSyncInConf to contain the current configuration of the sync in.\n\t\\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSyncInGetConf(
+        pHandle: *mut SbgEComHandle,
+        syncInId: SbgEComSyncInId,
+        pConf: *mut SbgEComSyncInConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = "\tSet the configuration of a Sync In.\n\n\t\\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n\t\\param[in]\tsyncInId\t\t\t\t\tThe id of the sync whose configuration is to be set.\n\t\\param[in]\tpConf\t\t\t\t\t\tPointer to a SbgEComSyncInConf that contains the new configuration for the sync in.\n\t\\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSyncInSetConf(
+        pHandle: *mut SbgEComHandle,
+        syncInId: SbgEComSyncInId,
+        pConf: *const SbgEComSyncInConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = "\tRetrieve the configuration of a Sync Out.\n\n\t\\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n\t\\param[in]\tsyncOutId\t\t\t\t\tThe id of the sync whose configuration is to be retrieved.\n\t\\param[out]\tpConf\t\t\t\t\t\tPointer to a SbgEComSyncOutConf to contain the current configuration of the sync out.\n\t\\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSyncOutGetConf(
+        pHandle: *mut SbgEComHandle,
+        syncOutId: SbgEComSyncOutId,
+        pConf: *mut SbgEComSyncOutConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = "\tSet the configuration of a Sync Out.\n\n\t\\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n\t\\param[in]\tsyncOutId\t\t\t\t\tThe id of the sync whose configuration is to be set.\n\t\\param[in]\tpConf\t\t\t\t\t\tPointer to a SbgEComSyncOutConf that contains the new configuration for the sync Out.\n\t\\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSyncOutSetConf(
+        pHandle: *mut SbgEComHandle,
+        syncOutId: SbgEComSyncOutId,
+        pConf: *const SbgEComSyncOutConf,
+    ) -> SbgErrorCode;
+}
+#[doc = "< GNSS module disabled"]
+pub const _SbgEComGnssType_SBG_ECOM_GNSS_TYPE_DISABLED: _SbgEComGnssType = 0;
+#[doc = "< External GNSS module (all features are unknown)"]
+pub const _SbgEComGnssType_SBG_ECOM_GNSS_TYPE_EXTERNAL: _SbgEComGnssType = 1;
+#[doc = "< Ublox MAX-M8 module"]
+pub const _SbgEComGnssType_SBG_ECOM_GNSS_TYPE_UBX_MAX_M8: _SbgEComGnssType = 2;
+#[doc = "< Novatel OEM615 device"]
+pub const _SbgEComGnssType_SBG_ECOM_GNSS_TYPE_NOV_OEM615: _SbgEComGnssType = 3;
+#[doc = "< Two Novatel OEM615 devices for dual antenna"]
+pub const _SbgEComGnssType_SBG_ECOM_GNSS_TYPE_NOV_OEM615_DUAL: _SbgEComGnssType = 4;
+#[doc = "< Novatel OEM617D device"]
+pub const _SbgEComGnssType_SBG_ECOM_GNSS_TYPE_NOV_OEM617D: _SbgEComGnssType = 5;
+#[doc = "< Septentrio Asterx m4"]
+pub const _SbgEComGnssType_SBG_ECOM_GNSS_TYPE_SEP_AX4: _SbgEComGnssType = 6;
+#[doc = "< Septentrio Asterx m2a"]
+pub const _SbgEComGnssType_SBG_ECOM_GNSS_TYPE_SEP_AXM2A: _SbgEComGnssType = 7;
+#[doc = "< Ublox ZED-F9P module"]
+pub const _SbgEComGnssType_SBG_ECOM_GNSS_TYPE_UBX_F9P: _SbgEComGnssType = 8;
+#[doc = " This enum defines the different types of internal GNSS receiver that can provide specific features.\n Note External type is considered as not handled by the feature system"]
+pub type _SbgEComGnssType = ::core::ffi::c_uint;
+#[doc = " This enum defines the different types of internal GNSS receiver that can provide specific features.\n Note External type is considered as not handled by the feature system"]
+pub use self::_SbgEComGnssType as SbgEComGnssType;
+#[doc = " This structure contains all the information provided by the SBG_ECOM_CMD_GET_FEATURES command"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComFeatures {
+    #[doc = "< The different measurement capabilities of this unit"]
+    pub sensorFeaturesMask: u32,
+    #[doc = "< The type of GNSS receiver used (brand and model)"]
+    pub gnssType: SbgEComGnssType,
+    #[doc = "< The actual GNSS update rate"]
+    pub gnssUpdateRate: u8,
+    #[doc = "< GNSS receiver signals tracking"]
+    pub gnssSignalsMask: u32,
+    #[doc = "< GNSS receiver computation and output features"]
+    pub gnssFeaturesMask: u32,
+    #[doc = "< String containing the GNSS receiver product code (\"\\0\" if unknown)"]
+    pub gnssProductCode: [::core::ffi::c_char; 32usize],
+    #[doc = "< String containing the GNSS receiver serial number (\"\\0\" if unknown)"]
+    pub gnssSerialNumber: [::core::ffi::c_char; 32usize],
+    #[doc = "< String containing the GNSS receiver firmware version (\"\\0\" if unknown)"]
+    pub gnssFirmwareVersion: [::core::ffi::c_char; 32usize],
+}
+#[test]
+fn bindgen_test_layout__SbgEComFeatures() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComFeatures> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComFeatures>(),
+        116usize,
+        concat!("Size of: ", stringify!(_SbgEComFeatures))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComFeatures>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComFeatures))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).sensorFeaturesMask) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComFeatures),
+            "::",
+            stringify!(sensorFeaturesMask)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gnssType) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComFeatures),
+            "::",
+            stringify!(gnssType)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gnssUpdateRate) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComFeatures),
+            "::",
+            stringify!(gnssUpdateRate)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gnssSignalsMask) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComFeatures),
+            "::",
+            stringify!(gnssSignalsMask)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gnssFeaturesMask) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComFeatures),
+            "::",
+            stringify!(gnssFeaturesMask)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gnssProductCode) as usize - ptr as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComFeatures),
+            "::",
+            stringify!(gnssProductCode)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gnssSerialNumber) as usize - ptr as usize },
+        52usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComFeatures),
+            "::",
+            stringify!(gnssSerialNumber)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gnssFirmwareVersion) as usize - ptr as usize },
+        84usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComFeatures),
+            "::",
+            stringify!(gnssFirmwareVersion)
+        )
+    );
+}
+#[doc = " This structure contains all the information provided by the SBG_ECOM_CMD_GET_FEATURES command"]
+pub type SbgEComFeatures = _SbgEComFeatures;
+extern "C" {
+    #[doc = " Retrieve the device and embedded GPS receiver features.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpFeatures\t\t\t\t\tA pointer to a structure to hold features.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGetFeatures(
+        pHandle: *mut SbgEComHandle,
+        pFeatures: *mut SbgEComFeatures,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Default internal GNSS for ELLIPSE-N and ELLIPSE-D"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_INTERNAL: _SbgEComGnssModelsStdIds = 101;
+#[doc = "< ELLIPSE-E to accept an external GNSS using NMEA protocol"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_NMEA: _SbgEComGnssModelsStdIds = 102;
+#[doc = "< Only for ELLIPSE-N hardware 1 & 2 to select GPS+BEIDOU instead of the default GPS+GLONASS"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_UBLOX_GPS_BEIDOU: _SbgEComGnssModelsStdIds =
+    103;
+#[doc = "< ELLIPSE-E to accept an external Ublox GNSS (receive only - passive)"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_UBLOX_EXTERNAL: _SbgEComGnssModelsStdIds =
+    104;
+#[doc = "< Reserved, do not use"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_RESERVED_01: _SbgEComGnssModelsStdIds = 105;
+#[doc = "< ELLIPSE-E to accept an external Novatel GNSS (receive only - passive)"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_NOVATEL_EXTERNAL: _SbgEComGnssModelsStdIds =
+    106;
+#[doc = "< Reserved, do not use"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_RESERVED_02: _SbgEComGnssModelsStdIds = 107;
+#[doc = "< Reserved, do not use"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_RESERVED_03: _SbgEComGnssModelsStdIds = 108;
+#[doc = "< ELLIPSE-E to accept an external Septentrio GNSS(receive only - passive)"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_SEPTENTRIO_EXTERNAL:
+    _SbgEComGnssModelsStdIds = 109;
+#[doc = "< Reserved, do not use"]
+pub const _SbgEComGnssModelsStdIds_SBG_ECOM_GNSS_MODEL_RESERVED_04: _SbgEComGnssModelsStdIds = 110;
+#[doc = " This enum defines the different GNSS model IDs available in standard"]
+pub type _SbgEComGnssModelsStdIds = ::core::ffi::c_uint;
+#[doc = " This enum defines the different GNSS model IDs available in standard"]
+pub use self::_SbgEComGnssModelsStdIds as SbgEComGnssModelsStdIds;
+#[doc = "< The GNSS will be used in single antenna mode only and the secondary lever arm is not used."]
+pub const _SbgEComGnssInstallationMode_SBG_ECOM_GNSS_INSTALLATION_MODE_SINGLE:
+    _SbgEComGnssInstallationMode = 1;
+#[doc = "< [Reserved] The GNSS dual antenna information will be used but the secondary lever arm is not known."]
+pub const _SbgEComGnssInstallationMode_SBG_ECOM_GNSS_INSTALLATION_MODE_DUAL_AUTO:
+    _SbgEComGnssInstallationMode = 2;
+#[doc = "< The GNSS dual antenna information will be used and we have a rough guess for the secondary lever arm."]
+pub const _SbgEComGnssInstallationMode_SBG_ECOM_GNSS_INSTALLATION_MODE_DUAL_ROUGH:
+    _SbgEComGnssInstallationMode = 3;
+#[doc = "< The GNSS dual antenna information will be used and the secondary lever arm is accurately entered and doesn't need online re-estimation."]
+pub const _SbgEComGnssInstallationMode_SBG_ECOM_GNSS_INSTALLATION_MODE_DUAL_PRECISE:
+    _SbgEComGnssInstallationMode = 4;
+#[doc = " GNSS mechanical installation modes for the dual antenna mode."]
+pub type _SbgEComGnssInstallationMode = ::core::ffi::c_uint;
+#[doc = " GNSS mechanical installation modes for the dual antenna mode."]
+pub use self::_SbgEComGnssInstallationMode as SbgEComGnssInstallationMode;
+#[doc = " GNSS mechanical installation parameters to be used with command SBG_ECOM_CMD_GNSS_#_INSTALLATION"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComGnssInstallation {
+    #[doc = "< GNSS primary antenna lever arm in IMU X, Y, Z axis in meters"]
+    pub leverArmPrimary: [f32; 3usize],
+    #[doc = "< If set to true, the primary lever arm has been accurately entered and doesn't need online re-estimation."]
+    pub leverArmPrimaryPrecise: bool,
+    #[doc = "< GNSS secondary antenna lever arm in IMU X, Y, Z axis in meters"]
+    pub leverArmSecondary: [f32; 3usize],
+    #[doc = "< Define the secondary antenna (dual antenna) operating mode."]
+    pub leverArmSecondaryMode: SbgEComGnssInstallationMode,
+}
+#[test]
+fn bindgen_test_layout__SbgEComGnssInstallation() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComGnssInstallation> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComGnssInstallation>(),
+        32usize,
+        concat!("Size of: ", stringify!(_SbgEComGnssInstallation))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComGnssInstallation>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComGnssInstallation))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).leverArmPrimary) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComGnssInstallation),
+            "::",
+            stringify!(leverArmPrimary)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).leverArmPrimaryPrecise) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComGnssInstallation),
+            "::",
+            stringify!(leverArmPrimaryPrecise)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).leverArmSecondary) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComGnssInstallation),
+            "::",
+            stringify!(leverArmSecondary)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).leverArmSecondaryMode) as usize - ptr as usize },
+        28usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComGnssInstallation),
+            "::",
+            stringify!(leverArmSecondaryMode)
+        )
+    );
+}
+#[doc = " GNSS mechanical installation parameters to be used with command SBG_ECOM_CMD_GNSS_#_INSTALLATION"]
+pub type SbgEComGnssInstallation = _SbgEComGnssInstallation;
+#[doc = " Holds all necessary information for GNSS module data rejection."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComGnssRejectionConf {
+    #[doc = "< Rejection mode for position."]
+    pub position: SbgEComRejectionMode,
+    #[doc = "< Rejection mode for velocity."]
+    pub velocity: SbgEComRejectionMode,
+    #[doc = "< Rejection mode for true heading."]
+    pub hdt: SbgEComRejectionMode,
+}
+#[test]
+fn bindgen_test_layout__SbgEComGnssRejectionConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComGnssRejectionConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComGnssRejectionConf>(),
+        12usize,
+        concat!("Size of: ", stringify!(_SbgEComGnssRejectionConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComGnssRejectionConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComGnssRejectionConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).position) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComGnssRejectionConf),
+            "::",
+            stringify!(position)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).velocity) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComGnssRejectionConf),
+            "::",
+            stringify!(velocity)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).hdt) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComGnssRejectionConf),
+            "::",
+            stringify!(hdt)
+        )
+    );
+}
+#[doc = " Holds all necessary information for GNSS module data rejection."]
+pub type SbgEComGnssRejectionConf = _SbgEComGnssRejectionConf;
+extern "C" {
+    #[doc = " Set GNSS error model id.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tmodelId\t\t\t\t\t\tModel ID to set\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGnss1SetModelId(
+        pHandle: *mut SbgEComHandle,
+        modelId: SbgEComGnssModelsStdIds,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve GNSS error model id.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpModelId\t\t\t\t\tRetrieved model id.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGnss1GetModelId(
+        pHandle: *mut SbgEComHandle,
+        pModelId: *mut SbgEComGnssModelsStdIds,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the mechanical installation parameters for the GNSS 1 module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpGnssInstallation\t\t\tUsed to store the retrieved the GNSS installation parameters.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGnss1InstallationGet(
+        pHandle: *mut SbgEComHandle,
+        pGnssInstallation: *mut SbgEComGnssInstallation,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the mechanical installation parameters for the GNSS 1 module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpGnssInstallation\t\t\t\tThe GNSS installation parameters to set.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGnss1InstallationSet(
+        pHandle: *mut SbgEComHandle,
+        pGnssInstallation: *const SbgEComGnssInstallation,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the rejection configuration of the gnss module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpRejectConf\t\t\t\t\tPointer to a SbgEComGnssRejectionConf struct to hold rejection configuration of the gnss module.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGnss1GetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *mut SbgEComGnssRejectionConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the rejection configuration of the gnss module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpRejectConf\t\t\t\t\tPointer to a SbgEComGnssRejectionConf struct holding rejection configuration for the gnss module.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGnss1SetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *const SbgEComGnssRejectionConf,
+    ) -> SbgErrorCode;
+}
+#[doc = " Helper structure to retrieve device info."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComDeviceInfo {
+    #[doc = "< Human readable Product Code."]
+    pub productCode: [u8; 32usize],
+    #[doc = "< Device serial number"]
+    pub serialNumber: u32,
+    #[doc = "< Calibration data revision"]
+    pub calibationRev: u32,
+    #[doc = "< Device Calibration Year"]
+    pub calibrationYear: u16,
+    #[doc = "< Device Calibration Month"]
+    pub calibrationMonth: u8,
+    #[doc = "< Device Calibration Day"]
+    pub calibrationDay: u8,
+    #[doc = "< Device hardware revision"]
+    pub hardwareRev: u32,
+    #[doc = "< Firmware revision"]
+    pub firmwareRev: u32,
+}
+#[test]
+fn bindgen_test_layout__SbgEComDeviceInfo() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComDeviceInfo> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComDeviceInfo>(),
+        52usize,
+        concat!("Size of: ", stringify!(_SbgEComDeviceInfo))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComDeviceInfo>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComDeviceInfo))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).productCode) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDeviceInfo),
+            "::",
+            stringify!(productCode)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).serialNumber) as usize - ptr as usize },
+        32usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDeviceInfo),
+            "::",
+            stringify!(serialNumber)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).calibationRev) as usize - ptr as usize },
+        36usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDeviceInfo),
+            "::",
+            stringify!(calibationRev)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).calibrationYear) as usize - ptr as usize },
+        40usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDeviceInfo),
+            "::",
+            stringify!(calibrationYear)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).calibrationMonth) as usize - ptr as usize },
+        42usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDeviceInfo),
+            "::",
+            stringify!(calibrationMonth)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).calibrationDay) as usize - ptr as usize },
+        43usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDeviceInfo),
+            "::",
+            stringify!(calibrationDay)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).hardwareRev) as usize - ptr as usize },
+        44usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDeviceInfo),
+            "::",
+            stringify!(hardwareRev)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).firmwareRev) as usize - ptr as usize },
+        48usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComDeviceInfo),
+            "::",
+            stringify!(firmwareRev)
+        )
+    );
+}
+#[doc = " Helper structure to retrieve device info."]
+pub type SbgEComDeviceInfo = _SbgEComDeviceInfo;
+extern "C" {
+    #[doc = " Retrieve the device information.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpInfo\t\t\t\t\t\tA pointer to a structure to hold device information.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdGetInfo(
+        pHandle: *mut SbgEComHandle,
+        pInfo: *mut SbgEComDeviceInfo,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Main communication interface. Full duplex."]
+pub const _SbgEComPortId_SBG_ECOM_IF_COM_A: _SbgEComPortId = 0;
+#[doc = "< Auxiliary input interface for RTCM."]
+pub const _SbgEComPortId_SBG_ECOM_IF_COM_B: _SbgEComPortId = 1;
+#[doc = "< Auxiliary communication interface. Full duplex."]
+pub const _SbgEComPortId_SBG_ECOM_IF_COM_C: _SbgEComPortId = 2;
+#[doc = "< Auxiliary input interface."]
+pub const _SbgEComPortId_SBG_ECOM_IF_COM_D: _SbgEComPortId = 3;
+#[doc = "< Auxiliary output interface."]
+pub const _SbgEComPortId_SBG_ECOM_IF_COM_E: _SbgEComPortId = 4;
+#[doc = "< Ethernet interface 0."]
+pub const _SbgEComPortId_SBG_ECOM_IF_ETH_0: _SbgEComPortId = 10;
+#[doc = "< Ethernet interface 1."]
+pub const _SbgEComPortId_SBG_ECOM_IF_ETH_1: _SbgEComPortId = 11;
+#[doc = "< Ethernet interface 2."]
+pub const _SbgEComPortId_SBG_ECOM_IF_ETH_2: _SbgEComPortId = 12;
+#[doc = "< Ethernet interface 3."]
+pub const _SbgEComPortId_SBG_ECOM_IF_ETH_3: _SbgEComPortId = 13;
+#[doc = "< Ethernet interface 4."]
+pub const _SbgEComPortId_SBG_ECOM_IF_ETH_4: _SbgEComPortId = 14;
+#[doc = "< Data logger interface."]
+pub const _SbgEComPortId_SBG_ECOM_IF_DATA_LOGGER: _SbgEComPortId = 20;
+#[doc = " List of serial interfaces available."]
+pub type _SbgEComPortId = ::core::ffi::c_uint;
+#[doc = " List of serial interfaces available."]
+pub use self::_SbgEComPortId as SbgEComPortId;
+#[doc = "< This interface is turned OFF."]
+pub const _SbgEComPortMode_SBG_ECOM_UART_MODE_OFF: _SbgEComPortMode = 0;
+#[doc = "< This interface is using RS-232 communications."]
+pub const _SbgEComPortMode_SBG_ECOM_UART_MODE_232: _SbgEComPortMode = 1;
+#[doc = "< This interface is using RS-422 communications."]
+pub const _SbgEComPortMode_SBG_ECOM_UART_MODE_422: _SbgEComPortMode = 2;
+#[doc = " List of serial modes available."]
+pub type _SbgEComPortMode = ::core::ffi::c_uint;
+#[doc = " List of serial modes available."]
+pub use self::_SbgEComPortMode as SbgEComPortMode;
+#[doc = " Helper structure to configure a serial interface"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComInterfaceConf {
+    #[doc = "< The baud rate of the interface."]
+    pub baudRate: u32,
+    #[doc = "< The mode of the interface."]
+    pub mode: SbgEComPortMode,
+}
+#[test]
+fn bindgen_test_layout__SbgEComInterfaceConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComInterfaceConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComInterfaceConf>(),
+        8usize,
+        concat!("Size of: ", stringify!(_SbgEComInterfaceConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComInterfaceConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComInterfaceConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).baudRate) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComInterfaceConf),
+            "::",
+            stringify!(baudRate)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).mode) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComInterfaceConf),
+            "::",
+            stringify!(mode)
+        )
+    );
+}
+#[doc = " Helper structure to configure a serial interface"]
+pub type SbgEComInterfaceConf = _SbgEComInterfaceConf;
+#[doc = "< The CAN interface is disabled."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_DISABLED: _SbgEComCanBitRate = 0;
+#[doc = "< 10Kb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_10: _SbgEComCanBitRate = 10;
+#[doc = "< 20Kb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_20: _SbgEComCanBitRate = 20;
+#[doc = "< 25Kb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_25: _SbgEComCanBitRate = 25;
+#[doc = "< 50Kb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_50: _SbgEComCanBitRate = 50;
+#[doc = "< 100Kb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_100: _SbgEComCanBitRate = 100;
+#[doc = "< 125Kb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_125: _SbgEComCanBitRate = 125;
+#[doc = "< 250Kb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_250: _SbgEComCanBitRate = 250;
+#[doc = "< 500Kb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_500: _SbgEComCanBitRate = 500;
+#[doc = "< 750Kb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_750: _SbgEComCanBitRate = 750;
+#[doc = "< 1Mb/s."]
+pub const _SbgEComCanBitRate_SBG_ECOM_CAN_BITRATE_1000: _SbgEComCanBitRate = 1000;
+#[doc = " Enum containing the list of all available bit rates (in KB/s)."]
+pub type _SbgEComCanBitRate = ::core::ffi::c_uint;
+#[doc = " Enum containing the list of all available bit rates (in KB/s)."]
+pub use self::_SbgEComCanBitRate as SbgEComCanBitRate;
+#[doc = "< CAN Mode undefined."]
+pub const _SbgEComCanMode_SBG_ECOM_CAN_MODE_UNDEFINED: _SbgEComCanMode = 0;
+#[doc = "< Only listening on the CAN bus and doesn't sent anything (even RX ACK bit)."]
+pub const _SbgEComCanMode_SBG_ECOM_CAN_MODE_SPY: _SbgEComCanMode = 1;
+#[doc = "< The device is allowed to both send and receive over the CAN bus."]
+pub const _SbgEComCanMode_SBG_ECOM_CAN_MODE_NORMAL: _SbgEComCanMode = 2;
+pub const _SbgEComCanMode_SBG_ECOM_CAN_NR_MODE: _SbgEComCanMode = 3;
+#[doc = " Enum containing the list of different CAN modes"]
+pub type _SbgEComCanMode = ::core::ffi::c_uint;
+#[doc = " Enum containing the list of different CAN modes"]
+pub use self::_SbgEComCanMode as SbgEComCanMode;
+extern "C" {
+    #[doc = " Retrieve the configuration of one of the interfaces.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tinterfaceId\t\t\t\t\tThe interface from which the configuration is to be retrieved.\n \\param[out]\tpConf\t\t\t\t\t\tPointer to a SbgEComInterfaceConf struct to hold configuration of the interface.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdInterfaceGetUartConf(
+        pHandle: *mut SbgEComHandle,
+        interfaceId: SbgEComPortId,
+        pConf: *mut SbgEComInterfaceConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the configuration of one of the interfaces.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tinterfaceId\t\t\t\t\tThe interface from which the configuration is to be retrieved.\n \\param[in]\tpConf\t\t\t\t\t\tPointer to a SbgEComInterfaceConf struct that holds the new configuration for the interface.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdInterfaceSetUartConf(
+        pHandle: *mut SbgEComHandle,
+        interfaceId: SbgEComPortId,
+        pConf: *const SbgEComInterfaceConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the configuration of the CAN interface.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpBitrate\t\t\t\t\tThe bitrate of the CAN interface.\n \\param[out]\tpMode\t                    Mode of the CAN interface.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdInterfaceGetCanConf(
+        pHandle: *mut SbgEComHandle,
+        pBitrate: *mut SbgEComCanBitRate,
+        pMode: *mut SbgEComCanMode,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the configuration of the CAN interface.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tbitRate\t\t\t\t\t\tThe bitrate of the CAN interface.\n \\param[in]\tmode\t                    Mode of the CAN interface.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdInterfaceSetCanConf(
+        pHandle: *mut SbgEComHandle,
+        bitRate: SbgEComCanBitRate,
+        mode: SbgEComCanMode,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Upload and apply a new license to a device.\n\n The device will reboot automatically to use the new license.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpBuffer\t\t\t\t\t\tRead only buffer containing the license.\n \\param[in]\tsize\t\t\t\t\t\tSize of the buffer.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdLicenseApply(
+        pHandle: *mut SbgEComHandle,
+        pBuffer: *const ::core::ffi::c_void,
+        size: usize,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Tell the device that the magnetic calibration will be performed with limited motions.\nThis calibration mode is only designed to be used when roll and pitch motions are less than ± 5°.\nTo work correctly, the device should be rotated through at least a full circle."]
+pub const _SbgEComMagCalibMode_SBG_ECOM_MAG_CALIB_MODE_2D: _SbgEComMagCalibMode = 1;
+#[doc = "< Tell the device to start a full 3D magnetic calibration procedure.\nThe 3D magnetic calibration offers the best accuracy but needs at least motion of ± 30° on the roll and pitch angles."]
+pub const _SbgEComMagCalibMode_SBG_ECOM_MAG_CALIB_MODE_3D: _SbgEComMagCalibMode = 2;
+#[doc = "\tDefine if the onboard magnetic calibration should acquiere points for a 3D or 2D calibration."]
+pub type _SbgEComMagCalibMode = ::core::ffi::c_uint;
+#[doc = "\tDefine if the onboard magnetic calibration should acquiere points for a 3D or 2D calibration."]
+pub use self::_SbgEComMagCalibMode as SbgEComMagCalibMode;
+#[doc = "< Tell the device that low dynamics will be observed during the magnetic calibration process."]
+pub const _SbgEComMagCalibBandwidth_SBG_ECOM_MAG_CALIB_LOW_BW: _SbgEComMagCalibBandwidth = 0;
+#[doc = "< Tell the device that normal dynamics will be observed during the magnetic calibration process."]
+pub const _SbgEComMagCalibBandwidth_SBG_ECOM_MAG_CALIB_MEDIUM_BW: _SbgEComMagCalibBandwidth = 1;
+#[doc = "< Tell the device that high dynamics will be observed during the magnetic calibration process."]
+pub const _SbgEComMagCalibBandwidth_SBG_ECOM_MAG_CALIB_HIGH_BW: _SbgEComMagCalibBandwidth = 2;
+#[doc = "\tUsed to select the expected dynamics during the magnetic calibration."]
+pub type _SbgEComMagCalibBandwidth = ::core::ffi::c_uint;
+#[doc = "\tUsed to select the expected dynamics during the magnetic calibration."]
+pub use self::_SbgEComMagCalibBandwidth as SbgEComMagCalibBandwidth;
+#[doc = "< All acquired points fit very well on a unit sphere after the calibration."]
+pub const _SbgEComMagCalibQuality_SBG_ECOM_MAG_CALIB_QUAL_OPTIMAL: _SbgEComMagCalibQuality = 0;
+#[doc = "< Small deviations of the magnetic field norm have been detected. The magnetic calibration should although provide accurate heading."]
+pub const _SbgEComMagCalibQuality_SBG_ECOM_MAG_CALIB_QUAL_GOOD: _SbgEComMagCalibQuality = 1;
+#[doc = "< Large deviations of the magnetic field norm have been detected. It may come from external magnetic distortions during the calibration."]
+pub const _SbgEComMagCalibQuality_SBG_ECOM_MAG_CALIB_QUAL_POOR: _SbgEComMagCalibQuality = 2;
+#[doc = "< No valid magnetic calibration has been computed. It could comes from too much magnetic disturbances, insufficient or invalid motions."]
+pub const _SbgEComMagCalibQuality_SBG_ECOM_MAG_CALIB_QUAL_INVALID: _SbgEComMagCalibQuality = 3;
+#[doc = "\tGeneral quality indicator of an onboard magnetic calibration."]
+pub type _SbgEComMagCalibQuality = ::core::ffi::c_uint;
+#[doc = "\tGeneral quality indicator of an onboard magnetic calibration."]
+pub use self::_SbgEComMagCalibQuality as SbgEComMagCalibQuality;
+#[doc = "< Reported quality indicator can be trusted as enough remarkable magnetic field points have been acquired."]
+pub const _SbgEComMagCalibConfidence_SBG_ECOM_MAG_CALIB_TRUST_HIGH: _SbgEComMagCalibConfidence = 0;
+#[doc = "< Few remarkable magnetic field points have been used to compute the magnetic calibration leading to a medium confidence in reported quality indicators."]
+pub const _SbgEComMagCalibConfidence_SBG_ECOM_MAG_CALIB_TRUST_MEDIUM: _SbgEComMagCalibConfidence =
+    1;
+#[doc = "< Even if the quality indicator could report an excellent calibration,\nThe data set used to compute the magnetic calibration was not meaningful enough to compute meaningful quality indicators.\nThis calibration should be used carefully."]
+pub const _SbgEComMagCalibConfidence_SBG_ECOM_MAG_CALIB_TRUST_LOW: _SbgEComMagCalibConfidence = 2;
+#[doc = "\tConfidence indicator on results of an onbard magnetic calibration."]
+pub type _SbgEComMagCalibConfidence = ::core::ffi::c_uint;
+#[doc = "\tConfidence indicator on results of an onbard magnetic calibration."]
+pub use self::_SbgEComMagCalibConfidence as SbgEComMagCalibConfidence;
+#[doc = "< Should be used in most applications"]
+pub const _SbgEComMagModelsStdIds_SBG_ECOM_MAG_MODEL_NORMAL: _SbgEComMagModelsStdIds = 201;
+#[doc = "< Should be used in disturbed magnetic environment"]
+pub const _SbgEComMagModelsStdIds_SBG_ECOM_MAG_MODEL_NOISY_MAG_TOLERANT: _SbgEComMagModelsStdIds =
+    202;
+#[doc = " This enum defines the different magnetometer model IDs available in standard"]
+pub type _SbgEComMagModelsStdIds = ::core::ffi::c_uint;
+#[doc = " This enum defines the different magnetometer model IDs available in standard"]
+pub use self::_SbgEComMagModelsStdIds as SbgEComMagModelsStdId;
+#[doc = " Holds all necessary information for Magnetometer module data rejection."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComMagRejectionConf {
+    #[doc = "< Rejection mode for magnetic field."]
+    pub magneticField: SbgEComRejectionMode,
+}
+#[test]
+fn bindgen_test_layout__SbgEComMagRejectionConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComMagRejectionConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComMagRejectionConf>(),
+        4usize,
+        concat!("Size of: ", stringify!(_SbgEComMagRejectionConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComMagRejectionConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComMagRejectionConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).magneticField) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagRejectionConf),
+            "::",
+            stringify!(magneticField)
+        )
+    );
+}
+#[doc = " Holds all necessary information for Magnetometer module data rejection."]
+pub type SbgEComMagRejectionConf = _SbgEComMagRejectionConf;
+#[doc = " Helper structure to retrieve onboard magnetic calibration results."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComMagCalibResults {
+    #[doc = "< General magnetic calibration quality indicator."]
+    pub quality: SbgEComMagCalibQuality,
+    #[doc = "< Confidence indicator that should be read to interpret the quality indicator."]
+    pub confidence: SbgEComMagCalibConfidence,
+    #[doc = "< Set of bit masks used to report advanced information on the magnetic calibration status."]
+    pub advancedStatus: u16,
+    #[doc = "< Mean magnetic field norm error observed before calibration."]
+    pub beforeMeanError: f32,
+    #[doc = "< Standard deviation of the magnetic field norm error observed before calibration."]
+    pub beforeStdError: f32,
+    #[doc = "< Maximum magnetic field norm error observed before calibration."]
+    pub beforeMaxError: f32,
+    #[doc = "< Mean magnetic field norm error observed after calibration."]
+    pub afterMeanError: f32,
+    #[doc = "< Standard deviation of the magnetic field norm error observed after calibration."]
+    pub afterStdError: f32,
+    #[doc = "< Maximum magnetic field norm error observed after calibration."]
+    pub afterMaxError: f32,
+    #[doc = "< Mean expected heading accuracy in radians."]
+    pub meanAccuracy: f32,
+    #[doc = "< Standard deviation of the expected heading accuracy in radians."]
+    pub stdAccuracy: f32,
+    #[doc = "< Maximum expected heading accuracy in radians."]
+    pub maxAccuracy: f32,
+    #[doc = "< Number of magnetic field points stored internally and used to compute the magnetic calibration."]
+    pub numPoints: u16,
+    #[doc = "< Maximum number of magnetic field points that can be stored internally."]
+    pub maxNumPoints: u16,
+    #[doc = "< Computed Hard Iron correction vector offset."]
+    pub offset: [f32; 3usize],
+    #[doc = "< Computed Hard & Soft Iron correction matrix."]
+    pub matrix: [f32; 9usize],
+}
+#[test]
+fn bindgen_test_layout__SbgEComMagCalibResults() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComMagCalibResults> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComMagCalibResults>(),
+        100usize,
+        concat!("Size of: ", stringify!(_SbgEComMagCalibResults))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComMagCalibResults>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComMagCalibResults))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).quality) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(quality)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).confidence) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(confidence)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).advancedStatus) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(advancedStatus)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).beforeMeanError) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(beforeMeanError)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).beforeStdError) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(beforeStdError)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).beforeMaxError) as usize - ptr as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(beforeMaxError)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).afterMeanError) as usize - ptr as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(afterMeanError)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).afterStdError) as usize - ptr as usize },
+        28usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(afterStdError)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).afterMaxError) as usize - ptr as usize },
+        32usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(afterMaxError)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).meanAccuracy) as usize - ptr as usize },
+        36usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(meanAccuracy)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).stdAccuracy) as usize - ptr as usize },
+        40usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(stdAccuracy)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).maxAccuracy) as usize - ptr as usize },
+        44usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(maxAccuracy)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).numPoints) as usize - ptr as usize },
+        48usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(numPoints)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).maxNumPoints) as usize - ptr as usize },
+        50usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(maxNumPoints)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).offset) as usize - ptr as usize },
+        52usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(offset)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).matrix) as usize - ptr as usize },
+        64usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComMagCalibResults),
+            "::",
+            stringify!(matrix)
+        )
+    );
+}
+#[doc = " Helper structure to retrieve onboard magnetic calibration results."]
+pub type SbgEComMagCalibResults = _SbgEComMagCalibResults;
+extern "C" {
+    #[doc = " Set magnetometer error model id.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle\n \\param[in]\tmodelId\t\t\t\t\t\tMagnetometer model id to set\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully"]
+    pub fn sbgEComCmdMagSetModelId(
+        pHandle: *mut SbgEComHandle,
+        modelId: SbgEComMagModelsStdId,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve magnetometer error model id\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle\n \\param[out]\tpModelId\t\t\t\t\tRetrieved magnetometer model id\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully"]
+    pub fn sbgEComCmdMagGetModelId(
+        pHandle: *mut SbgEComHandle,
+        pModelId: *mut SbgEComMagModelsStdId,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the rejection configuration of the magnetometer module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpRejectConf\t\t\t\t\tPointer to a SbgEComMagRejectionConf struct to hold rejection configuration of the magnetometer module.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdMagGetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *mut SbgEComMagRejectionConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the rejection configuration of the magnetometer module.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpRejectConf\t\t\t\t\tPointer to a SbgEComMagRejectionConf struct holding rejection configuration for the magnetometer module.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdMagSetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *const SbgEComMagRejectionConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Send a command that set the magnetometers calibration parameters.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpOffset\t\t\t\t\t\tMagnetometers calibration offset vector.\n \\param[in]\tpMatrix\t\t\t\t\t\tMagnetometers calibration 3x3 matrix.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdMagSetCalibData(
+        pHandle: *mut SbgEComHandle,
+        pOffset: *const f32,
+        pMatrix: *const f32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Start the magnetic calibration process.\n\n As soon as this command is sent, the device will start logging magnetic field data internally.\n This set of data will be used later by the magnetic calibration algorithms to map the surrounding magnetic field.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tmode\t\t\t\t\t\tDefine which magnetic calibration type to perform. It could be 3D or 2D.\n \\param[in]\tbandwidth\t\t\t\t\tTell the device that we should have low, medium or high dynamics during the magnetic calibration process.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdMagStartCalib(
+        pHandle: *mut SbgEComHandle,
+        mode: SbgEComMagCalibMode,
+        bandwidth: SbgEComMagCalibBandwidth,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " This command computes a magnetic calibration solution based on the magnetic field logged since the last call to the command SBG_ECOM_CMD_START_MAG_CALIB (15).\n\n As soon as the computations are done, the device will answer with quality indicators, status flags and if possible a valid magnetic calibration matrix and offset.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpCalibResults\t\t\t\tPointer on a SbgEComMagCalibResults structure that can hold onboard magnetic calibration results and status.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdMagComputeCalib(
+        pHandle: *mut SbgEComHandle,
+        pCalibResults: *mut SbgEComMagCalibResults,
+    ) -> SbgErrorCode;
+}
+#[doc = " Holds all necessary information for Odometer module parameter configuration."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComOdoConf {
+    #[doc = "< Odometer's gain in pulses / meter."]
+    pub gain: f32,
+    #[doc = "< User gain average error in %"]
+    pub gainError: u8,
+    #[doc = "< Whether the odometer is in reverse mode or not."]
+    pub reverseMode: bool,
+}
+#[test]
+fn bindgen_test_layout__SbgEComOdoConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComOdoConf> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComOdoConf>(),
+        8usize,
+        concat!("Size of: ", stringify!(_SbgEComOdoConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComOdoConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComOdoConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gain) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComOdoConf),
+            "::",
+            stringify!(gain)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gainError) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComOdoConf),
+            "::",
+            stringify!(gainError)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).reverseMode) as usize - ptr as usize },
+        5usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComOdoConf),
+            "::",
+            stringify!(reverseMode)
+        )
+    );
+}
+#[doc = " Holds all necessary information for Odometer module parameter configuration."]
+pub type SbgEComOdoConf = _SbgEComOdoConf;
+#[doc = " Holds all necessary information for Odometer module data rejection."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComOdoRejectionConf {
+    #[doc = "< Rejection mode for velocity."]
+    pub velocity: SbgEComRejectionMode,
+}
+#[test]
+fn bindgen_test_layout__SbgEComOdoRejectionConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComOdoRejectionConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComOdoRejectionConf>(),
+        4usize,
+        concat!("Size of: ", stringify!(_SbgEComOdoRejectionConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComOdoRejectionConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComOdoRejectionConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).velocity) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComOdoRejectionConf),
+            "::",
+            stringify!(velocity)
+        )
+    );
+}
+#[doc = " Holds all necessary information for Odometer module data rejection."]
+pub type SbgEComOdoRejectionConf = _SbgEComOdoRejectionConf;
+#[doc = "< Channel used to decode the vehicle velocity information"]
+pub const _SbgEComCmdOdoCanChannel_SBG_ECOM_CMD_ODO_CAN_CH_VELOCITY: _SbgEComCmdOdoCanChannel = 0;
+#[doc = "< Channel used to decode the vehicle velocity reverse info (if available)."]
+pub const _SbgEComCmdOdoCanChannel_SBG_ECOM_CMD_ODO_CAN_CH_REVERSE: _SbgEComCmdOdoCanChannel = 1;
+#[doc = " CAN odometer channels definition\n A channel is an inforamtion that can be decoded / used by the device."]
+pub type _SbgEComCmdOdoCanChannel = ::core::ffi::c_uint;
+#[doc = " CAN odometer channels definition\n A channel is an inforamtion that can be decoded / used by the device."]
+pub use self::_SbgEComCmdOdoCanChannel as SbgEComCmdOdoCanChannel;
+#[doc = " Holds all necessary information for CAN Odometer parameter configuration.\n This format is very similar to info contained in a DBC file."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComCmdOdoCanConf {
+    #[doc = "< Set of options bit masks such as CAN extended."]
+    pub options: u16,
+    #[doc = "< CAN message ID from which the odometer velocity will be parsed."]
+    pub canId: u32,
+    #[doc = "< Index of field MSB in big endian or LSB in little endian within the payload (any value from 0 to 63)."]
+    pub startBit: usize,
+    #[doc = "< Length in bits of the odometer velocity field (any value from 1 to 64 minus dataOffset)."]
+    pub dataSize: usize,
+    #[doc = "< Value to multiply the parsed field with to get physical unit^in m.s-1."]
+    pub scale: f32,
+    #[doc = "< Offset to add on the scaled velocity information in m.s-1 (after applying scale factor)."]
+    pub offset: f32,
+    #[doc = "< The minimum velocity to consider the message valid in m.s-1"]
+    pub minValue: f32,
+    #[doc = "< The maximum velocity to consider the message valid in m.s-1"]
+    pub maxValue: f32,
+}
+#[test]
+fn bindgen_test_layout__SbgEComCmdOdoCanConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComCmdOdoCanConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComCmdOdoCanConf>(),
+        32usize,
+        concat!("Size of: ", stringify!(_SbgEComCmdOdoCanConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComCmdOdoCanConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComCmdOdoCanConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).options) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdOdoCanConf),
+            "::",
+            stringify!(options)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).canId) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdOdoCanConf),
+            "::",
+            stringify!(canId)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).startBit) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdOdoCanConf),
+            "::",
+            stringify!(startBit)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).dataSize) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdOdoCanConf),
+            "::",
+            stringify!(dataSize)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).scale) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdOdoCanConf),
+            "::",
+            stringify!(scale)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).offset) as usize - ptr as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdOdoCanConf),
+            "::",
+            stringify!(offset)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).minValue) as usize - ptr as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdOdoCanConf),
+            "::",
+            stringify!(minValue)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).maxValue) as usize - ptr as usize },
+        28usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComCmdOdoCanConf),
+            "::",
+            stringify!(maxValue)
+        )
+    );
+}
+#[doc = " Holds all necessary information for CAN Odometer parameter configuration.\n This format is very similar to info contained in a DBC file."]
+pub type SbgEComCmdOdoCanConf = _SbgEComCmdOdoCanConf;
+extern "C" {
+    #[doc = " For quadrature and/or pulse based odometer, retrieve the configuration.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpOdometerConf\t\t\t\tPointer to a SbgEComOdoConf struct to hold configuration of the odometer module.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOdoGetConf(
+        pHandle: *mut SbgEComHandle,
+        pOdometerConf: *mut SbgEComOdoConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " For quadrature and/or pulse base odometer, define the configuration.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpOdometerConf\t\t\t\tPointer to a SbgEComOdoConf struct holding configuration for the odometer module.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOdoSetConf(
+        pHandle: *mut SbgEComHandle,
+        pOdometerConf: *const SbgEComOdoConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the lever arm applicable for both quadrature or CAN based odometer.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpLeverArm\t\t\t\t\tArray of three values, one for each axis.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOdoGetLeverArm(
+        pHandle: *mut SbgEComHandle,
+        pLeverArm: *mut f32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the lever arm applicable for both quadrature or CAN based odometer.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpLeverArm\t\t\t\t\tArray of three values, one for each axis.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOdoSetLeverArm(
+        pHandle: *mut SbgEComHandle,
+        pLeverArm: *const f32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the velocity rejection configuration for both quadrature or CAN based odometer.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpRejectConf\t\t\t\t\tPointer to a SbgEComOdoRejectionConf struct to hold rejection configuration of the odometer module.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOdoGetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *mut SbgEComOdoRejectionConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the velocity rejection configuration for both quadrature or CAN based odometer.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpRejectConf\t\t\t\t\tPointer to a SbgEComOdoRejectionConf struct holding rejection configuration for the odometer module.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOdoSetRejection(
+        pHandle: *mut SbgEComHandle,
+        pRejectConf: *const SbgEComOdoRejectionConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the CAN odometer configuration for a specific CAN information channel\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tcanChannel\t\t\t\t\tThe CAN channel to retreive associated DBC configuration.\n \\param[out]\tpOdoCanConf\t\t\t\t\tStruct to hold configuration of the CAN odometer.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOdoCanGetConf(
+        pHandle: *mut SbgEComHandle,
+        canChannel: SbgEComCmdOdoCanChannel,
+        pOdoCanConf: *mut SbgEComCmdOdoCanConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the CAN odometer configuration for a specific CAN information channel\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tcanChannel\t\t\t\t\tThe CAN channel to define associated DBC configuration.\n \\param[in]\tpOdoCanConf\t\t\t\t\tStruct holding configuration for the CAN odometer.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOdoCanSetConf(
+        pHandle: *mut SbgEComHandle,
+        canChannel: SbgEComCmdOdoCanChannel,
+        pOdoCanConf: *const SbgEComCmdOdoCanConf,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Main output port."]
+pub const _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A: _SbgEComOutputPort = 0;
+#[doc = "< Secondary output port only available on Ellipse-E devices"]
+pub const _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_C: _SbgEComOutputPort = 2;
+#[doc = "< Secondary output port only available on B1 devices"]
+pub const _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_E: _SbgEComOutputPort = 4;
+#[doc = " List of ouput ports available."]
+pub type _SbgEComOutputPort = ::core::ffi::c_uint;
+#[doc = " List of ouput ports available."]
+pub use self::_SbgEComOutputPort as SbgEComOutputPort;
+#[doc = "< This output is disabled."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DISABLED: _SbgEComOutputMode = 0;
+#[doc = "< Output the message every main loop (ie 200 Hz)."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_MAIN_LOOP: _SbgEComOutputMode = 1;
+#[doc = "< Output the message every 2 main loops (ie 100 Hz)."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_2: _SbgEComOutputMode = 2;
+#[doc = "< Output the message every 4 main loops (ie 50 Hz)."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_4: _SbgEComOutputMode = 4;
+#[doc = "< Output the message every 4 main loops (ie 40 Hz)."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_5: _SbgEComOutputMode = 5;
+#[doc = "< Output the message every 8 main loops (ie 25 Hz)."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8: _SbgEComOutputMode = 8;
+#[doc = "< Output the message every 10 main loops (ie 20 Hz)."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_10: _SbgEComOutputMode = 10;
+#[doc = "< Output the message every 20 main loops (ie 10 Hz)."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20: _SbgEComOutputMode = 20;
+#[doc = "< Output the message every 40 main loops (ie 5 Hz)."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40: _SbgEComOutputMode = 40;
+#[doc = "< Output the message every 200 main loops (ie 1 Hz)."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200: _SbgEComOutputMode = 200;
+#[doc = "< Output the message on a Pulse Per Second event."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_PPS: _SbgEComOutputMode = 10000;
+#[doc = "< Output sent when a new data is available."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_NEW_DATA: _SbgEComOutputMode = 10001;
+#[doc = "< Output the message when a Sync A is received."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_EVENT_IN_A: _SbgEComOutputMode = 10003;
+#[doc = "< Output the message when a Sync B is received."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_EVENT_IN_B: _SbgEComOutputMode = 10004;
+#[doc = "< Output the message when a Sync C is received."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_EVENT_IN_C: _SbgEComOutputMode = 10005;
+#[doc = "< Output the message when a Sync D is received."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_EVENT_IN_D: _SbgEComOutputMode = 10006;
+#[doc = "< Output the message when a Sync E is received."]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_EVENT_IN_E: _SbgEComOutputMode = 10007;
+#[doc = "< Output the message in the 1KHz IMU loop"]
+pub const _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_HIGH_FREQ_LOOP: _SbgEComOutputMode = 20001;
+#[doc = " List of output modes available."]
+pub type _SbgEComOutputMode = ::core::ffi::c_uint;
+#[doc = " List of output modes available."]
+pub use self::_SbgEComOutputMode as SbgEComOutputMode;
+#[doc = "< Output measurements at the IMU location."]
+pub const _SbgEComOutputMonitoringPoint_SBG_ECOM_OUTPUT_MONITORING_POINT_IMU:
+    _SbgEComOutputMonitoringPoint = 0;
+#[doc = "< Output measurements at the center of rotation."]
+pub const _SbgEComOutputMonitoringPoint_SBG_ECOM_OUTPUT_MONITORING_POINT_COG:
+    _SbgEComOutputMonitoringPoint = 1;
+#[doc = "< Output measurements at the user deported location 1 (only for Ekinox and Apogee)."]
+pub const _SbgEComOutputMonitoringPoint_SBG_ECOM_OUTPUT_MONITORING_POINT_1:
+    _SbgEComOutputMonitoringPoint = 2;
+#[doc = "< Output measurements at the user deported location 2 (only for Ekinox and Apogee)."]
+pub const _SbgEComOutputMonitoringPoint_SBG_ECOM_OUTPUT_MONITORING_POINT_2:
+    _SbgEComOutputMonitoringPoint = 3;
+#[doc = "< Output measurements at the user deported location 3 (only for Ekinox and Apogee)."]
+pub const _SbgEComOutputMonitoringPoint_SBG_ECOM_OUTPUT_MONITORING_POINT_3:
+    _SbgEComOutputMonitoringPoint = 4;
+#[doc = "< Number of output monitoring points."]
+pub const _SbgEComOutputMonitoringPoint_SBG_ECOM_OUTPUT_MONITORING_NUM:
+    _SbgEComOutputMonitoringPoint = 5;
+#[doc = " Defines which monitoring point to use for an output port.\n This feature enabled deporting measurements at a specific monitoring point."]
+pub type _SbgEComOutputMonitoringPoint = ::core::ffi::c_uint;
+#[doc = " Defines which monitoring point to use for an output port.\n This feature enabled deporting measurements at a specific monitoring point."]
+pub use self::_SbgEComOutputMonitoringPoint as SbgEComOutputMonitoringPoint;
+extern "C" {
+    #[doc = " Retrieve the configuration of one the message on one of the output interfaces.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\toutputPort\t\t\t\t\tThe output port of the device for the log concerned.\n \\param[in]\tclassId\t\t\t\t\t\tThe class of the concerned log.\n \\param[in]\tmsgId\t\t\t\t\t\tThe id of the concerned log.\n \\param[out]\tpMode\t\t\t\t\t\tPointer to a SbgEComOutputMode to contain the current output mode of the message.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOutputGetConf(
+        pHandle: *mut SbgEComHandle,
+        outputPort: SbgEComOutputPort,
+        classId: SbgEComClass,
+        msgId: SbgEComMsgId,
+        pMode: *mut SbgEComOutputMode,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the configuration of one the message on one of the output interfaces.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\toutputPort\t\t\t\t\tThe output port of the device for the log concerned.\n \\param[in]\tclassId\t\t\t\t\t\tThe class of the concerned log.\n \\param[in]\tmsgId\t\t\t\t\t\tThe id of the concerned log.\n \\param[in]\tmode\t\t\t\t\t\tNew output mode to set.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOutputSetConf(
+        pHandle: *mut SbgEComHandle,
+        outputPort: SbgEComOutputPort,
+        classId: SbgEComClass,
+        msgId: SbgEComMsgId,
+        mode: SbgEComOutputMode,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the enable of one of the output class message on one of the output interfaces.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\toutputPort\t\t\t\t\tThe output port.\n \\param[in]\tclassId\t\t\t\t\t\tThe class to enable or disable.\n \\param[out]\tpEnable\t\t\t\t\t\tTRUE to enable message output of this class, FALSE to disable it.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOutputClassGetEnable(
+        pHandle: *mut SbgEComHandle,
+        outputPort: SbgEComOutputPort,
+        classId: SbgEComClass,
+        pEnable: *mut bool,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the enable of one of the output class message on one of the output interfaces.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\toutputPort\t\t\t\t\tThe output port.\n \\param[in]\tclassId\t\t\t\t\t\tThe class to enable or disable.\n \\param[in]\tenable\t\t\t\t\t\tTRUE to enable message output of this class, FALSE to disable it.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOutputClassSetEnable(
+        pHandle: *mut SbgEComHandle,
+        outputPort: SbgEComOutputPort,
+        classId: SbgEComClass,
+        enable: bool,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the configuration of one the message on the CAN interface.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tinternalId\t\t\t\t\tThe internal message id.\n \\param[out]\tpMode\t\t\t\t\t\tPointer to a SbgEComOutputMode to contain the current output mode of the message.\n \\param[out]\tpUserId\t\t\t\t\t\tThe user defined message id.\n \\param[out]\tpExtended\t\t\t\t\tTRUE if the user id uses the extended format.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdCanOutputGetConf(
+        pHandle: *mut SbgEComHandle,
+        internalId: SbgECanMessageId,
+        pMode: *mut SbgEComOutputMode,
+        pUserId: *mut u32,
+        pExtended: *mut bool,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the configuration of one the message on the CAN interface\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tinternalId\t\t\t\t\tThe internal message id.\n \\param[in]\tmode\t\t\t\t\t\tPointer to a SbgEComOutputMode containing the new output mode of the message.\n \\param[in]\tuserId\t\t\t\t\t\tThe user defined message id.\n \\param[in]\textended\t\t\t\t\tTRUE if the user id uses the extended format.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdCanOutputSetConf(
+        pHandle: *mut SbgEComHandle,
+        internalId: SbgECanMessageId,
+        mode: SbgEComOutputMode,
+        userId: u32,
+        extended: bool,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the NMEA talker id of one of the output interfaces.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\toutputPort\t\t\t\t\tThe output port of the device for the log concerned.\n \\param[out]\tpNmeaTalkerId\t\t\t\tA 2-char array to contain the nmea talker id.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOutputGetNmeaTalkerId(
+        pHandle: *mut SbgEComHandle,
+        outputPort: SbgEComOutputPort,
+        pNmeaTalkerId: *mut ::core::ffi::c_char,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the NMEA talker id of one of the output interfaces.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\toutputPort\t\t\t\t\tThe output port of the device for the log concerned.\n \\param[out]\tpNmeaTalkerId\t\t\t\tA 2-char array containint the new nmea talker id.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdOutputSetNmeaTalkerId(
+        pHandle: *mut SbgEComHandle,
+        outputPort: SbgEComOutputPort,
+        pNmeaTalkerId: *const ::core::ffi::c_char,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Module connected on PORT_A."]
+pub const _SbgEComModulePortAssignment_SBG_ECOM_MODULE_PORT_A: _SbgEComModulePortAssignment = 0;
+#[doc = "< Module connected on PORT_B."]
+pub const _SbgEComModulePortAssignment_SBG_ECOM_MODULE_PORT_B: _SbgEComModulePortAssignment = 1;
+#[doc = "< Module connected on PORT_C."]
+pub const _SbgEComModulePortAssignment_SBG_ECOM_MODULE_PORT_C: _SbgEComModulePortAssignment = 2;
+#[doc = "< Module connected on PORT_D."]
+pub const _SbgEComModulePortAssignment_SBG_ECOM_MODULE_PORT_D: _SbgEComModulePortAssignment = 3;
+#[doc = "< Module connected on PORT_E."]
+pub const _SbgEComModulePortAssignment_SBG_ECOM_MODULE_PORT_E: _SbgEComModulePortAssignment = 4;
+#[doc = "< Module is connected internally."]
+pub const _SbgEComModulePortAssignment_SBG_ECOM_MODULE_INTERNAL: _SbgEComModulePortAssignment = 5;
+#[doc = "< Module is disabled."]
+pub const _SbgEComModulePortAssignment_SBG_ECOM_MODULE_DISABLED: _SbgEComModulePortAssignment = 255;
+#[doc = " Ports available for the modules."]
+pub type _SbgEComModulePortAssignment = ::core::ffi::c_uint;
+#[doc = " Ports available for the modules."]
+pub use self::_SbgEComModulePortAssignment as SbgEComModulePortAssignment;
+#[doc = "< Module is disabled."]
+pub const _SbgEComModuleSyncAssignment_SBG_ECOM_MODULE_SYNC_DISABLED: _SbgEComModuleSyncAssignment =
+    0;
+#[doc = "< Synchronization is done using SYNC_IN_A pin."]
+pub const _SbgEComModuleSyncAssignment_SBG_ECOM_MODULE_SYNC_IN_A: _SbgEComModuleSyncAssignment = 1;
+#[doc = "< Synchronization is done using SYNC_IN_B pin."]
+pub const _SbgEComModuleSyncAssignment_SBG_ECOM_MODULE_SYNC_IN_B: _SbgEComModuleSyncAssignment = 2;
+#[doc = "< Synchronization is done using SYNC_IN_C pin."]
+pub const _SbgEComModuleSyncAssignment_SBG_ECOM_MODULE_SYNC_IN_C: _SbgEComModuleSyncAssignment = 3;
+#[doc = "< Synchronization is done using SYNC_IN_D pin."]
+pub const _SbgEComModuleSyncAssignment_SBG_ECOM_MODULE_SYNC_IN_D: _SbgEComModuleSyncAssignment = 4;
+#[doc = "< Synchronization is internal."]
+pub const _SbgEComModuleSyncAssignment_SBG_ECOM_MODULE_SYNC_INTERNAL: _SbgEComModuleSyncAssignment =
+    5;
+#[doc = "< Synchronization signal is output on SYNC_OUT_A."]
+pub const _SbgEComModuleSyncAssignment_SBG_ECOM_MODULE_SYNC_OUT_A: _SbgEComModuleSyncAssignment = 6;
+#[doc = "< Synchronization signal is output on SYNC_OUT_B."]
+pub const _SbgEComModuleSyncAssignment_SBG_ECOM_MODULE_SYNC_OUT_B: _SbgEComModuleSyncAssignment = 7;
+#[doc = " Synchronization signals available for the modules."]
+pub type _SbgEComModuleSyncAssignment = ::core::ffi::c_uint;
+#[doc = " Synchronization signals available for the modules."]
+pub use self::_SbgEComModuleSyncAssignment as SbgEComModuleSyncAssignment;
+#[doc = "< Odometer is disabled."]
+pub const _SbgEComOdometerPinAssignment_SBG_ECOM_MODULE_ODO_DISABLED:
+    _SbgEComOdometerPinAssignment = 0;
+#[doc = "< Odometer connected only to ODO_A (unidirectional).."]
+pub const _SbgEComOdometerPinAssignment_SBG_ECOM_MODULE_ODO_A: _SbgEComOdometerPinAssignment = 1;
+#[doc = "< Odometer connected to both ODO_A (signal A) and ODO_B (Signal B or direction) for bidirectional odometer.."]
+pub const _SbgEComOdometerPinAssignment_SBG_ECOM_MODULE_ODO_A_B: _SbgEComOdometerPinAssignment = 2;
+#[doc = "< Vehicle odometer using CAN (OBD-II)."]
+pub const _SbgEComOdometerPinAssignment_SBG_ECOM_MODULE_ODO_CAN: _SbgEComOdometerPinAssignment = 3;
+#[doc = " List of configurations available for the odometer."]
+pub type _SbgEComOdometerPinAssignment = ::core::ffi::c_uint;
+#[doc = " List of configurations available for the odometer."]
+pub use self::_SbgEComOdometerPinAssignment as SbgEComOdometerPinAssignment;
+#[doc = "< Should be used as a default when other profiles do not apply"]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_GENERAL_PURPOSE:
+    _SbgEComMotionProfileStdIds = 1;
+#[doc = "< Dedicated to car applications with strict lateral velocity constraints."]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_AUTOMOTIVE:
+    _SbgEComMotionProfileStdIds = 2;
+#[doc = "< Used in marine and underwater applications"]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_MARINE: _SbgEComMotionProfileStdIds =
+    3;
+#[doc = "< For fixed wings aircraft"]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_AIRPLANE:
+    _SbgEComMotionProfileStdIds = 4;
+#[doc = "< For rotary wing aircraft"]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_HELICOPTER:
+    _SbgEComMotionProfileStdIds = 5;
+#[doc = "< Pedestrian applications using foot odometry"]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_PEDESTRIAN:
+    _SbgEComMotionProfileStdIds = 6;
+#[doc = "< For rotary wing UAVs that have low dynamics"]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_UAV_ROTARY_WING:
+    _SbgEComMotionProfileStdIds = 7;
+#[doc = "< For vibrating applications with low dynamics and no specific travel direction"]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_HEAVY_MACHINERY:
+    _SbgEComMotionProfileStdIds = 8;
+#[doc = "< Static motion profile that delivers stable results for 27/7 operations."]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_STATIC: _SbgEComMotionProfileStdIds =
+    9;
+#[doc = "< Truck applications with medium lateral velocity constraints."]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_TRUCK: _SbgEComMotionProfileStdIds =
+    10;
+#[doc = "< Train applications with relaxed lateral velocity constraints."]
+pub const _SbgEComMotionProfileStdIds_SBG_ECOM_MOTION_PROFILE_RAILWAY: _SbgEComMotionProfileStdIds =
+    11;
+#[doc = " This enum defines the different motion profile IDs available in standard"]
+pub type _SbgEComMotionProfileStdIds = ::core::ffi::c_uint;
+#[doc = " This enum defines the different motion profile IDs available in standard"]
+pub use self::_SbgEComMotionProfileStdIds as SbgEComMotionProfileStdIds;
+#[doc = " Helper structure for module assignments"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComAidingAssignConf {
+    #[doc = "< GNSS module port assignment."]
+    pub gps1Port: SbgEComModulePortAssignment,
+    #[doc = "< GNSS module sync assignment."]
+    pub gps1Sync: SbgEComModuleSyncAssignment,
+    #[doc = "< Port on which the DVL is connected"]
+    pub dvlPort: SbgEComModulePortAssignment,
+    #[doc = "< Optional sync signal that could be used to time stamp the DVL data."]
+    pub dvlSync: SbgEComModuleSyncAssignment,
+    #[doc = "< RTCM input port assignment for IGNG-N DGPS."]
+    pub rtcmPort: SbgEComModulePortAssignment,
+    #[doc = "< Port on which Air Data aiding is connected."]
+    pub airDataPort: SbgEComModulePortAssignment,
+    #[doc = "< Odometer module pin assignment."]
+    pub odometerPinsConf: SbgEComOdometerPinAssignment,
+}
+#[test]
+fn bindgen_test_layout__SbgEComAidingAssignConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComAidingAssignConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComAidingAssignConf>(),
+        28usize,
+        concat!("Size of: ", stringify!(_SbgEComAidingAssignConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComAidingAssignConf>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComAidingAssignConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gps1Port) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAidingAssignConf),
+            "::",
+            stringify!(gps1Port)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).gps1Sync) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAidingAssignConf),
+            "::",
+            stringify!(gps1Sync)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).dvlPort) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAidingAssignConf),
+            "::",
+            stringify!(dvlPort)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).dvlSync) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAidingAssignConf),
+            "::",
+            stringify!(dvlSync)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).rtcmPort) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAidingAssignConf),
+            "::",
+            stringify!(rtcmPort)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).airDataPort) as usize - ptr as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAidingAssignConf),
+            "::",
+            stringify!(airDataPort)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).odometerPinsConf) as usize - ptr as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComAidingAssignConf),
+            "::",
+            stringify!(odometerPinsConf)
+        )
+    );
+}
+#[doc = " Helper structure for module assignments"]
+pub type SbgEComAidingAssignConf = _SbgEComAidingAssignConf;
+#[doc = " Helper structure for sensor alignment details"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComSensorAlignmentInfo {
+    #[doc = "< Sensor X axis direction in vehicle"]
+    pub axisDirectionX: SbgEComAxisDirection,
+    #[doc = "< Sensor Y axis direction in vehicle"]
+    pub axisDirectionY: SbgEComAxisDirection,
+    #[doc = "< Roll angle fine misalignment in rad"]
+    pub misRoll: f32,
+    #[doc = "< Pitch angle fine misalignment in rad"]
+    pub misPitch: f32,
+    #[doc = "< Yaw angle fine misalignment in rad"]
+    pub misYaw: f32,
+}
+#[test]
+fn bindgen_test_layout__SbgEComSensorAlignmentInfo() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComSensorAlignmentInfo> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComSensorAlignmentInfo>(),
+        20usize,
+        concat!("Size of: ", stringify!(_SbgEComSensorAlignmentInfo))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComSensorAlignmentInfo>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_SbgEComSensorAlignmentInfo))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).axisDirectionX) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSensorAlignmentInfo),
+            "::",
+            stringify!(axisDirectionX)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).axisDirectionY) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSensorAlignmentInfo),
+            "::",
+            stringify!(axisDirectionY)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).misRoll) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSensorAlignmentInfo),
+            "::",
+            stringify!(misRoll)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).misPitch) as usize - ptr as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSensorAlignmentInfo),
+            "::",
+            stringify!(misPitch)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).misYaw) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComSensorAlignmentInfo),
+            "::",
+            stringify!(misYaw)
+        )
+    );
+}
+#[doc = " Helper structure for sensor alignment details"]
+pub type SbgEComSensorAlignmentInfo = _SbgEComSensorAlignmentInfo;
+#[doc = " Helper structure for sensor Initial condition details"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _SbgEComInitConditionConf {
+    #[doc = "< Initial latitude in °"]
+    pub latitude: f64,
+    #[doc = "< Initial longitude in °"]
+    pub longitude: f64,
+    #[doc = "< Initial altitude above MSL in meters"]
+    pub altitude: f64,
+    #[doc = "< Initial Year"]
+    pub year: u16,
+    #[doc = "< Initial month"]
+    pub month: u8,
+    #[doc = "< Initial day"]
+    pub day: u8,
+}
+#[test]
+fn bindgen_test_layout__SbgEComInitConditionConf() {
+    const UNINIT: ::core::mem::MaybeUninit<_SbgEComInitConditionConf> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_SbgEComInitConditionConf>(),
+        32usize,
+        concat!("Size of: ", stringify!(_SbgEComInitConditionConf))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_SbgEComInitConditionConf>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_SbgEComInitConditionConf))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).latitude) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComInitConditionConf),
+            "::",
+            stringify!(latitude)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).longitude) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComInitConditionConf),
+            "::",
+            stringify!(longitude)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).altitude) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComInitConditionConf),
+            "::",
+            stringify!(altitude)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).year) as usize - ptr as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComInitConditionConf),
+            "::",
+            stringify!(year)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).month) as usize - ptr as usize },
+        26usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComInitConditionConf),
+            "::",
+            stringify!(month)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).day) as usize - ptr as usize },
+        27usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_SbgEComInitConditionConf),
+            "::",
+            stringify!(day)
+        )
+    );
+}
+#[doc = " Helper structure for sensor Initial condition details"]
+pub type SbgEComInitConditionConf = _SbgEComInitConditionConf;
+extern "C" {
+    #[doc = " Set the motion profile id used to tune the Kalman Filter to a specific application\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tmodelId\t\t\t\t\t\tMotion profile id to set\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSensorSetMotionProfileId(
+        pHandle: *mut SbgEComHandle,
+        modelId: SbgEComMotionProfileStdIds,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the motion profile id.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpModelId\t\t\t\t\tRetrieved motion profile id\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSensorGetMotionProfileId(
+        pHandle: *mut SbgEComHandle,
+        pModelId: *mut SbgEComMotionProfileStdIds,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the initial conditions settings.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpConf\t\t\t\t\t\tPointer to a SbgEComInitConditionConf to contain the current initial conditions settings.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSensorGetInitCondition(
+        pHandle: *mut SbgEComHandle,
+        pConf: *mut SbgEComInitConditionConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the initial condition configuration.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpConf\t\t\t\t\t\tPointer to a SbgEComInitConditionConf containing the new initial condition configuration.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSensorSetInitCondition(
+        pHandle: *mut SbgEComHandle,
+        pConf: *const SbgEComInitConditionConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the assignment of the aiding sensors.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpConf\t\t\t\t\t\tPointer to a SbgEComAidingAssignConf to contain the current assignment of the aiding sensors.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSensorGetAidingAssignment(
+        pHandle: *mut SbgEComHandle,
+        pConf: *mut SbgEComAidingAssignConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the assignment of the aiding sensors.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpConf\t\t\t\t\t\tPointer to a SbgEComAidingAssignConf containing the new assignment of the aiding sensors.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSensorSetAidingAssignment(
+        pHandle: *mut SbgEComHandle,
+        pConf: *const SbgEComAidingAssignConf,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve the alignment and lever arm configuration of the sensor.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[out]\tpAlignConf\t\t\t\t\tPointer to a SbgEComSensorAlignmentInfo struct to hold alignment configuration of the sensor.\n \\param[out]\tpLeverArm\t\t\t\t\tPointer to a table to contain lever arm X, Y, Z components in meters.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSensorGetAlignmentAndLeverArm(
+        pHandle: *mut SbgEComHandle,
+        pAlignConf: *mut SbgEComSensorAlignmentInfo,
+        pLeverArm: *mut f32,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Set the alignment and lever arm configuration of the sensor.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpAlignConf\t\t\t\t\tPointer to a SbgEComSensorAlignmentInfo struct holding alignment configuration for the sensor.\n \\param[in]\tpLeverArm\t\t\t\t\tPointer to a table containing lever arm X, Y, Z components in meters.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSensorSetAlignmentAndLeverArm(
+        pHandle: *mut SbgEComHandle,
+        pAlignConf: *const SbgEComSensorAlignmentInfo,
+        pLeverArm: *const f32,
+    ) -> SbgErrorCode;
+}
+#[doc = "< Only reboot the device."]
+pub const _SbgEComSettingsAction_SBG_ECOM_REBOOT_ONLY: _SbgEComSettingsAction = 0;
+#[doc = "< Save the settings to non-volatile memory and then reboot the device."]
+pub const _SbgEComSettingsAction_SBG_ECOM_SAVE_SETTINGS: _SbgEComSettingsAction = 1;
+#[doc = "< Restore default settings, save them to non-volatile memory and reboot the device."]
+pub const _SbgEComSettingsAction_SBG_ECOM_RESTORE_DEFAULT_SETTINGS: _SbgEComSettingsAction = 2;
+#[doc = " Defintion of all the settings actions available."]
+pub type _SbgEComSettingsAction = ::core::ffi::c_uint;
+#[doc = " Defintion of all the settings actions available."]
+pub use self::_SbgEComSettingsAction as SbgEComSettingsAction;
+extern "C" {
+    #[doc = " Send a command to execute a specific system action to reboot/save/restore default settings.\n\n Execute one of the available settings action:\n\t- SBG_ECOM_REBOOT_ONLY : Only reboot the device.\n\t- SBG_ECOM_SAVE_SETTINGS : Save the settings to non-volatile memory and then reboot the device.\n\t- SBG_ECOM_RESTORE_DEFAULT_SETTINGS : Restore default settings, save them to non-volatile memory and reboot the device.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\taction\t\t\t\t\t\tOne of the available SbgEComSettingsAction.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdSettingsAction(
+        pHandle: *mut SbgEComHandle,
+        action: SbgEComSettingsAction,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Send a complete set of settings to the device and store them into the FLASH memory.\n\n The device will reboot automatically to use the new settings.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpBuffer\t\t\t\t\t\tRead only buffer containing the settings.\n \\param[in]\tsize\t\t\t\t\t\tSize of the buffer.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdImportSettings(
+        pHandle: *mut SbgEComHandle,
+        pBuffer: *const ::core::ffi::c_void,
+        size: usize,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Retrieve a complete set of settings from the device as a buffer.\n\n \\param[in]\tpHandle\t\t\t\t\t\tA valid sbgECom handle.\n \\param[in]\tpBuffer\t\t\t\t\t\tAllocated buffer that can hold the received settings.\n \\param[out]\tpSize\t\t\t\t\t\tThe number of bytes that have been stored into pBuffer.\n \\param[in]\tmaxSize\t\t\t\t\t\tThe maximum buffer size in bytes that can be stored into pBuffer.\n \\return\t\t\t\t\t\t\t\t\tSBG_NO_ERROR if the command has been executed successfully."]
+    pub fn sbgEComCmdExportSettings(
+        pHandle: *mut SbgEComHandle,
+        pBuffer: *mut ::core::ffi::c_void,
+        pSize: *mut usize,
+        maxSize: usize,
+    ) -> SbgErrorCode;
+}
+extern "C" {
+    #[doc = " Returns an integer representing the version of the sbgECom library.\n\n \\return\t\t\t\t\t\t\t\t\t\tAn integer representing the version of the sbgECom library.<br>"]
+    pub fn sbgEComGetVersion() -> u32;
+}
+extern "C" {
+    #[doc = " Retrieve the sbgECom library version as a string (1.0.443-stable).\n\n \\return\t\t\t\t\t\t\t\t\t\tNull terminated string that contains the sbgECom library version."]
+    pub fn sbgEComGetVersionAsString() -> *const ::core::ffi::c_char;
 }
