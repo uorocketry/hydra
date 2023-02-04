@@ -1,0 +1,3 @@
+- uses mode 3 by default
+- 8 bit command
+- followed by 8 bit/ 16 bit/ 24 bit data
