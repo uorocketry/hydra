@@ -28,8 +28,6 @@ use systick_monotonic::*;
 /* SBG */
 use sbg_rs;
 use sbg_rs::sbg::SBG_COUNT;
-use cortex_m::interrupt::Mutex;
-// use cortex_m_rt::interrupt;
 use pac::interrupt::TC2;
 /* Type Def */
 type Pads = uart::PadsFromIds<Sercom1, IoSet1, PA17, PA16>;
@@ -55,7 +53,7 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
-        sbg: Mutex<sbg_rs::sbg::SBG<Uart<ConfigCDC, Duplex>>>,
+        sbg: sbg_rs::sbg::SBG<Uart<ConfigCDC, Duplex>>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -162,8 +160,7 @@ mod app {
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
-        // Put the SBG object into a mutex 
-        let mut sbg = Mutex::new(sbg_rs::sbg::SBG::new(uart_cdc));
+        let mut sbg = sbg_rs::sbg::SBG::new(uart_cdc);
         rtic::pend(pac::Interrupt::TC2);
         (
             Shared {
@@ -245,7 +242,6 @@ mod app {
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
             cx.local.led.toggle()?;
-
             let time = monotonics::now().duration_since_epoch().to_secs();
             info!("Seconds since epoch: {}", time);
 

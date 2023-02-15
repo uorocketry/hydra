@@ -10,9 +10,10 @@ edition = "2021"
 embedded-hal = "0.2.7"
 nb = "1.0.0"
 defmt = "0.3.2"
-atsamd-hal = { workspace = true }
 cortex-m = { workspace = true }
 cortex-m-rt = "^0.7.0"
+messages = { path = "../../libraries/messages" }
+
 
 [build-dependencies]
 #tinyrlibc = "0.3.0"

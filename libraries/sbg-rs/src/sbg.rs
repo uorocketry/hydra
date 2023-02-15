@@ -1,15 +1,13 @@
-use core::ffi::{c_char, c_void, VaListImpl};
+use core::ffi::{c_char, c_void, VaListImpl, CStr};
 use core::ptr;
-use atsamd_hal::timer::TimerCounter2;
 use nb::{block, Error};
-use defmt::{error, info, warn, debug};
+use defmt::{error, info, warn, debug, trace};
 use core::ptr::{null, null_mut};
-use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING};
-use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType};
-use embedded_hal::{serial, serial::Read, serial::Write, timer::CountDown, timer::Periodic};
+use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle};
+use crate::bindings::{_SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo};
+use embedded_hal::serial::{Read, Write};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
-use atsamd_hal::rtc;
-use atsamd_hal::pac::TC2;
+use messages::sensor::Sbg;
 
 /**
  * Represents the number of milliseconds that have passed.
@@ -24,6 +22,7 @@ struct UARTSBGInterface {
 pub struct SBG<T> where T: Read<u8> + Write<u8> {
     UARTSBGInterface: UARTSBGInterface,
     serial_device: T,
+    handle: *mut _SbgEComHandle
 } 
 
 impl<T> SBG<T> where T: Read<u8> + Write<u8> {
@@ -55,14 +54,67 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         let handle: *mut _SbgEComHandle = &mut _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
          // initialize with dummy data then pass the handle to the init to be consumed 
         sbgEComInit(handle, interface.interface);
-        let data: &[u8;3] = &[1,2,3]; // simple test data 
-        sbgEComProtocolSend(&mut protocol, 0, 0, data.as_ptr() as *const c_void, 3);} // create a safe wrapper
+        
         SBG {
             UARTSBGInterface: interface,
             serial_device,
+            handle,
+        }
         }
     }
+    /**
+     * Reads a data frame from the SBG. 
+     */
+    pub unsafe fn readData(&mut self) -> Sbg {
+        sbgEComHandle(self.handle);
+    
+        Sbg { accel: 8.0, speed: 8.0, pressure: 8.0, height: 8.0 }
+    }
 
+    pub unsafe fn getAndPrintProductInfo(pHandle: *mut _SbgEComHandle) -> _SbgErrorCode {
+        let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
+        let mut pInfo: SbgEComDeviceInfo = _SbgEComDeviceInfo {
+            productCode: [0;32],
+            serialNumber: 0,
+            calibationRev: 0,
+            calibrationYear: 0,
+            calibrationMonth: 0,
+            calibrationDay: 0,
+            hardwareRev: 0,
+            firmwareRev: 0,
+        };
+        errorCode = sbgEComCmdGetInfo(pHandle, &mut pInfo);
+        errorCode 
+    }
+
+    pub unsafe fn ellipseMinimalProcess(pInterface: *mut _SbgInterface) -> _SbgErrorCode {
+        let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
+        let mut x: u8 = 10;
+        let pLargeBuffer: *mut u8 = &mut x;
+        // Create some dummy data to be able to create the struct. 
+        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: pInterface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 2 };
+        let handle: *mut _SbgEComHandle = &mut _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
+        errorCode = sbgEComInit(handle, pInterface);
+        if errorCode == _SbgErrorCode_SBG_NO_ERROR {
+            errorCode = Self::getAndPrintProductInfo(handle);
+        }
+
+
+        errorCode
+    }
+
+    pub unsafe fn run(&mut self) -> u32 {
+        let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
+        let mut exitCode: u32 = 0;
+        errorCode = Self::ellipseMinimalProcess(self.UARTSBGInterface.interface);
+        if errorCode == _SbgErrorCode_SBG_NO_ERROR {
+            exitCode = EXIT_SUCCESS;
+        }
+        else {
+            exitCode = EXIT_FAILURE;
+        }
+        return exitCode;
+    }
     /**
      * Allows the SBG interface to read data from the serial ports. 
      * The ability to fill the new buffer must be implemented 
@@ -121,6 +173,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
      */
     #[no_mangle]
     pub unsafe extern "C" fn SbgEComReceiveLogFunc(pHandle: *mut _SbgEComHandle, msgClass: u32, msg: u8, pLogData: *const _SbgBinaryLogData, pUserArg: *mut c_void) -> _SbgErrorCode{
+        
         _SbgErrorCode_SBG_NO_ERROR
     }
 
@@ -170,11 +223,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 }
 
-/**
- * This is very wrong and a Arc<Mutex<SBG<T>>> should be used to facilitate the send!!!!!!
- */
 unsafe impl<T> Send for SBG<T> where T: Read<u8> + Write<u8>  {} 
-
 
 /**
  * To be implemented 
@@ -183,13 +232,22 @@ unsafe impl<T> Send for SBG<T> where T: Read<u8> + Write<u8>  {}
 #[feature(c_variadic)]
 pub unsafe extern "C" fn sbgPlatformDebugLogMsg(pFileName: *const ::core::ffi::c_char, pFunctionName: *const ::core::ffi::c_char, line: u32, pCategory: *const ::core::ffi::c_char, logType: _SbgDebugLogType, errorCode: _SbgErrorCode, pFormat: *const ::core::ffi::c_char, args: ...) {
     // using defmt logs
+    let file = CStr::from_ptr(pFileName).to_str().unwrap();
+    let function = CStr::from_ptr(pFunctionName).to_str().unwrap();
+    let category = CStr::from_ptr(pCategory).to_str().unwrap();
+    let format = CStr::from_ptr(pFormat).to_str().unwrap();
+    // let mut arg_message = *"";
+    // for _ in 0..n {
+    //     arg_message = arg_message + *args.arg::<&str>();
+    // }
+    // let message = format_args!("{} {}", format, arg_message);
     match logType {
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug"),
-        _ => (),
-    }
+        _ => trace!(""),
+    };
 }
 
 /**
@@ -203,9 +261,14 @@ pub unsafe extern "C" fn sbgGetTime() -> u32 {
 
 
 /**
- * To be implemented 
+ * Sleeps the sbg execution 
  */
 #[no_mangle]
 pub unsafe extern "C" fn sbgSleep(ms: u32) {
-    
+    let start_time = SBG_COUNT;
+    while (SBG_COUNT - start_time) < ms {
+        // do nothing 
+    }
 }
+
+
