@@ -11,13 +11,11 @@ use hal::pac;
 use pac::Peripherals;
 use panic_halt as _;
 
-//********* Me ************
 use atsamd_hal::sercom::pad::IoSet1;
 use atsamd_hal::sercom::spi::lengths::U2;
 use atsamd_hal::sercom::spi::{BitOrder, MODE_1};
 use atsamd_hal::sercom::{spi, Sercom0};
 use nb::block;
-//*********************
 
 #[entry]
 fn main() -> ! {

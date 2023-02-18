@@ -23,7 +23,7 @@ use super::lookup_table;
  *  - MOSI:
  */
 pub struct Thermocouple {
-    pub thermo_controller: spi::Duplex,
+    pub thermo_controller: spi,
 }
 
 impl Thermocouple {
@@ -114,6 +114,7 @@ impl Thermocouple {
     pub fn convert_to_c(mv: f64) -> f64 {
         Thermocouple::binary_search(&lookup_table::LOOKUP_TABLE, mv, 0, 1807)
     }
+
     pub fn binary_search(arr: &[[f64; 2]; 1808], value: f64, lower: usize, upper: usize) -> f64 {
         if lower > upper {
             -1.0
@@ -131,11 +132,11 @@ impl Thermocouple {
             }
             // right side
             else if value > arr[mid][0] {
-                binary_search(arr, value, mid + 1, upper)
+                Thermocouple::binary_search(arr, value, mid + 1, upper)
             }
             // left side
             else {
-                binary_search(arr, value, lower, mid - 1)
+                Thermocouple::binary_search(arr, value, lower, mid - 1)
             }
         }
     }
@@ -144,7 +145,7 @@ impl Thermocouple {
         block!(self.thermo_controller.send(msg)).expect("SPI send failed.");
     }
 
-    pub fn read(&mut self) -> u16 {
+    pub fn read(&mut self) {
         block!(self.thermo_controller.read()).expect("SPI receive failed.");
     }
 }
