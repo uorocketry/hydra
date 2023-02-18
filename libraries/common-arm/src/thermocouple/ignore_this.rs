@@ -77,4 +77,3 @@ fn main() -> ! {
         led.set_low().unwrap();
         delay.delay_ms(1000_u16);
     }
-}

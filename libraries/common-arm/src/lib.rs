@@ -7,7 +7,9 @@
 
 pub mod error;
 pub mod sd;
+pub mod thermocouple;
 
 pub use crate::error::error_manager::ErrorManager;
 pub use crate::error::hydra_error::SpawnError;
 pub use crate::sd::SdInterface;
+pub use crate::thermocouple::thermocouple_interface;
