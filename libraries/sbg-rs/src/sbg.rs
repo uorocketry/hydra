@@ -5,7 +5,7 @@ use core::convert::Infallible;
 use core::sync::atomic::AtomicU32;
 use defmt::{error, info, warn, debug, trace};
 use core::ptr::{null, null_mut};
-use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle, sbgEComCmdOutputSetConf, sbgEComSetReceiveLogCallback};
+use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle, sbgEComCmdOutputSetConf, sbgEComSetReceiveLogCallback, sbgInterfaceSerialCreate};
 use crate::bindings::{_SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo};
 use embedded_hal::serial::{Read, Write};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
@@ -24,7 +24,7 @@ struct UARTSBGInterface {
 pub struct SBG<T> where T: Read<u8> + Write<u8> {
     UARTSBGInterface: UARTSBGInterface,
     serial_device: T,
-    handle: *mut _SbgEComHandle,
+    handle: _SbgEComHandle,
     pub isInitialized: bool,
 } 
 
@@ -33,10 +33,9 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
      * Creates a new SBG instance to control the desired UART peripheral. 
      */
     pub fn new(mut serial_device: T) -> Self {
-        let serial_ptr: *mut T = &mut serial_device;
         let interface = UARTSBGInterface {
             interface: &mut _SbgInterface {
-                handle: serial_ptr.cast(),
+                handle: &mut serial_device as *mut T as *mut c_void,
                 type_: 0,
                 name: [0; 48],
                 pDestroyFunc: Some(SBG::<T>::SbgDestroyFunc),
@@ -54,20 +53,19 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
             Justify the use of unsafe!
          */
 
-        let mut x: u8 = 10;
-        let pLargeBuffer: *mut u8 = &mut x;
-        // Create some dummy data to be able to create the struct. 
-        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 2 };
-        let handle: *mut _SbgEComHandle = &mut _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
-         // initialize with dummy data then pass the handle to the init to be consumed 
-        unsafe {
-            sbgEComInit(handle, interface.interface);
-        }
+        let pLargeBuffer: *mut u8 = null_mut();
+        // // Create some dummy data to be able to create the struct. 
+        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 4096, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
+        let mut handle: _SbgEComHandle = _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
+        //  // initialize with dummy data then pass the handle to the init to be consumed 
+        // unsafe {
+        //     sbgEComInit(&mut handle, interface.interface);
+        // }
         let mut isInitialized = false;
         SBG {
             UARTSBGInterface: interface,
             serial_device,
-            handle,
+            handle: handle,
             isInitialized,
         }
     }
@@ -76,12 +74,21 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
      */
     pub fn readData(&mut self) -> Sbg {
         unsafe {
-            sbgEComHandle(self.handle);
+            sbgEComHandle(&mut self.handle);
         }
         Sbg { accel: 8.0, speed: 8.0, pressure: 8.0, height: 8.0 }
     }
 
     pub fn setup(&mut self) -> u32 {
+        let mut x: u8 = 10;
+        let pLargeBuffer: *mut u8 = &mut x;
+        // Create some dummy data to be able to create the struct. 
+        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: self.UARTSBGInterface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 2 };
+        let mut handle: _SbgEComHandle = _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
+         // initialize with dummy data then pass the handle to the init to be consumed 
+        unsafe {
+            sbgEComInit(&mut handle, self.UARTSBGInterface.interface);
+        }
         let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
 		//
 		// Showcase how to configure some output logs to 25 Hz, don't stop if there is an error
@@ -94,11 +101,10 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
 		// 	// warn!(errorCode, "Unable to configure SBG_ECOM_LOG_IMU_DATA log");
         //     info!("Unable to configure imu log");
 		// }
-		errorCode = sbgEComCmdOutputSetConf(self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, 6, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8 );
+		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, 6, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8 );
         }
 		if errorCode != _SbgErrorCode_SBG_NO_ERROR
 		{
-			// warn!(errorCode, "Unable to configure SBG_ECOM_LOG_EKF_EULER log");
             info!("Unable to configure euler log");
 		}
 
@@ -106,7 +112,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
 		// Define callbacks for received data and display header
         // This should happen in the new method
 		//
-		unsafe {sbgEComSetReceiveLogCallback(self.handle, Some(SBG::<T>::SbgEComReceiveLogFunc), null_mut())};
+		unsafe {sbgEComSetReceiveLogCallback(&mut self.handle, Some(SBG::<T>::SbgEComReceiveLogFunc), null_mut())};
 		info!("Euler Angles display with estimated standard deviation - degrees\n");
         if errorCode == _SbgErrorCode_SBG_NO_ERROR {
             self.isInitialized = true;
@@ -142,7 +148,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         bytesRead = 0;
         let mut array: &mut [u8] = unsafe{from_raw_parts_mut(pBuffer as *mut u8, bytesToRead)};
         loop {
-            if bytesToRead == bytesRead {
+            if bytesRead >= bytesToRead {
                 break;
             }
             let result = unsafe{nb::block!(serial.as_mut().expect("Serial reference").read())};
@@ -150,7 +156,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
 
             match result {
                 Ok(word) => array[bytesRead] = word,
-                Err(_) => (),
+                Err(_) => return _SbgErrorCode_SBG_READ_ERROR,
             }
         }
         _SbgErrorCode_SBG_NO_ERROR

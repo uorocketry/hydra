@@ -44,8 +44,6 @@ use sbg_rs::sbg;
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
 
-    use hal::pac::TC2;
-
     use super::*;
 
     #[shared]
@@ -57,7 +55,6 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
-        // uart_cdc: Uart<ConfigCDC, Duplex>,
         sbg: sbg::SBG<Uart<ConfigSBG, Duplex>>,
     }
 
@@ -86,18 +83,6 @@ mod app {
             pac::gclk::genctrl::SRC_A::DFLL,
             false,
         );
-
-        // // let rtc = hal::rtc::Rtc::count32_mode(rtc, rtc_clock_freq, &mut peripherals.MCLK);
-        // clocks.configure_gclk_divider_and_source(
-        //     pac::gclk::pchctrl::GEN_A::GCLK4,
-        //     32,
-        //     pac::gclk::genctrl::SRC_A::GCLKGEN1,
-        //     false,
-        // );
-        // let gclk4 = clocks.get_gclk(pac::gclk::pchctrl::GEN_A::GCLK4).expect("Could not get gclk 4.");
-        // let tc2_clk = clocks.tc2_tc3(&gclk4).expect("Could not configure the TC2 clock");
-        // let mut sbg_timer = TimerCounter::tc2_(&tc2_clk, peripherals.TC2, &mut peripherals.MCLK);
-        // Could use an interrupt timer
         
         // UART
         let gclk2 = clocks
@@ -182,27 +167,21 @@ mod app {
             padsSBG,
             sbg_clk.freq(),
         )
-        .stop_bits(uart::StopBits::OneBit)
-        .parity(
-            uart::Parity::Odd,
-        )
         .baud(
             115200.hz(),
-            uart::BaudMode::Fractional(uart::Oversampling::Bits8),
+            uart::BaudMode::Fractional(uart::Oversampling::Bits16),
         )
         .enable();
 
+        tc2::spawn().ok();
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
-        tc2::spawn().ok();
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
-        let mut sbg = sbg::SBG::new(uart_sbg);
-        // rtic::pend(pac::Interrupt::TC2);
-        // sbg_timer.enable_interrupt();
-        // sbg_timer.start(Milliseconds(1));
+        let mut sbg: sbg::SBG<Uart<ConfigSBG, Duplex>> = sbg::SBG::new(uart_sbg);
+
         (
             Shared {
                 em: ErrorManager::new(),
@@ -212,20 +191,9 @@ mod app {
         )
     }
 
-    #[idle(local = [sbg])]
+    #[idle]
     fn idle(cx: idle::Context) -> ! {
-        // let mut cdc_uart = cx.local.uart_cdc;
         loop {
-            if cx.local.sbg.isInitialized == false {
-                cx.local.sbg.setup();
-            } else {
-                cx.local.sbg.readData();
-            }
-            // let data = match cdc_uart.read() {
-            //     Ok(data) =>  cdc_uart.write(data).unwrap(),
-            //     Err(_) => (),
-            // };
-                       // rtic::pend(pac::Interrupt::TC2);
             rtic::export::wfi();
         }
     }
@@ -269,10 +237,15 @@ mod app {
         spawn_after!(state_send, 10.secs()).ok();
     }
 
-    #[task(priority = 2, shared = [&em])]
+    #[task(priority = 2, local = [sbg], shared = [&em])]
     fn sensor_send(cx: sensor_send::Context) {   
 
         cx.shared.em.run(|| {
+            if cx.local.sbg.isInitialized == false {
+                cx.local.sbg.setup();
+            } else {
+                cx.local.sbg.readData();
+            }
             let sbg = Sbg {
                 accel: 9.8,
                 speed: 0.0,
@@ -306,7 +279,7 @@ mod app {
         });
     }
 
-    #[task(priority = 1, shared = [&em])] 
+    #[task(priority = 3, shared = [&em])] 
     fn tc2(cx: tc2::Context) {
         cx.shared.em.run(|| {
             unsafe {*SBG_COUNT.get_mut() += 100;}

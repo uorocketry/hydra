@@ -697,6 +697,7 @@ dependencies = [
  "cortex-m-rt",
  "defmt",
  "embedded-hal",
+ "libc",
  "messages",
  "nb 1.0.0",
 ]
