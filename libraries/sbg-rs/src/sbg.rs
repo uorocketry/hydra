@@ -6,7 +6,7 @@ use core::sync::atomic::AtomicU32;
 use defmt::{error, info, warn, debug, trace};
 use core::ptr::{null, null_mut};
 use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle, sbgEComCmdOutputSetConf, sbgEComSetReceiveLogCallback, sbgInterfaceSerialCreate};
-use crate::bindings::{_SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo};
+use crate::bindings::{_SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo};
 use embedded_hal::serial::{Read, Write};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use messages::sensor::Sbg;
@@ -57,10 +57,6 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
         // // Create some dummy data to be able to create the struct. 
         let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 4096, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
         let mut handle: _SbgEComHandle = _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
-        //  // initialize with dummy data then pass the handle to the init to be consumed 
-        // unsafe {
-        //     sbgEComInit(&mut handle, interface.interface);
-        // }
         let mut isInitialized = false;
         SBG {
             UARTSBGInterface: interface,
@@ -80,28 +76,18 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 
     pub fn setup(&mut self) -> u32 {
-        let mut x: u8 = 10;
-        let pLargeBuffer: *mut u8 = &mut x;
-        // Create some dummy data to be able to create the struct. 
-        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: self.UARTSBGInterface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 2 };
-        let mut handle: _SbgEComHandle = _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
-         // initialize with dummy data then pass the handle to the init to be consumed 
-        unsafe {
-            sbgEComInit(&mut handle, self.UARTSBGInterface.interface);
-        }
         let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
-		//
-		// Showcase how to configure some output logs to 25 Hz, don't stop if there is an error
-		//
-		unsafe {
-        // errorCode = sbgEComCmdOutputSetConf(self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, 3, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8 );
+
+        unsafe {
+            errorCode = sbgEComInit(&mut self.handle, self.UARTSBGInterface.interface);
         
-		// if errorCode != _SbgErrorCode_SBG_NO_ERROR
-		// {
-		// 	// warn!(errorCode, "Unable to configure SBG_ECOM_LOG_IMU_DATA log");
-        //     info!("Unable to configure imu log");
-		// }
-		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, 6, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8 );
+		if errorCode != _SbgErrorCode_SBG_NO_ERROR
+		{
+            info!("Unable to initialize the SBG");
+		} else {
+            info!("SBG initialized");
+            errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, 6, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20 );
+        }
         }
 		if errorCode != _SbgErrorCode_SBG_NO_ERROR
 		{
