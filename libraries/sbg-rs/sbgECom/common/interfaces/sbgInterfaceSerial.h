@@ -48,8 +48,13 @@ extern "C" {
 //- Public methods                                                     -//
 //----------------------------------------------------------------------//
 
+<<<<<<< HEAD
 #define SBG_IF_SERIAL_TX_BUFFER_SIZE			(4096)				/*!< Define the transmission buffer size for the serial port. */
 #define SBG_IF_SERIAL_RX_BUFFER_SIZE			(4096)				/*!< Define the reception buffer size for the serial port. */
+=======
+#define SBG_IF_SERIAL_TX_BUFFER_SIZE			(64)					/*!< Define the transmission buffer size for the serial port. */
+#define SBG_IF_SERIAL_RX_BUFFER_SIZE			(64)	
+>>>>>>> fcab824121b2ffa2d1ae2719fd87c314464837fd
 
 /*!
  *	Initialize a serial interface for read and write operations.
