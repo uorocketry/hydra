@@ -691,6 +691,7 @@ dependencies = [
 name = "sbg-rs"
 version = "0.1.0"
 dependencies = [
+ "atsamd-hal",
  "bindgen",
  "cmake",
  "cortex-m",

@@ -1,15 +1,24 @@
-use core::borrow::Borrow;
+use core::borrow::{Borrow, BorrowMut};
 use core::ffi::{c_char, c_void, VaListImpl, CStr};
-use core::ptr;
+use core::{ptr, result};
 use core::convert::Infallible;
 use core::sync::atomic::AtomicU32;
 use defmt::{error, info, warn, debug, trace};
+use hal::gpio::{PA09, PA08, PB17, PB16};
+use hal::sercom::uart::Duplex;
+use hal::sercom::{Sercom0, IoSet1, Sercom5};
+use hal::sercom::uart::{self, EightBit, Uart};
 use core::ptr::{null, null_mut};
 use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle, sbgEComCmdOutputSetConf, sbgEComSetReceiveLogCallback, sbgInterfaceSerialCreate};
-use crate::bindings::{_SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo};
+use crate::bindings::{_SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo};
 use embedded_hal::serial::{Read, Write};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use messages::sensor::Sbg;
+use atsamd_hal as hal;
+
+type Pads = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
+type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
+type Config = uart::Config<PadsCDC, EightBit>;
 
 /**
  * Represents the number of milliseconds that have passed.
@@ -21,30 +30,30 @@ struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface
 }
 
-pub struct SBG<T> where T: Read<u8> + Write<u8> {
+pub struct SBG {
     UARTSBGInterface: UARTSBGInterface,
-    serial_device: T,
+    serial_device: Uart<Config, Duplex>,
     handle: _SbgEComHandle,
     pub isInitialized: bool,
 } 
 
-impl<T> SBG<T> where T: Read<u8> + Write<u8> {
+impl SBG {
     /**
      * Creates a new SBG instance to control the desired UART peripheral. 
      */
-    pub fn new(mut serial_device: T) -> Self {
+    pub fn new(mut serial_device: Uart<Config, Duplex>) -> Self {
         let interface = UARTSBGInterface {
             interface: &mut _SbgInterface {
-                handle: &mut serial_device as *mut T as *mut c_void,
+                handle: &mut serial_device as *mut Uart<Config, Duplex> as *mut c_void,
                 type_: 0,
                 name: [0; 48],
-                pDestroyFunc: Some(SBG::<T>::SbgDestroyFunc),
-                pWriteFunc: Some(SBG::<T>::SbgInterfaceWriteFunc),
-                pReadFunc: Some(SBG::<T>::SbgInterfaceReadFunc),
-                pFlushFunc: Some(SBG::<T>::SbgFlushFunc),
-                pSetSpeedFunc: Some(SBG::<T>::SbgSetSpeedFunc),
-                pGetSpeedFunc: Some(SBG::<T>::SbgGetSpeedFunc),
-                pDelayFunc: Some(SBG::<T>::SbgDelayFunc),
+                pDestroyFunc: Some(SBG::SbgDestroyFunc),
+                pWriteFunc: Some(SBG::SbgInterfaceWriteFunc),
+                pReadFunc: Some(SBG::SbgInterfaceReadFunc),
+                pFlushFunc: Some(SBG::SbgFlushFunc),
+                pSetSpeedFunc: Some(SBG::SbgSetSpeedFunc),
+                pGetSpeedFunc: Some(SBG::SbgGetSpeedFunc),
+                pDelayFunc: Some(SBG::SbgDelayFunc),
             },
         };
 
@@ -55,8 +64,8 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
 
         let pLargeBuffer: *mut u8 = null_mut();
         // // Create some dummy data to be able to create the struct. 
-        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 4096, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
-        let mut handle: _SbgEComHandle = _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
+        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 16, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 4096, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
+        let mut handle: _SbgEComHandle = _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
         //  // initialize with dummy data then pass the handle to the init to be consumed 
         // unsafe {
         //     sbgEComInit(&mut handle, interface.interface);
@@ -80,28 +89,15 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 
     pub fn setup(&mut self) -> u32 {
-        let mut x: u8 = 10;
-        let pLargeBuffer: *mut u8 = &mut x;
-        // Create some dummy data to be able to create the struct. 
-        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: self.UARTSBGInterface.interface, rxBuffer: [0;4096usize], rxBufferSize: 4096usize, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 16, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 2 };
-        let mut handle: _SbgEComHandle = _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::<T>::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
-         // initialize with dummy data then pass the handle to the init to be consumed 
         unsafe {
-            sbgEComInit(&mut handle, self.UARTSBGInterface.interface);
+            sbgEComInit(&mut self.handle, self.UARTSBGInterface.interface);
         }
         let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
 		//
 		// Showcase how to configure some output logs to 25 Hz, don't stop if there is an error
 		//
 		unsafe {
-        // errorCode = sbgEComCmdOutputSetConf(self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, 3, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8 );
-        
-		// if errorCode != _SbgErrorCode_SBG_NO_ERROR
-		// {
-		// 	// warn!(errorCode, "Unable to configure SBG_ECOM_LOG_IMU_DATA log");
-        //     info!("Unable to configure imu log");
-		// }
-		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, 6, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_8 );
+		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, 6, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
         }
 		if errorCode != _SbgErrorCode_SBG_NO_ERROR
 		{
@@ -112,7 +108,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
 		// Define callbacks for received data and display header
         // This should happen in the new method
 		//
-		unsafe {sbgEComSetReceiveLogCallback(&mut self.handle, Some(SBG::<T>::SbgEComReceiveLogFunc), null_mut())};
+		unsafe {sbgEComSetReceiveLogCallback(&mut self.handle, Some(SBG::SbgEComReceiveLogFunc), null_mut())};
 		info!("Euler Angles display with estimated standard deviation - degrees\n");
         if errorCode == _SbgErrorCode_SBG_NO_ERROR {
             self.isInitialized = true;
@@ -142,16 +138,18 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
      * Allows the SBG interface to read data from the serial ports. 
      */
     pub extern "C" fn SbgInterfaceReadFunc(pInterface: *mut _SbgInterface, pBuffer: *mut c_void, pBytesRead: *mut usize, mut bytesToRead: usize) -> _SbgErrorCode {
-        // let mut array: &[u8] = (*pBuffer)._data;
-        let serial: *mut T = unsafe {(*pInterface).handle.cast()};
+        let serial: *mut Uart<Config, Duplex> = unsafe {(*pInterface).handle as *mut Uart<Config, Duplex>};
         let mut bytesRead = unsafe {*pBytesRead};
         bytesRead = 0;
         let mut array: &mut [u8] = unsafe{from_raw_parts_mut(pBuffer as *mut u8, bytesToRead)};
+
         loop {
             if bytesRead >= bytesToRead {
-                break;
+                break
             }
-            let result = unsafe{nb::block!(serial.as_mut().expect("Serial reference").read())};
+
+            let result = unsafe {nb::block!(serial.as_mut().unwrap().read())};
+
             bytesRead = bytesRead + 1;
 
             match result {
@@ -165,16 +163,20 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     /**
      * Allows the SBG interface to write to the UART peripheral 
      */
-    pub unsafe extern "C" fn SbgInterfaceWriteFunc(pInterface: *mut _SbgInterface, pBuffer: *const c_void, bytesToWrite: usize) -> _SbgErrorCode {
-        let serial: *mut T = (*pInterface).handle.cast();
-        let mut array: &[u8] = from_raw_parts(pBuffer as *const u8, bytesToWrite);
+    pub extern "C" fn SbgInterfaceWriteFunc(pInterface: *mut _SbgInterface, pBuffer: *const c_void, bytesToWrite: usize) -> _SbgErrorCode {
+        let serial: *mut Uart<Config, Duplex> = unsafe {(*pInterface).handle as *mut Uart<Config, Duplex>};
+        let mut array: &[u8] = unsafe{from_raw_parts(pBuffer as *const u8, bytesToWrite)};
+        // unsafe{serial.write_bytes(array, bytesToWrite)};
         let mut counter: usize = 0;
+
         loop {
             if bytesToWrite == counter {
-                break;
+                break
             }
             // The block is needed otherwise the operation will not complete. 
-            let result = nb::block!(serial.as_mut().expect("Serial reference").write(array[counter]));
+
+            // write a u8 from the array
+            let result = unsafe{nb::block!(serial.as_mut().unwrap().write(array[counter]))};
             match result {
                 Ok(_) => counter+=1,
                 Err(_) => return _SbgErrorCode_SBG_WRITE_ERROR,
@@ -207,9 +209,9 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     /**
      * To be implemented 
      */
-    pub unsafe extern "C" fn SbgFlushFunc(pInterface: *mut _SbgInterface, flags: u32) -> _SbgErrorCode {
-        let serial: *mut T = (*pInterface).handle.cast();
-        let result = serial.as_mut().expect("Serial flush failed.").flush();
+    pub extern "C" fn SbgFlushFunc(pInterface: *mut _SbgInterface, flags: u32) -> _SbgErrorCode {
+        let serial: *mut Uart<Config, Duplex> = unsafe {(*pInterface).handle as *mut Uart<Config, Duplex>};
+        let result = unsafe {serial.as_mut().unwrap().flush()};
         match result {
             Ok(_) => return _SbgErrorCode_SBG_NO_ERROR,
             Err(_) => return _SbgErrorCode_SBG_READ_ERROR,
@@ -238,7 +240,7 @@ impl<T> SBG<T> where T: Read<u8> + Write<u8> {
     }
 }
 
-unsafe impl<T> Send for SBG<T> where T: Read<u8> + Write<u8>  {} 
+unsafe impl Send for SBG {} 
 
 /**
  * To be implemented 

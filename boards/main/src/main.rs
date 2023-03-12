@@ -55,7 +55,7 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
-        sbg: sbg::SBG<Uart<ConfigSBG, Duplex>>,
+        sbg: sbg::SBG,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -125,19 +125,19 @@ mod app {
             .sercom5_core(&gclk3)
             .expect("Could not configure Sercom 5 clock.");
 
-        clocks.configure_gclk_divider_and_source(
-            pac::gclk::pchctrl::GEN_A::GCLK5,
-            1,
-            pac::gclk::genctrl::SRC_A::DFLL,
-            false,
-        );
-        let gclk5 = clocks
-            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5)
-            .expect("Could not get gclk 2.");
+        // clocks.configure_gclk_divider_and_source(
+        //     pac::gclk::pchctrl::GEN_A::GCLK4,
+        //     1,
+        //     pac::gclk::genctrl::SRC_A::DFLL,
+        //     false,
+        // );
+        // let gclk4 = clocks
+        //     .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK4)
+        //     .expect("Could not get gclk 4.");
 
         /* Start UART CDC config */
         let sbg_clk = clocks
-            .sercom0_core(&gclk5)
+            .sercom0_core(&gclk3)
             .expect("Could not configure Sercom 0 clock.");
 
         let pads = uart::Pads::<Sercom5, _>::default()
@@ -148,10 +148,6 @@ mod app {
             peripherals.SERCOM5,
             pads,
             cdc_clk.freq(),
-        )
-        .stop_bits(uart::StopBits::OneBit)
-        .parity(
-            uart::Parity::Odd,
         )
         .baud(
             115200.hz(),
@@ -169,10 +165,9 @@ mod app {
         )
         .baud(
             115200.hz(),
-            uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+            uart::BaudMode::Fractional(uart::Oversampling::Bits8),
         )
         .enable();
-
         tc2::spawn().ok();
         state_send::spawn().ok();
         sensor_send::spawn().ok();
@@ -180,7 +175,7 @@ mod app {
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
-        let mut sbg: sbg::SBG<Uart<ConfigSBG, Duplex>> = sbg::SBG::new(uart_sbg);
+        let mut sbg: sbg::SBG = sbg::SBG::new(uart_cdc);
 
         (
             Shared {
@@ -242,6 +237,7 @@ mod app {
 
         cx.shared.em.run(|| {
             if cx.local.sbg.isInitialized == false {
+                // cx.local.sbg.serial_device.flush_rx_buffer();
                 cx.local.sbg.setup();
             } else {
                 cx.local.sbg.readData();
@@ -263,7 +259,7 @@ mod app {
         spawn_after!(sensor_send, 2.secs()).ok();
     }
 
-    #[task(priority = 1, local = [led], shared = [&em])]
+    #[task(local = [led], shared = [&em])]
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
             cx.local.led.toggle()?;
