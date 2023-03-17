@@ -9,7 +9,7 @@ use hal::sercom::uart::Duplex;
 use hal::sercom::{Sercom0, IoSet1, Sercom5};
 use hal::sercom::uart::{self, EightBit, Uart};
 use core::ptr::{null, null_mut};
-use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle, sbgEComCmdOutputSetConf, sbgEComSetReceiveLogCallback, sbgInterfaceSerialCreate};
+use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle, sbgEComCmdOutputSetConf, sbgEComSetReceiveLogCallback, sbgInterfaceSerialCreate, _SbgLogEkfEulerData};
 use crate::bindings::{_SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo};
 use embedded_hal::serial::{Read, Write};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
@@ -18,7 +18,7 @@ use atsamd_hal as hal;
 
 type Pads = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
-type Config = uart::Config<PadsCDC, EightBit>;
+type Config = uart::Config<Pads, EightBit>;
 
 /**
  * Represents the number of milliseconds that have passed.
@@ -97,7 +97,7 @@ impl SBG {
 		// Showcase how to configure some output logs to 25 Hz, don't stop if there is an error
 		//
 		unsafe {
-		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, 6, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
+		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER as u8, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
         }
 		if errorCode != _SbgErrorCode_SBG_NO_ERROR
 		{
@@ -149,7 +149,7 @@ impl SBG {
             }
 
             let result = unsafe {nb::block!(serial.as_mut().unwrap().read())};
-
+            unsafe {serial.as_mut().unwrap().flush_rx_buffer()};
             bytesRead = bytesRead + 1;
 
             match result {

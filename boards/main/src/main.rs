@@ -175,7 +175,7 @@ mod app {
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
-        let mut sbg: sbg::SBG = sbg::SBG::new(uart_cdc);
+        let mut sbg: sbg::SBG = sbg::SBG::new(uart_sbg);
 
         (
             Shared {
