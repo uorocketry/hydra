@@ -7305,7 +7305,7 @@ pub type _SbgEComCmd = ::core::ffi::c_uint;
 #[doc = " Enum that defines all the available commands for the sbgECom library."]
 pub use self::_SbgEComCmd as SbgEComCmd;
 #[doc = "\tThis type defines any message identifier.\n\tBecause message identifiers enum will be different with each class id, we use a generic uint8_t rather than an enum."]
-pub type SbgEComMsgId = u8;
+pub type SbgEComMsgId = ::core::ffi::c_uint;
 #[doc = " Payload.\n\n This class is used to abstract whether some payload is received from a single\n or multiple frames."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

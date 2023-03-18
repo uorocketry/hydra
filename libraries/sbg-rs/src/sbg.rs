@@ -10,7 +10,7 @@ use hal::sercom::{Sercom0, IoSet1, Sercom5};
 use hal::sercom::uart::{self, EightBit, Uart};
 use core::ptr::{null, null_mut};
 use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle, sbgEComCmdOutputSetConf, sbgEComSetReceiveLogCallback, sbgInterfaceSerialCreate, _SbgLogEkfEulerData};
-use crate::bindings::{_SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo};
+use crate::bindings::{_SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo, _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT};
 use embedded_hal::serial::{Read, Write};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use messages::sensor::Sbg;
@@ -64,7 +64,7 @@ impl SBG {
 
         let pLargeBuffer: *mut u8 = null_mut();
         // // Create some dummy data to be able to create the struct. 
-        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 16, discardSize: 16, nextLargeTxId: 16, pLargeBuffer, largeBufferSize: 4096, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
+        let mut protocol: _SbgEComProtocol = _SbgEComProtocol { pLinkedInterface: interface.interface, rxBuffer: [0;4096usize], rxBufferSize: 0, discardSize: 0, nextLargeTxId: 0, pLargeBuffer, largeBufferSize: 0, msgClass: 0, msgId: 0, transferId: 0, pageIndex: 0, nrPages: 0 };
         let mut handle: _SbgEComHandle = _SbgEComHandle {protocolHandle: protocol, pReceiveLogCallback: Some(SBG::SbgEComReceiveLogFunc), pUserArg: null_mut(), numTrials: 3, cmdDefaultTimeOut: 500};
         //  // initialize with dummy data then pass the handle to the init to be consumed 
         // unsafe {
@@ -97,7 +97,7 @@ impl SBG {
 		// Showcase how to configure some output logs to 25 Hz, don't stop if there is an error
 		//
 		unsafe {
-		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER as u8, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
+		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
         }
 		if errorCode != _SbgErrorCode_SBG_NO_ERROR
 		{
@@ -140,9 +140,8 @@ impl SBG {
     pub extern "C" fn SbgInterfaceReadFunc(pInterface: *mut _SbgInterface, pBuffer: *mut c_void, pBytesRead: *mut usize, mut bytesToRead: usize) -> _SbgErrorCode {
         let serial: *mut Uart<Config, Duplex> = unsafe {(*pInterface).handle as *mut Uart<Config, Duplex>};
         let mut bytesRead = unsafe {*pBytesRead};
-        bytesRead = 0;
         let mut array: &mut [u8] = unsafe{from_raw_parts_mut(pBuffer as *mut u8, bytesToRead)};
-
+        bytesRead = 0;
         loop {
             if bytesRead >= bytesToRead {
                 break
@@ -150,13 +149,14 @@ impl SBG {
 
             let result = unsafe {nb::block!(serial.as_mut().unwrap().read())};
             unsafe {serial.as_mut().unwrap().flush_rx_buffer()};
-            bytesRead = bytesRead + 1;
 
             match result {
                 Ok(word) => array[bytesRead] = word,
                 Err(_) => return _SbgErrorCode_SBG_READ_ERROR,
             }
+            bytesRead = bytesRead + 1;
         }
+        unsafe {*pBytesRead = bytesRead;}
         _SbgErrorCode_SBG_NO_ERROR
     }
 
@@ -189,11 +189,12 @@ impl SBG {
      * Callback function for handling logs. 
      * To be implemented
      */
-    pub extern "C" fn SbgEComReceiveLogFunc(pHandle: *mut _SbgEComHandle, msgClass: u32, msg: u8, pLogData: *const _SbgBinaryLogData, pUserArg: *mut c_void) -> _SbgErrorCode{
+    pub extern "C" fn SbgEComReceiveLogFunc(pHandle: *mut _SbgEComHandle, msgClass: u32, msg: u32, pLogData: *const _SbgBinaryLogData, pUserArg: *mut c_void) -> _SbgErrorCode{
         if msgClass == _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0 {
             match msg {
-                6 => info!("{}", unsafe{(*pLogData).ekfEulerData.euler[0]}), 
-                _ => warn!("Unknown log type"),
+                _SbgEComLog_SBG_ECOM_LOG_EKF_EULER => info!("Roll {}, Pitch {}, Yaw {}", unsafe{(*pLogData).ekfEulerData.euler[0]}, unsafe{(*pLogData).ekfEulerData.euler[1]}, unsafe{(*pLogData).ekfEulerData.euler[2]}), 
+                _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT => info!("{}", unsafe{(*pLogData).ekfQuatData.quaternion[0]}),
+                _ => (),
             }
         }
         _SbgErrorCode_SBG_NO_ERROR
@@ -236,7 +237,7 @@ impl SBG {
      * To be implemented 
      */
     pub unsafe extern "C" fn SbgDelayFunc(pInterface: *const _SbgInterface, numBytes: usize) -> u32 {
-        200
+        501
     }
 }
 
