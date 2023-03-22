@@ -9,7 +9,6 @@ use atsamd_hal::prelude::nb::block;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1, Sercom1, Sercom5};
-use atsamd_hal::timer::TimerCounter;
 use hal::sercom::Sercom0;
 use hal::sercom::uart::NineBit;
 use hal::timer;
@@ -30,6 +29,7 @@ use postcard::to_vec_cobs;
 use systick_monotonic::*;
 /* SBG */
 use sbg_rs::sbg::SBG_COUNT;
+use sbg_rs::sbg::SBG_RING_BUFFER;
 use pac::interrupt;
 /* Type Def */
 type Pads = uart::PadsFromIds<Sercom1, IoSet1, PA17, PA16>;
@@ -43,19 +43,18 @@ use sbg_rs::sbg;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
-
     use super::*;
 
     #[shared]
     struct Shared {
         em: ErrorManager,
+        sbg: sbg::SBG,
     }
 
     #[local]
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
-        sbg: sbg::SBG,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -168,6 +167,9 @@ mod app {
             uart::BaudMode::Fractional(uart::Oversampling::Bits8),
         )
         .enable();
+
+        uart_sbg.enable_interrupts(hal::sercom::uart::Flags::RXC);
+
         tc2::spawn().ok();
         state_send::spawn().ok();
         sensor_send::spawn().ok();
@@ -180,14 +182,15 @@ mod app {
         (
             Shared {
                 em: ErrorManager::new(),
+                sbg,
             },
-            Local { led, uart, sbg },
+            Local { led, uart },
             init::Monotonics(mono),
         )
     }
 
     #[idle]
-    fn idle(cx: idle::Context) -> ! {
+    fn idle(_: idle::Context) -> ! {
         loop {
             rtic::export::wfi();
         }
@@ -232,16 +235,39 @@ mod app {
         spawn_after!(state_send, 10.secs()).ok();
     }
 
-    #[task(priority = 2, local = [sbg], shared = [&em])]
-    fn sensor_send(cx: sensor_send::Context) {   
+    /**
+     * Fills a ring buffer once the uart has received a byte.
+     */
+    #[task(binds = SERCOM0_2, priority = 2, shared = [sbg])]
+    fn fillBuffer(mut cx: fillBuffer::Context) {
+        cx.shared.sbg.lock(|shared| {
+            // fill the buffer using the sbg uart
+            let result = shared.serial_device.read();
+            match result {
+                Ok(data) => {
+                    unsafe{
+                        SBG_RING_BUFFER.push(data);
+                    };
+                },
+                // Flush the buffer if we get an error. Change this to a better error handling method.
+                Err(e) => shared.serial_device.flush_rx_buffer(),
+            }
+            shared.serial_device.clear_flags(hal::sercom::uart::Flags::RXC); // clear the interrupt flag
+        });
+    }
+
+    #[task(priority = 2, shared = [&em, sbg])]
+    fn sensor_send(mut cx: sensor_send::Context) {   
 
         cx.shared.em.run(|| {
-            if cx.local.sbg.isInitialized == false {
-                // cx.local.sbg.serial_device.flush_rx_buffer();
-                cx.local.sbg.setup();
-            } else {
-                cx.local.sbg.readData();
-            }
+            cx.shared.sbg.lock(|shared| {
+                // if shared.isInitialized == false {
+                //     shared.setup();
+                // } else {
+                    shared.readData();
+                // }
+            });
+
             let sbg = Sbg {
                 accel: 9.8,
                 speed: 0.0,

@@ -20,3 +20,4 @@ common-arm = { path = "../../libraries/common-arm" }
 atsamd-hal = { workspace = true }
 messages = { path = "../../libraries/messages" }
 sbg-rs = {path = "../../libraries/sbg-rs"}
+ring-buffer = {path = "../../libraries/ring-buffer"}

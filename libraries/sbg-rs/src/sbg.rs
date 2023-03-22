@@ -2,18 +2,19 @@ use core::borrow::{Borrow, BorrowMut};
 use core::ffi::{c_char, c_void, VaListImpl, CStr};
 use core::{ptr, result};
 use core::convert::Infallible;
-use core::sync::atomic::AtomicU32;
+use core::sync::atomic::{AtomicU32, AtomicU16};
 use defmt::{error, info, warn, debug, trace};
 use hal::gpio::{PA09, PA08, PB17, PB16};
 use hal::sercom::uart::Duplex;
 use hal::sercom::{Sercom0, IoSet1, Sercom5};
 use hal::sercom::uart::{self, EightBit, Uart};
 use core::ptr::{null, null_mut};
-use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle, sbgEComCmdOutputSetConf, sbgEComSetReceiveLogCallback, sbgInterfaceSerialCreate, _SbgLogEkfEulerData};
+use crate::bindings::{self, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComProtocolSend, sbgEComProtocolPayloadConstruct, sbgEComBinaryLogWriteGpsRawData, sbgEComBinaryLogWriteEkfEulerData, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, EXIT_SUCCESS, EXIT_FAILURE, sbgEComCmdGetInfo, SbgEComDeviceInfo, sbgEComHandle, sbgEComCmdOutputSetConf, sbgEComSetReceiveLogCallback, sbgInterfaceSerialCreate, _SbgLogEkfEulerData, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20};
 use crate::bindings::{_SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgInterface, SbgInterfaceHandle, _SbgErrorCode, SbgInterfaceReadFunc, sbgEComInit, _SbgEComHandle, _SbgEComProtocol, _SbgBinaryLogData, _SbgDebugLogType, _SbgEComDeviceInfo, _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT};
 use embedded_hal::serial::{Read, Write};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use messages::sensor::Sbg;
+use ring_buffer::ring_buffer::RingBuffer;
 use atsamd_hal as hal;
 
 type Pads = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
@@ -25,6 +26,9 @@ type Config = uart::Config<Pads, EightBit>;
  * Overflows after roughly 600 hours. 
  */
 pub static mut SBG_COUNT: AtomicU32 = AtomicU32::new(0);
+    // should be done like this
+    // pub ring_buffer: ring_buffer::RingBuffer<u8, 4096>,
+pub static mut SBG_RING_BUFFER: RingBuffer = RingBuffer::new();
 
 struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface
@@ -32,9 +36,10 @@ struct UARTSBGInterface {
 
 pub struct SBG {
     UARTSBGInterface: UARTSBGInterface,
-    serial_device: Uart<Config, Duplex>,
+    pub serial_device: Uart<Config, Duplex>,
     handle: _SbgEComHandle,
     pub isInitialized: bool,
+
 } 
 
 impl SBG {
@@ -93,16 +98,22 @@ impl SBG {
             sbgEComInit(&mut self.handle, self.UARTSBGInterface.interface);
         }
         let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
-		//
-		// Showcase how to configure some output logs to 25 Hz, don't stop if there is an error
-		//
+
 		unsafe {
-		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
+		errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20 );
         }
 		if errorCode != _SbgErrorCode_SBG_NO_ERROR
 		{
-            info!("Unable to configure euler log");
+            info!("Unable to configure Euler logs to 20 cycles");
 		}
+
+        unsafe {
+            errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40 );
+        }
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR
+        {
+            info!("Unable to configure IMU logs to 40 cycles");
+        }
 
 		//
 		// Define callbacks for received data and display header
@@ -138,7 +149,7 @@ impl SBG {
      * Allows the SBG interface to read data from the serial ports. 
      */
     pub extern "C" fn SbgInterfaceReadFunc(pInterface: *mut _SbgInterface, pBuffer: *mut c_void, pBytesRead: *mut usize, mut bytesToRead: usize) -> _SbgErrorCode {
-        let serial: *mut Uart<Config, Duplex> = unsafe {(*pInterface).handle as *mut Uart<Config, Duplex>};
+        // let serial: *mut Uart<Config, Duplex> = unsafe {(*pInterface).handle as *mut Uart<Config, Duplex>};
         let mut bytesRead = unsafe {*pBytesRead};
         let mut array: &mut [u8] = unsafe{from_raw_parts_mut(pBuffer as *mut u8, bytesToRead)};
         bytesRead = 0;
@@ -146,10 +157,14 @@ impl SBG {
             if bytesRead >= bytesToRead {
                 break
             }
+            // let result = unsafe {nb::block!(serial.as_mut().unwrap().read())};
+            // unsafe {serial.as_mut().unwrap().flush_rx_buffer()};
 
-            let result = unsafe {nb::block!(serial.as_mut().unwrap().read())};
-            unsafe {serial.as_mut().unwrap().flush_rx_buffer()};
-
+            // match result {
+            //     Ok(word) => array[bytesRead] = word,
+            //     Err(_) => return _SbgErrorCode_SBG_READ_ERROR,
+            // }
+            let result = unsafe {SBG_RING_BUFFER.pop()};
             match result {
                 Ok(word) => array[bytesRead] = word,
                 Err(_) => return _SbgErrorCode_SBG_READ_ERROR,
@@ -193,7 +208,8 @@ impl SBG {
         if msgClass == _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0 {
             match msg {
                 _SbgEComLog_SBG_ECOM_LOG_EKF_EULER => info!("Roll {}, Pitch {}, Yaw {}", unsafe{(*pLogData).ekfEulerData.euler[0]}, unsafe{(*pLogData).ekfEulerData.euler[1]}, unsafe{(*pLogData).ekfEulerData.euler[2]}), 
-                _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT => info!("{}", unsafe{(*pLogData).ekfQuatData.quaternion[0]}),
+                _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT => info!("Quat X {}, Y {}, Z {}, W {}", unsafe{(*pLogData).ekfQuatData.quaternion[0]}, unsafe{(*pLogData).ekfQuatData.quaternion[1]}, unsafe{(*pLogData).ekfQuatData.quaternion[2]}, unsafe{(*pLogData).ekfQuatData.quaternion[3]}),
+                _SbgEComLog_SBG_ECOM_LOG_IMU_DATA => info!("Accel X {}, Y {}, Z {}", unsafe{(*pLogData).imuData.accelerometers[0]}, unsafe{(*pLogData).imuData.accelerometers[1]}, unsafe{(*pLogData).imuData.accelerometers[2]}),
                 _ => (),
             }
         }
