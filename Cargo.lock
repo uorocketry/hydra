@@ -699,6 +699,7 @@ dependencies = [
  "atsamd-hal",
  "bindgen",
  "cmake",
+ "common-arm",
  "cortex-m",
  "cortex-m-rt",
  "defmt",

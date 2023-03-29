@@ -10,6 +10,7 @@ use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1, Sercom1, Sercom5};
 use hal::sercom::Sercom0;
+use hal::sercom::Sercom3;
 use hal::sercom::uart::NineBit;
 use hal::timer;
 use common_arm::*;
@@ -30,9 +31,8 @@ use systick_monotonic::*;
 /* SBG */
 use sbg_rs::sbg::SBG_COUNT;
 use sbg_rs::sbg::SBG_RING_BUFFER;
-use pac::interrupt;
 /* Type Def */
-type Pads = uart::PadsFromIds<Sercom1, IoSet1, PA17, PA16>;
+type Pads = uart::PadsFromIds<Sercom3, IoSet1, PA23, PA22>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 type Config = uart::Config<Pads, EightBit>;
@@ -55,6 +55,7 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
+        // sd: SdInterface,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -88,17 +89,29 @@ mod app {
             .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
             .expect("Could not get gclk 2.");
 
+        /* Start SD config */
+        // let mclk = &mut peripherals.MCLK;
+        // clocks.configure_gclk_divider_and_source(pac::gclk::pchctrl::GEN_A::GCLK5, 1, pac::gclk::genctrl::SRC_A::DFLL, false);
+        // let gclk5 = clocks.get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5).expect("Could not get gclk 5.");
+        // let spi_clk = clocks.sercom1_core(&gclk5).expect("Could not configure Sercom 1 clock.");
+        // let sercom = peripherals.SERCOM1;
+        // let cs = pins.pa18.into_push_pull_output();
+        // let sck = pins.pa17.into_push_pull_output();
+        // let miso = pins.pa19.into_push_pull_output();
+        // let mosi = pins.pa16.into_push_pull_output();
+        // let mut sd = sd::SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
+        /* End SD config */
         /* Start Radio config */
         let uart_clk = clocks
-            .sercom1_core(&gclk2)
+            .sercom3_core(&gclk2)
             .expect("Could not configure Sercom 1 clock.");
 
-        let pads = uart::Pads::<Sercom1, _>::default()
-            .rx(pins.pa17)
-            .tx(pins.pa16);
+        let pads = uart::Pads::<hal::sercom::Sercom3, _>::default()
+            .rx(pins.pa23)
+            .tx(pins.pa22);
         let uart = Config::new(
             &peripherals.MCLK,
-            peripherals.SERCOM1,
+            peripherals.SERCOM3,
             pads,
             uart_clk.freq(),
         )
@@ -123,16 +136,6 @@ mod app {
         let cdc_clk = clocks
             .sercom5_core(&gclk3)
             .expect("Could not configure Sercom 5 clock.");
-
-        // clocks.configure_gclk_divider_and_source(
-        //     pac::gclk::pchctrl::GEN_A::GCLK4,
-        //     1,
-        //     pac::gclk::genctrl::SRC_A::DFLL,
-        //     false,
-        // );
-        // let gclk4 = clocks
-        //     .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK4)
-        //     .expect("Could not get gclk 4.");
 
         /* Start UART CDC config */
         let sbg_clk = clocks
@@ -250,7 +253,7 @@ mod app {
                     };
                 },
                 // Flush the buffer if we get an error. Change this to a better error handling method.
-                Err(e) => shared.serial_device.flush_rx_buffer(),
+                Err(_) => shared.serial_device.flush_rx_buffer(),
             }
             shared.serial_device.clear_flags(hal::sercom::uart::Flags::RXC); // clear the interrupt flag
         });

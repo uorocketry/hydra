@@ -8,7 +8,7 @@ members = [
 
 [workspace.dependencies.atsamd-hal]
 version = "0.15.1"
-features = ["same51j", "same51j-rt"]
+features = ["same51j", "same51j-rt", "dma"]
 
 [workspace.dependencies.serde]
 version = "1.0.150"
