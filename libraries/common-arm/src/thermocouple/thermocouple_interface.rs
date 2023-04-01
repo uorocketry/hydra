@@ -3,50 +3,69 @@
  *******************************************/
 use atsamd_hal as hal;
 use atsamd_hal::prelude::*;
-use hal::gpio::{Pin, PinId, PinMode, Pins};
+use embedded_hal::spi::MODE_0;
+use hal::clock::Sercom1CoreClock;
+use hal::gpio::{Pin, PinId, PinMode};
 use hal::pac;
-use pac::Peripherals;
+use hal::sercom::Sercom1;
 
+use atsamd_hal::gpio::{Alternate, Output, PushPull, C, PA16, PA17, PA19};
 use atsamd_hal::sercom::pad::IoSet1;
-use atsamd_hal::sercom::spi::lengths::U2;
-use atsamd_hal::sercom::spi::{BitOrder, MODE_1};
-use atsamd_hal::sercom::{spi, Sercom0};
+use atsamd_hal::sercom::spi;
+use atsamd_hal::sercom::spi::BitOrder;
 use nb::block;
 
 use super::lookup_table;
 
 /**
  * Thermocouple struct
- * pins:
- *  - SCK:
- *  - MISO:
- *  - MOSI:
  */
 pub struct Thermocouple {
-    pub thermo_controller: spi,
+    pub thermo_controller: spi::Spi<
+        spi::Config<
+            spi::Pads<
+                Sercom1,
+                IoSet1,
+                Pin<PA19, Alternate<C>>,
+                Pin<PA16, Alternate<C>>,
+                Pin<PA17, Alternate<C>>,
+            >,
+        >,
+        spi::Duplex,
+    >,
 }
 
 impl Thermocouple {
+    /**
+     * ### Constructor for Thermocouple module
+     * `mclk`: reference to MCLK
+     * `sercom`: reference to SERCOM1
+     * `sck`: reference to SCK(Serial clock) pin
+     * `cs`: reference to Chip Select pin
+     * `miso`: reference to Master In Slave Out pin
+     * `mosi`: reference to Master Out Slave In pin
+     */
     pub fn new<I: PinId, M: PinMode>(
         mclk: &pac::MCLK,
-        sercom: pac::SERCOM1,
-        sck: Pin<I, M>,
-        cs: Pin<I, M>,
-        miso: Pin<I, M>,
-        mosi: Pin<I, M>,
+        sercom: hal::sercom::Sercom1,
+        spi_clk: Sercom1CoreClock,
+        _cs: Pin<I, M>,
+        sck: Pin<PA17, Output<PushPull>>,
+        miso: Pin<PA19, Output<PushPull>>,
+        mosi: Pin<PA16, Output<PushPull>>,
     ) -> Self {
         // 1. Configure pins
-        let pads = spi::Pads::<Sercom0, IoSet1>::default()
-            .sclk(spi_clk)
+        let pads = spi::Pads::<hal::sercom::Sercom1, IoSet1>::default()
+            .sclk(sck)
             .data_in(miso)
             .data_out(mosi);
 
         //2. instantiate SPI object
-        let mut spi = spi::Config::new(&mclk, sercom, pads, freq)
+        let spi = spi::Config::new(&mclk, sercom, pads, spi_clk.freq())
             .baud(2.mhz())
-            .length::<U2>()
+            .length::<spi::lengths::U1>()
             .bit_order(BitOrder::LsbFirst)
-            .spi_mode(MODE_1)
+            .spi_mode(MODE_0)
             .enable();
 
         //return SPI connection object to be used to communicate with the ADC
@@ -57,48 +76,6 @@ impl Thermocouple {
 }
 
 impl Thermocouple {
-    pub fn config(&mut self) {
-        let mut peripherals = Peripherals::take().unwrap();
-        let p2 = cortex_m::peripheral::Peripherals::take().unwrap();
-
-        let pins = Pins::new(peripherals.PORT);
-        let mut led = pins.pa14.into_push_pull_output();
-
-        // External 32KHz clock for stability
-        let mut clock = hal::clock::GenericClockController::with_external_32kosc(
-            peripherals.GCLK,
-            &mut peripherals.MCLK,
-            &mut peripherals.OSC32KCTRL,
-            &mut peripherals.OSCCTRL,
-            &mut peripherals.NVMCTRL,
-        );
-
-        clock.configure_gclk_divider_and_source(
-            pac::gclk::pchctrl::GEN_A::GCLK2,
-            1,
-            pac::gclk::genctrl::SRC_A::DFLL,
-            false,
-        );
-
-        // 1. Configure pins
-        let pads = spi::Pads::<Sercom0, IoSet1>::default()
-            .sclk(pins.pa09)
-            .data_in(pins.pa08)
-            .data_out(pins.pa11);
-        // 2. # SPI config
-        let mclk = peripherals.MCLK;
-        let sercom = peripherals.SERCOM0;
-        let freq = 10.mhz();
-
-        // 3. # Instantiate SPI
-        let mut spi = spi::Config::new(&mclk, sercom, pads, freq)
-            .baud(2.mhz())
-            .length::<U2>()
-            .bit_order(BitOrder::LsbFirst)
-            .spi_mode(MODE_1)
-            .enable();
-    }
-
     pub fn get_temperature(&mut self) -> f64 {
         return Thermocouple::convert_to_c(Thermocouple::get_voltage(self));
     }
@@ -141,11 +118,30 @@ impl Thermocouple {
         }
     }
 
-    pub fn send(&mut self, msg: u16) {
+    //returns true if it can successfully communicate with the ADC by getting its ID
+    pub fn test_connection(&mut self) -> bool {
+        // 0x05 is the address to read the ID from
+        self.thermo_controller.send(0x05).expect("SPI send failed.");
+
+        let rcvd = block!(self.thermo_controller.read());
+
+        let _ = match rcvd {
+            Ok(_data) => return true,
+            Err(_) => return false,
+        };
+    }
+
+    pub fn send(&mut self, msg: u8) {
         block!(self.thermo_controller.send(msg)).expect("SPI send failed.");
     }
 
-    pub fn read(&mut self) {
-        block!(self.thermo_controller.read()).expect("SPI receive failed.");
+    pub fn read(&mut self) -> u8 {
+        //read ADC for voltage
+        // Address to be determined
+        self.thermo_controller.send(0x00).expect("SPI send failed.");
+
+        let rcvd = block!(self.thermo_controller.read()).expect("SPI receive failed.");
+
+        return rcvd;
     }
 }
