@@ -9,6 +9,8 @@ use atsamd_hal::prelude::nb::block;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1, Sercom1, Sercom5};
+use hal::dmac::BufferPair;
+use pac::interrupt::DMAC_0;
 use hal::sercom::Sercom0;
 use hal::sercom::Sercom3;
 use hal::sercom::uart::NineBit;
@@ -40,6 +42,16 @@ type ConfigCDC = uart::Config<PadsCDC, EightBit>;
 type ConfigSBG = uart::Config<PadsSBG, EightBit>;
 use hal::{time::{Nanoseconds, Milliseconds}};
 use sbg_rs::sbg;
+use hal::dmac;
+
+const LENGTH: usize = 50;
+// type TransferBuffer = &'static mut [u8; LENGTH];
+// static mut BUF_SRC: TransferBuffer = &mut [0; LENGTH];
+// static mut BUF_DST: TransferBuffer = &mut [0; LENGTH];
+type SBGWaker = fn(dmac::CallbackStatus) -> ();
+type SBGTransfer = dmac::Transfer<dmac::Channel<dmac::Ch0, dmac::Busy>, BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>, SBGWaker>;
+type SBGBuffer = &'static mut [u8; 4096];
+static mut BUF_DST: SBGBuffer = &mut [0; 4096];
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -49,6 +61,9 @@ mod app {
     struct Shared {
         em: ErrorManager,
         sbg: sbg::SBG,
+        opt_xfer: Option<SBGTransfer>,
+        // sbg_rx: Uart<ConfigSBG, uart::RxDuplex>,
+        // opt_channel: Option<dmac::Channel<dmac::Ch0, dmac::Ready>>,
     }
 
     #[local]
@@ -122,6 +137,14 @@ mod app {
         .enable();
         /* End Radio config */
 
+        /* DMAC config */
+        let mut dmac = dmac::DmaController::init(
+            peripherals.DMAC,
+            &mut peripherals.PM,
+        );
+        let channels = dmac.split();
+        let mut chan0 = channels.0.init(dmac::PriorityLevel::LVL0);
+        /* End DMAC config */
         clocks.configure_gclk_divider_and_source(
             pac::gclk::pchctrl::GEN_A::GCLK3,
             1,
@@ -145,7 +168,7 @@ mod app {
         let pads = uart::Pads::<Sercom5, _>::default()
             .rx(pins.pb17)
             .tx(pins.pb16);
-        let mut uart_cdc = ConfigCDC::new(
+        let uart_cdc = ConfigCDC::new(
             &peripherals.MCLK,
             peripherals.SERCOM5,
             pads,
@@ -171,7 +194,11 @@ mod app {
         )
         .enable();
 
-        uart_sbg.enable_interrupts(hal::sercom::uart::Flags::RXC);
+        let (sbg_rx, sbg_tx) = uart_sbg.split();
+        let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
+        let xfer = sbg_rx.receive_with_dma(unsafe {&mut *BUF_DST}, chan0, waker);        
+        // uart_sbg.enable_interrupts(hal::sercom::uart::Flags::RXC);
+        // uart_cdc.receive_with_dma(unsafe{&mut *BUF_DST}, chan0, |_| {});
 
         tc2::spawn().ok();
         state_send::spawn().ok();
@@ -180,14 +207,16 @@ mod app {
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
-        let mut sbg: sbg::SBG = sbg::SBG::new(uart_sbg);
+        let mut sbg: sbg::SBG = sbg::SBG::new(sbg_tx);
 
         (
             Shared {
                 em: ErrorManager::new(),
                 sbg,
+                opt_xfer: Some(xfer),
+                // opt_channel: Some(chan0),
             },
-            Local { led, uart },
+            Local { led, uart},
             init::Monotonics(mono),
         )
     }
@@ -196,6 +225,44 @@ mod app {
     fn idle(_: idle::Context) -> ! {
         loop {
             rtic::export::wfi();
+        }
+    }
+
+    #[task(shared = [opt_xfer])]
+    fn handleTransfer(mut cx: handleTransfer::Context) {
+        match cx.shared.opt_xfer.lock(|xfer| xfer.take()) {
+            Some(xfer) => {
+                let (xfer, buf, chan) = xfer.wait();
+            },
+            None => {
+                ()
+            }
+        }
+    }
+
+    #[task(binds = DMAC_0, shared = [opt_xfer])]
+    fn dmac0(mut cx: dmac0::Context) {
+        match cx.shared.opt_xfer.lock(|xfer| xfer.take()) {
+            Some(mut xfer) => {
+                let (chan, rx, buf) = xfer.wait();
+                let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
+                for i in 0..buf.len() {
+                    unsafe{SBG_RING_BUFFER.push(buf[i])};
+                }
+                let newXfer = rx.receive_with_dma(buf, chan, waker);
+                cx.shared.opt_xfer.lock(|xfer| *xfer = Some(newXfer));
+                // cx.shared.opt_xfer.lock(|xfer| *xfer = Some(xfer));
+            },
+            None => {
+                // match cx.shared.opt_channel.lock(|chan| chan.take()) {
+                //     Some(chan) => {
+                //         let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
+                //     },
+                //     None => {
+                //         ()
+                //     }
+                // }
+            }
         }
     }
 
@@ -238,26 +305,26 @@ mod app {
         spawn_after!(state_send, 10.secs()).ok();
     }
 
-    /**
-     * Fills a ring buffer once the uart has received a byte.
-     */
-    #[task(binds = SERCOM0_2, priority = 2, shared = [sbg])]
-    fn fillBuffer(mut cx: fillBuffer::Context) {
-        cx.shared.sbg.lock(|shared| {
-            // fill the buffer using the sbg uart
-            let result = shared.serial_device.read();
-            match result {
-                Ok(data) => {
-                    unsafe{
-                        SBG_RING_BUFFER.push(data);
-                    };
-                },
-                // Flush the buffer if we get an error. Change this to a better error handling method.
-                Err(_) => shared.serial_device.flush_rx_buffer(),
-            }
-            shared.serial_device.clear_flags(hal::sercom::uart::Flags::RXC); // clear the interrupt flag
-        });
-    }
+    // /**
+    //  * Fills a ring buffer once the uart has received a byte.
+    //  */
+    // #[task(binds = SERCOM0_2, priority = 2, shared = [sbg])]
+    // fn fillBuffer(mut cx: fillBuffer::Context) {
+    //     cx.shared.sbg.lock(|shared| {
+    //         // fill the buffer using the sbg uart
+    //         let result = shared.serial_device.read();
+    //         match result {
+    //             Ok(data) => {
+    //                 unsafe{
+    //                     SBG_RING_BUFFER.push(data);
+    //                 };
+    //             },
+    //             // Flush the buffer if we get an error. Change this to a better error handling method.
+    //             Err(_) => shared.serial_device.flush_rx_buffer(),
+    //         }
+    //         shared.serial_device.clear_flags(hal::sercom::uart::Flags::RXC); // clear the interrupt flag
+    //     });
+    // }
 
     #[task(priority = 2, shared = [&em, sbg])]
     fn sensor_send(mut cx: sensor_send::Context) {   
@@ -304,7 +371,7 @@ mod app {
         });
     }
 
-    #[task(priority = 3, shared = [&em])] 
+    #[task(priority = 2, shared = [&em])] 
     fn tc2(cx: tc2::Context) {
         cx.shared.em.run(|| {
             unsafe {*SBG_COUNT.get_mut() += 100;}

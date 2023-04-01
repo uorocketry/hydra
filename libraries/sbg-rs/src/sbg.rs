@@ -33,7 +33,7 @@ struct UARTSBGInterface {
 
 pub struct SBG {
     UARTSBGInterface: UARTSBGInterface,
-    pub serial_device: Uart<Config, Duplex>,
+    pub serial_device: Uart<Config, uart::TxDuplex>,
     handle: _SbgEComHandle,
     pub isInitialized: bool,
 } 
@@ -42,10 +42,10 @@ impl SBG {
     /**
      * Creates a new SBG instance to control the desired UART peripheral. 
      */
-    pub fn new(mut serial_device: Uart<Config, Duplex>) -> Self {
+    pub fn new(mut serial_device: Uart<Config, uart::TxDuplex>) -> Self {
         let interface = UARTSBGInterface {
             interface: &mut _SbgInterface {
-                handle: &mut serial_device as *mut Uart<Config, Duplex> as *mut c_void,
+                handle: &mut serial_device as *mut Uart<Config, uart::TxDuplex> as *mut c_void,
                 type_: 0,
                 name: [0; 48],
                 pDestroyFunc: Some(SBG::SbgDestroyFunc),

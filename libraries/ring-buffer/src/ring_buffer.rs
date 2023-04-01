@@ -1,14 +1,14 @@
 pub struct RingBuffer {
-    buffer: [u8; 4096*2],
+    buffer: [u8; 4096],
     head: usize,
     tail: usize,
-    size: usize,
+    size: u16,
 }
 
 impl RingBuffer {
     pub const fn new() -> Self {
         Self {
-            buffer: [0; 4096*2],
+            buffer: [0; 4096],
             head: 0,
             tail: 0,
             size: 0,
@@ -21,7 +21,7 @@ impl RingBuffer {
     pub fn push(&mut self, item: u8) {
         // push items into the circular buffer
         self.buffer[self.tail] = item;
-        self.tail = (self.tail + 1) % (4096*2);
+        self.tail = (self.tail + 1) % (4096);
         self.size += 1;
     }
     /**
@@ -32,7 +32,7 @@ impl RingBuffer {
             return Err(());
         }
         let item = self.buffer[self.head];
-        self.head = (self.head + 1) % (4096*2);
+        self.head = (self.head + 1) % (4096);
         self.size -= 1;
         Ok(item)
     }
