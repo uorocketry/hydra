@@ -10,3 +10,4 @@ derive_more = "0.99.17"
 serde = { workspace = true }
 defmt = "0.3.2"
 fugit = "0.3.6"
+mavlink = { workspace = true }

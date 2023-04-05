@@ -25,7 +25,7 @@ use messages::sender::Sender::MainBoard;
 use messages::sensor::{Sbg, Sensor};
 use messages::*;
 use panic_halt as _;
-use postcard::to_vec_cobs;
+use postcard::to_vec;
 use systick_monotonic::*;
 /* SBG */
 use sbg_rs::sbg::SBG_COUNT;
@@ -201,11 +201,15 @@ mod app {
         cx.shared.em.run(|| {
             let uart = cx.local.uart;
 
-            let payload: Vec<u8, 64> = to_vec_cobs(&m)?;
+            let payload: Vec<u8, 64> = to_vec(&m)?;
+            
+            let mav_message = mavlink_postcard_message(&payload[..]);
 
-            for x in payload {
-                block!(uart.write(x))?;
-            }
+            mavlink::write_versioned_msg(&mut uart, mavlink::MavlinkVersion::V2, mav_header, &mav_message)?;
+
+            // for x in payload {
+            //     block!(uart.write(x))?;
+            // }
 
             info!("Sent message: {:?}", m);
 

@@ -22,6 +22,7 @@ pub struct Message {
     /// Time in milliseconds since epoch. Note that the epoch here can be arbitrary and is not the
     /// Unix epoch.
     pub timestamp: u64,
+    // this stuff is stuipd
 
     /// The original sender of this message.
     pub sender: Sender,
