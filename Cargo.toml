@@ -19,6 +19,9 @@ features = ["derive"]
 version = "0.7.6"
 features = ["critical-section-single-core"]
 
+[workspace.dependencies.mavlink]
+mavlink = {git = "https://github.com/uorocketry/rust-mavlink", branch = "hydra_dialect", features = ["default"]}
+
 [profile.dev]
 # Using LTO causes issues with GDB
 lto = false

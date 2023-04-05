@@ -26,7 +26,7 @@ use messages::sender::Sender::MainBoard;
 use messages::sensor::{Sbg, Sensor};
 use messages::*;
 use panic_halt as _;
-use postcard::to_vec_cobs;
+use postcard::to_vec;
 use systick_monotonic::*;
 type Pads = uart::PadsFromIds<Sercom3, IoSet1, PA23, PA22>;
 type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
@@ -308,11 +308,15 @@ mod app {
         cx.shared.em.run(|| {
             let uart = cx.local.uart;
 
-            let payload: Vec<u8, 255> = to_vec_cobs(&m)?;
+            let payload: Vec<u8, 255> = to_vec(&m)?;
+            
+            let mav_message = mavlink_postcard_message(&payload[..]);
 
-            for x in payload {
-                block!(uart.write(x))?;
-            }
+            mavlink::write_versioned_msg(&mut uart, mavlink::MavlinkVersion::V2, mav_header, &mav_message)?;
+
+            // for x in payload {
+            //     block!(uart.write(x))?;
+            // }
 
             info!("Sent message: {:?}", m);
 
