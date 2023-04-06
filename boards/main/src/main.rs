@@ -43,8 +43,7 @@ type ConfigSBG = uart::Config<PadsSBG, EightBit>;
 use hal::{time::{Nanoseconds, Milliseconds}};
 use sbg_rs::sbg;
 use hal::dmac;
-
-const LENGTH: usize = 50;
+use embedded_sdmmc::File;
 // type TransferBuffer = &'static mut [u8; LENGTH];
 // static mut BUF_SRC: TransferBuffer = &mut [0; LENGTH];
 // static mut BUF_DST: TransferBuffer = &mut [0; LENGTH];
@@ -70,7 +69,8 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
-        // sd: SdInterface,
+        sd: SdInterface,
+        sbg_file: File,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -105,16 +105,17 @@ mod app {
             .expect("Could not get gclk 2.");
 
         /* Start SD config */
-        // let mclk = &mut peripherals.MCLK;
-        // clocks.configure_gclk_divider_and_source(pac::gclk::pchctrl::GEN_A::GCLK5, 1, pac::gclk::genctrl::SRC_A::DFLL, false);
-        // let gclk5 = clocks.get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5).expect("Could not get gclk 5.");
-        // let spi_clk = clocks.sercom1_core(&gclk5).expect("Could not configure Sercom 1 clock.");
-        // let sercom = peripherals.SERCOM1;
-        // let cs = pins.pa18.into_push_pull_output();
-        // let sck = pins.pa17.into_push_pull_output();
-        // let miso = pins.pa19.into_push_pull_output();
-        // let mosi = pins.pa16.into_push_pull_output();
-        // let mut sd = sd::SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
+        let mclk = &mut peripherals.MCLK;
+        clocks.configure_gclk_divider_and_source(pac::gclk::pchctrl::GEN_A::GCLK5, 1, pac::gclk::genctrl::SRC_A::DFLL, false);
+        let gclk5 = clocks.get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5).expect("Could not get gclk 5.");
+        let spi_clk = clocks.sercom1_core(&gclk5).expect("Could not configure Sercom 1 clock.");
+        let sercom = peripherals.SERCOM1;
+        let cs = pins.pa18.into_push_pull_output();
+        let sck = pins.pa17.into_push_pull_output();
+        let miso = pins.pa19.into_push_pull_output();
+        let mosi = pins.pa16.into_push_pull_output();
+        let mut sd = sd::SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
+        let sbg_file = sd.open_file("SBG_Raw.txt").expect("Could not open file");
         /* End SD config */
         /* Start Radio config */
         let uart_clk = clocks
@@ -216,7 +217,7 @@ mod app {
                 opt_xfer: Some(xfer),
                 // opt_channel: Some(chan0),
             },
-            Local { led, uart},
+            Local { led, uart, sd, sbg_file},
             init::Monotonics(mono),
         )
     }
@@ -240,15 +241,18 @@ mod app {
         }
     }
 
-    #[task(binds = DMAC_0, shared = [opt_xfer])]
+    #[task(binds = DMAC_0, local = [sd, sbg_file], shared = [opt_xfer])]
     fn dmac0(mut cx: dmac0::Context) {
+        let mut sd = cx.local.sd;
         match cx.shared.opt_xfer.lock(|xfer| xfer.take()) {
             Some(mut xfer) => {
                 let (chan, rx, buf) = xfer.wait();
                 let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
-                for i in 0..buf.len() {
+                sd.write(&mut cx.local.sbg_file, buf).unwrap();
+                for i in 0..buf.len() {                
                     unsafe{SBG_RING_BUFFER.push(buf[i])};
                 }
+                spawn!(sensor_send).ok();
                 let newXfer = rx.receive_with_dma(buf, chan, waker);
                 cx.shared.opt_xfer.lock(|xfer| *xfer = Some(newXfer));
                 // cx.shared.opt_xfer.lock(|xfer| *xfer = Some(xfer));
@@ -305,28 +309,7 @@ mod app {
         spawn_after!(state_send, 10.secs()).ok();
     }
 
-    // /**
-    //  * Fills a ring buffer once the uart has received a byte.
-    //  */
-    // #[task(binds = SERCOM0_2, priority = 2, shared = [sbg])]
-    // fn fillBuffer(mut cx: fillBuffer::Context) {
-    //     cx.shared.sbg.lock(|shared| {
-    //         // fill the buffer using the sbg uart
-    //         let result = shared.serial_device.read();
-    //         match result {
-    //             Ok(data) => {
-    //                 unsafe{
-    //                     SBG_RING_BUFFER.push(data);
-    //                 };
-    //             },
-    //             // Flush the buffer if we get an error. Change this to a better error handling method.
-    //             Err(_) => shared.serial_device.flush_rx_buffer(),
-    //         }
-    //         shared.serial_device.clear_flags(hal::sercom::uart::Flags::RXC); // clear the interrupt flag
-    //     });
-    // }
-
-    #[task(priority = 2, shared = [&em, sbg])]
+    #[task(priority = 3, shared = [&em, sbg])]
     fn sensor_send(mut cx: sensor_send::Context) {   
 
         cx.shared.em.run(|| {
@@ -352,7 +335,7 @@ mod app {
             Ok(())
         });
 
-        spawn_after!(sensor_send, 2.secs()).ok();
+        // spawn_after!(sensor_send, 2.secs()).ok();
     }
 
     #[task(local = [led], shared = [&em])]

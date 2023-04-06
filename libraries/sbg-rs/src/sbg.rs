@@ -154,10 +154,10 @@ impl SBG {
             if bytesRead >= bytesToRead {
                 break
             }
-            let result = unsafe {SBG_RING_BUFFER.pop()};
+            let result = unsafe{SBG_RING_BUFFER.pop()};
             match result {
                 Ok(word) => array[bytesRead] = word,
-                Err(_) => return _SbgErrorCode_SBG_READ_ERROR,
+                Err(_) => break,
             }
             bytesRead = bytesRead + 1;
         }

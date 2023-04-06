@@ -438,6 +438,7 @@ dependencies = [
  "cortex-m-rtic",
  "defmt",
  "defmt-rtt",
+ "embedded-sdmmc",
  "fugit",
  "heapless",
  "messages",

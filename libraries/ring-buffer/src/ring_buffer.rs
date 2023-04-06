@@ -1,14 +1,16 @@
+const BUFFER_SIZE: usize = 4096*3;
+
 pub struct RingBuffer {
-    buffer: [u8; 4096],
+    buffer: [u8; BUFFER_SIZE],
     head: usize,
     tail: usize,
-    size: u16,
+    size: usize,
 }
 
 impl RingBuffer {
     pub const fn new() -> Self {
         Self {
-            buffer: [0; 4096],
+            buffer: [0; BUFFER_SIZE],
             head: 0,
             tail: 0,
             size: 0,
@@ -19,9 +21,12 @@ impl RingBuffer {
      * Push an item into the ring buffer.
      */
     pub fn push(&mut self, item: u8) {
+        if self.size == BUFFER_SIZE {
+            panic!("Ring buffer is full!");
+        }
         // push items into the circular buffer
-        self.buffer[self.tail] = item;
-        self.tail = (self.tail + 1) % (4096);
+        self.buffer[self.head] = item;
+        self.head = (self.head+1) % BUFFER_SIZE;
         self.size += 1;
     }
     /**
@@ -29,10 +34,10 @@ impl RingBuffer {
      */
     pub fn pop(&mut self) -> Result<u8, ()> {
         if self.size == 0 {
-            return Err(());
+            return Err(()) // Empty
         }
-        let item = self.buffer[self.head];
-        self.head = (self.head + 1) % (4096);
+        let item = self.buffer[self.tail];
+        self.tail = (self.tail+1) % BUFFER_SIZE;
         self.size -= 1;
         Ok(item)
     }
