@@ -49,19 +49,21 @@ use embedded_sdmmc::File;
 // static mut BUF_DST: TransferBuffer = &mut [0; LENGTH];
 type SBGWaker = fn(dmac::CallbackStatus) -> ();
 type SBGTransfer = dmac::Transfer<dmac::Channel<dmac::Ch0, dmac::Busy>, BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>, SBGWaker>;
+// type SBGTransfer = dmac::Transfer<dmac::Channel<dmac::Ch0, dmac::Busy>, BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>, >;
 type SBGBuffer = &'static mut [u8; 4096];
 static mut BUF_DST: SBGBuffer = &mut [0; 4096];
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+    use hal::{dmac::Transfer, sercom::Sercom};
+
     use super::*;
 
     #[shared]
     struct Shared {
         em: ErrorManager,
         sbg: sbg::SBG,
-        opt_xfer: Option<SBGTransfer>,
-        // sbg_rx: Uart<ConfigSBG, uart::RxDuplex>,
+        opt_xfer: SBGTransfer,
         // opt_channel: Option<dmac::Channel<dmac::Ch0, dmac::Ready>>,
     }
 
@@ -71,6 +73,7 @@ mod app {
         uart: Uart<Config, Duplex>,
         sd: SdInterface,
         sbg_file: File,
+        // sbg_rx: Option<Uart<ConfigSBG, uart::RxDuplex>>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -144,7 +147,9 @@ mod app {
             &mut peripherals.PM,
         );
         let channels = dmac.split();
-        let mut chan0 = channels.0.init(dmac::PriorityLevel::LVL0);
+        let mut chan0 = channels.0.init(dmac::PriorityLevel::LVL3);
+        // chan0.as_mut().enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
+        chan0.as_mut().enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
         /* End DMAC config */
         clocks.configure_gclk_divider_and_source(
             pac::gclk::pchctrl::GEN_A::GCLK3,
@@ -195,9 +200,11 @@ mod app {
         )
         .enable();
 
-        let (sbg_rx, sbg_tx) = uart_sbg.split();
+        let (mut sbg_rx, sbg_tx) = uart_sbg.split();
         let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
-        let xfer = sbg_rx.receive_with_dma(unsafe {&mut *BUF_DST}, chan0, waker);        
+        let xfer = Transfer::new(chan0, sbg_rx, unsafe {&mut *BUF_DST}, false).expect("DMA err").with_waker(waker).begin(hal::sercom::Sercom0::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+
+        // let xfer = sbg_rx.receive_with_dma(unsafe {&mut *BUF_DST}, chan0, waker);        
         // uart_sbg.enable_interrupts(hal::sercom::uart::Flags::RXC);
         // uart_cdc.receive_with_dma(unsafe{&mut *BUF_DST}, chan0, |_| {});
 
@@ -214,7 +221,7 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 sbg,
-                opt_xfer: Some(xfer),
+                opt_xfer: xfer,
                 // opt_channel: Some(chan0),
             },
             Local { led, uart, sd, sbg_file},
@@ -229,45 +236,71 @@ mod app {
         }
     }
 
-    #[task(shared = [opt_xfer])]
+    #[task(local = [sd, sbg_file], shared = [opt_xfer])]
     fn handleTransfer(mut cx: handleTransfer::Context) {
-        match cx.shared.opt_xfer.lock(|xfer| xfer.take()) {
-            Some(xfer) => {
-                let (xfer, buf, chan) = xfer.wait();
-            },
-            None => {
-                ()
-            }
-        }
+        // match cx.shared.opt_xfer.lock(|xfer| xfer.take()) {
+        //     Some(mut xfer) => {
+        //         let buf = xfer.recycle_source(unsafe{BUF_DST}).expect("err");
+        //         for i in 0..buf.len() {                
+        //             unsafe{SBG_RING_BUFFER.push(buf[i])};
+        //         }
+        //     },
+        //     None => {
+        //         spawn!(sensor_send).ok();
+
+        //     }
+        // }
     }
 
-    #[task(binds = DMAC_0, local = [sd, sbg_file], shared = [opt_xfer])]
+    #[task(binds = DMAC_0, shared = [opt_xfer])]
     fn dmac0(mut cx: dmac0::Context) {
-        let mut sd = cx.local.sd;
-        match cx.shared.opt_xfer.lock(|xfer| xfer.take()) {
-            Some(mut xfer) => {
-                let (chan, rx, buf) = xfer.wait();
-                let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
-                sd.write(&mut cx.local.sbg_file, buf).unwrap();
+        cx.shared.opt_xfer.lock(|xfer| (
+            if xfer.complete() {
+                let buf = xfer.recycle_source(unsafe{BUF_DST}).expect("err");
                 for i in 0..buf.len() {                
                     unsafe{SBG_RING_BUFFER.push(buf[i])};
                 }
-                spawn!(sensor_send).ok();
-                let newXfer = rx.receive_with_dma(buf, chan, waker);
-                cx.shared.opt_xfer.lock(|xfer| *xfer = Some(newXfer));
                 // cx.shared.opt_xfer.lock(|xfer| *xfer = Some(xfer));
-            },
-            None => {
-                // match cx.shared.opt_channel.lock(|chan| chan.take()) {
-                //     Some(chan) => {
-                //         let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
-                //     },
-                //     None => {
-                //         ()
-                //     }
-                // }
+                spawn!(sensor_send).ok();
             }
-        }
+        ));
+        
+        // let mut sd = cx.local.sd;
+        // // let mut sbg_rx = cx.local.sbg_rx.take().expect("err");
+        // match cx.shared.opt_xfer.lock(|xfer| xfer.take()) {
+        //     Some(mut xfer) => {
+                // let buf = xfer.recycle_source(unsafe{BUF_DST}).expect("err");
+                // for i in 0..buf.len() {                
+                //     unsafe{SBG_RING_BUFFER.push(buf[i])};
+                // }
+                // spawn!(sensor_send).ok();
+        //         // cx.shared.opt_xfer.lock(|xfer| *xfer = Some(xfer));
+        //     },
+        //     None => {
+
+        //     }
+            // Some(mut xfer) => {
+            //     let (chan, rx, buf) = xfer.wait();
+            //     let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
+            //     sd.write(&mut cx.local.sbg_file, buf).unwrap();
+            //     for i in 0..buf.len() {                
+            //         unsafe{SBG_RING_BUFFER.push(buf[i])};
+            //     }
+            //     spawn!(sensor_send).ok();
+            //     let newXfer = rx.receive_with_dma(buf, chan, waker);
+            //     cx.shared.opt_xfer.lock(|xfer| *xfer = Some(newXfer));
+            //     // cx.shared.opt_xfer.lock(|xfer| *xfer = Some(xfer));
+            // },
+            // None => {
+            //     // match cx.shared.opt_channel.lock(|chan| chan.take()) {
+            //     //     Some(chan) => {
+            //     //         let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
+            //     //     },
+            //     //     None => {
+            //     //         ()
+            //     //     }
+            //     // }
+            // }
     }
 
     #[task(capacity = 10, local = [uart], shared = [&em])]
