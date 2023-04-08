@@ -44,6 +44,8 @@ const SBG_BUFFER_SIZE: usize = 4096;
 type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
 static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+use messages::mav_message;
+use mavlink;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -308,11 +310,22 @@ mod app {
         cx.shared.em.run(|| {
             let uart = cx.local.uart;
 
+<<<<<<< HEAD
             let payload: Vec<u8, 255> = to_vec(&m)?;
             
             let mav_message = mavlink_postcard_message(&payload[..]);
+=======
+            let payload: Vec<u8, 64> = to_vec(&m)?;
+>>>>>>> 06787f8 (add mav_message to library)
 
-            mavlink::write_versioned_msg(&mut uart, mavlink::MavlinkVersion::V2, mav_header, &mav_message)?;
+            let mav_message = mav_message::mavlink_postcard_message(&payload[..]);
+
+            mavlink::write_versioned_msg(
+                &mut uart,
+                mavlink::MavlinkVersion::V2,
+                mav_message::MAV_HEADER_MAIN,
+                &mav_message
+            )?;
 
             // for x in payload {
             //     block!(uart.write(x))?;
