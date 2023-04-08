@@ -40,6 +40,8 @@ type ConfigCDC = uart::Config<PadsCDC, EightBit>;
 type ConfigSBG = uart::Config<PadsSBG, EightBit>;
 use hal::{time::{Nanoseconds, Milliseconds}};
 use sbg_rs::sbg;
+use messages::mav_message;
+use mavlink;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -202,10 +204,15 @@ mod app {
             let uart = cx.local.uart;
 
             let payload: Vec<u8, 64> = to_vec(&m)?;
-            
-            let mav_message = mavlink_postcard_message(&payload[..]);
 
-            mavlink::write_versioned_msg(&mut uart, mavlink::MavlinkVersion::V2, mav_header, &mav_message)?;
+            let mav_message = mav_message::mavlink_postcard_message(&payload[..]);
+
+            mavlink::write_versioned_msg(
+                &mut uart,
+                mavlink::MavlinkVersion::V2,
+                mav_message::MAV_HEADER_MAIN,
+                &mav_message
+            )?;
 
             // for x in payload {
             //     block!(uart.write(x))?;
