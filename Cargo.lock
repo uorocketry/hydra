@@ -235,6 +235,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "crc-any"
+version = "2.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "774646b687f63643eb0f4bf13dc263cb581c8c9e57973b6ddf78bda3994d88df"
+
+[[package]]
 name = "critical-section"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -440,12 +446,32 @@ dependencies = [
  "defmt-rtt",
  "fugit",
  "heapless",
+ "mavlink",
  "messages",
  "panic-halt",
  "postcard",
  "ring-buffer",
  "sbg-rs",
  "systick-monotonic",
+]
+
+[[package]]
+name = "mavlink"
+version = "0.11.1"
+source = "git+https://github.com/uorocketry/rust-mavlink?branch=hydra_dialect#3899cdffee56a023228267ebebe2196cb4a92d4d"
+dependencies = [
+ "bitflags",
+ "byteorder",
+ "crc-any",
+ "embedded-hal",
+ "heapless",
+ "lazy_static",
+ "nb 1.0.0",
+ "num-derive",
+ "num-traits",
+ "proc-macro2",
+ "quick-xml",
+ "quote",
 ]
 
 [[package]]
@@ -461,6 +487,7 @@ dependencies = [
  "defmt",
  "derive_more",
  "fugit",
+ "mavlink",
  "serde",
 ]
 
@@ -514,6 +541,17 @@ checksum = "e5507769c4919c998e69e49c839d9dc6e693ede4cc4290d6ad8b41d4f09c548c"
 dependencies = [
  "memchr",
  "minimal-lexical",
+]
+
+[[package]]
+name = "num-derive"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -592,6 +630,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ea3d908b0e36316caf9e9e2c4625cdde190a7e6f440d794667ed17a1855e725"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f50b1c63b38611e7d4d7f68b82d3ad0cc71a2ad2e7f61fc10f1328d917c93cd"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
