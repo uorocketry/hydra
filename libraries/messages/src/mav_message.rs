@@ -8,10 +8,10 @@ pub const MAV_HEADER_MAIN: mavlink::MavHeader = mavlink::MavHeader {
     sequence: 42,
 };
 
-pub fn mavlink_postcard_message(m: &[u8]) -> mavlink::uorocketry::MavMessage{
+pub fn mavlink_postcard_message(m: Vec <u8,255>) -> mavlink::uorocketry::MavMessage{
     mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(
-        mavlink::uorocketry::MavMessage::Postcard_Message_DATA{
-            message: m
+        mavlink::uorocketry::POSTCARD_MESSAGE_DATA{
+            message: m,
         }
     )
 }
