@@ -1,7 +1,9 @@
 #![no_std]
 #![no_main]
 #[link(name = "c", kind = "static")]
-extern {}
+extern "C" {}
+use core::sync::atomic::AtomicBool;
+
 use atsamd_hal as hal;
 use atsamd_hal::gpio::*;
 use atsamd_hal::pac;
@@ -9,24 +11,24 @@ use atsamd_hal::prelude::nb::block;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1, Sercom1, Sercom5};
-use hal::dmac::BufferPair;
-use pac::interrupt::DMAC_0;
-use hal::sercom::Sercom0;
-use hal::sercom::Sercom3;
-use hal::sercom::uart::NineBit;
-use hal::timer;
 use common_arm::*;
 use defmt::info;
 use defmt_rtt as _;
+use hal::dmac::BufferPair;
 use hal::gpio::Pins;
 use hal::gpio::PA14;
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
+use hal::sercom::uart::NineBit;
+use hal::sercom::Sercom0;
+use hal::sercom::Sercom3;
 use hal::time::Hertz;
+use hal::timer;
 use heapless::Vec;
 use messages::sender::Sender::MainBoard;
 use messages::sensor::{Sbg, Sensor};
 use messages::*;
+
 use panic_halt as _;
 use postcard::to_vec_cobs;
 use systick_monotonic::*;
@@ -40,18 +42,29 @@ type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 type Config = uart::Config<Pads, EightBit>;
 type ConfigCDC = uart::Config<PadsCDC, EightBit>;
 type ConfigSBG = uart::Config<PadsSBG, EightBit>;
-use hal::{time::{Nanoseconds, Milliseconds}};
-use sbg_rs::sbg;
-use hal::dmac;
 use embedded_sdmmc::File;
+use hal::dmac;
+use hal::time::{Milliseconds, Nanoseconds};
+use sbg_rs::sbg;
+use core::sync::atomic::AtomicU8;
 // type TransferBuffer = &'static mut [u8; LENGTH];
 // static mut BUF_SRC: TransferBuffer = &mut [0; LENGTH];
 // static mut BUF_DST: TransferBuffer = &mut [0; LENGTH];
 type SBGWaker = fn(dmac::CallbackStatus) -> ();
-type SBGTransfer = dmac::Transfer<dmac::Channel<dmac::Ch0, dmac::Busy>, BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>, SBGWaker>;
+type SBGTransfer = dmac::Transfer<
+    dmac::Channel<dmac::Ch0, dmac::Busy>,
+    BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>,
+    SBGWaker,
+>;
 // type SBGTransfer = dmac::Transfer<dmac::Channel<dmac::Ch0, dmac::Busy>, BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>, >;
-type SBGBuffer = &'static mut [u8; 4096];
-static mut BUF_DST: SBGBuffer = &mut [0; 4096];
+const SBG_BUFFER_SIZE: usize = 4096;
+type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
+static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+// static mut BUF_DST3: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+// static mut BUF_DST4: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+
+// static mut BUF_SELECT: AtomicBool = AtomicBool::new(false);
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -62,8 +75,11 @@ mod app {
     #[shared]
     struct Shared {
         em: ErrorManager,
-        sbg: sbg::SBG,
         opt_xfer: SBGTransfer,
+        buf_select: AtomicU8,
+        sbg: sbg::SBG,
+
+        // buf: [u8; 0],
         // opt_channel: Option<dmac::Channel<dmac::Ch0, dmac::Ready>>,
     }
 
@@ -71,8 +87,8 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
-        sd: SdInterface,
-        sbg_file: File,
+        // sd: SdInterface,
+        // sbg_file: File,
         // sbg_rx: Option<Uart<ConfigSBG, uart::RxDuplex>>,
     }
 
@@ -101,7 +117,7 @@ mod app {
             pac::gclk::genctrl::SRC_A::DFLL,
             false,
         );
-        
+
         // UART
         let gclk2 = clocks
             .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
@@ -109,16 +125,25 @@ mod app {
 
         /* Start SD config */
         let mclk = &mut peripherals.MCLK;
-        clocks.configure_gclk_divider_and_source(pac::gclk::pchctrl::GEN_A::GCLK5, 1, pac::gclk::genctrl::SRC_A::DFLL, false);
-        let gclk5 = clocks.get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5).expect("Could not get gclk 5.");
-        let spi_clk = clocks.sercom1_core(&gclk5).expect("Could not configure Sercom 1 clock.");
-        let sercom = peripherals.SERCOM1;
-        let cs = pins.pa18.into_push_pull_output();
-        let sck = pins.pa17.into_push_pull_output();
-        let miso = pins.pa19.into_push_pull_output();
-        let mosi = pins.pa16.into_push_pull_output();
-        let mut sd = sd::SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
-        let sbg_file = sd.open_file("SBG_Raw.txt").expect("Could not open file");
+        clocks.configure_gclk_divider_and_source(
+            pac::gclk::pchctrl::GEN_A::GCLK5,
+            1,
+            pac::gclk::genctrl::SRC_A::DFLL,
+            false,
+        );
+        let gclk5 = clocks
+            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5)
+            .expect("Could not get gclk 5.");
+        // let spi_clk = clocks
+        //     .sercom1_core(&gclk5)
+        //     .expect("Could not configure Sercom 1 clock.");
+        // let sercom = peripherals.SERCOM1;
+        // let cs = pins.pa18.into_push_pull_output();
+        // let sck = pins.pa17.into_push_pull_output();
+        // let miso = pins.pa19.into_push_pull_output();
+        // let mosi = pins.pa16.into_push_pull_output();
+        // let mut sd = sd::SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
+        // let sbg_file = sd.open_file("SBG_Raw.txt").expect("Could not open file");
         /* End SD config */
         /* Start Radio config */
         let uart_clk = clocks
@@ -142,14 +167,13 @@ mod app {
         /* End Radio config */
 
         /* DMAC config */
-        let mut dmac = dmac::DmaController::init(
-            peripherals.DMAC,
-            &mut peripherals.PM,
-        );
+        let mut dmac = dmac::DmaController::init(peripherals.DMAC, &mut peripherals.PM);
         let channels = dmac.split();
         let mut chan0 = channels.0.init(dmac::PriorityLevel::LVL3);
         // chan0.as_mut().enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        chan0.as_mut().enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
+        chan0
+            .as_mut()
+            .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
         /* End DMAC config */
         clocks.configure_gclk_divider_and_source(
             pac::gclk::pchctrl::GEN_A::GCLK3,
@@ -174,17 +198,12 @@ mod app {
         let pads = uart::Pads::<Sercom5, _>::default()
             .rx(pins.pb17)
             .tx(pins.pb16);
-        let uart_cdc = ConfigCDC::new(
-            &peripherals.MCLK,
-            peripherals.SERCOM5,
-            pads,
-            cdc_clk.freq(),
-        )
-        .baud(
-            115200.hz(),
-            uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-        )
-        .enable();
+        let uart_cdc = ConfigCDC::new(&peripherals.MCLK, peripherals.SERCOM5, pads, cdc_clk.freq())
+            .baud(
+                115200.hz(),
+                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+            )
+            .enable();
         let padsSBG = uart::Pads::<Sercom0, _>::default()
             .rx(pins.pa09)
             .tx(pins.pa08);
@@ -201,30 +220,56 @@ mod app {
         .enable();
 
         let (mut sbg_rx, sbg_tx) = uart_sbg.split();
-        let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
-        let xfer = Transfer::new(chan0, sbg_rx, unsafe {&mut *BUF_DST}, false).expect("DMA err").with_waker(waker).begin(hal::sercom::Sercom0::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+        let waker: SBGWaker = |_| {
+            handleTransfer::spawn().ok();
+        };
+        let xfer = Transfer::new(chan0, sbg_rx, unsafe { &mut *BUF_DST }, false)
+            .expect("DMA err")
+            .with_waker(waker)
+            .begin(
+                hal::sercom::Sercom0::DMA_RX_TRIGGER,
+                dmac::TriggerAction::BURST,
+            );
 
-        // let xfer = sbg_rx.receive_with_dma(unsafe {&mut *BUF_DST}, chan0, waker);        
-        // uart_sbg.enable_interrupts(hal::sercom::uart::Flags::RXC);
-        // uart_cdc.receive_with_dma(unsafe{&mut *BUF_DST}, chan0, |_| {});
-
-        tc2::spawn().ok();
-        state_send::spawn().ok();
-        sensor_send::spawn().ok();
-        blink::spawn().ok();
+        // enable_internal_32kosc(&mut peripherals.SYSCTL);
+        let timer_clock = clocks.configure_gclk_divider_and_source(
+            pac::gclk::pchctrl::GEN_A::GCLK1,
+            1,
+            pac::gclk::genctrl::SRC_A::XOSC32K,
+            false,
+        ).unwrap();
+        let gclk1 = clocks
+            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK1)
+            .expect("Could not get gclk 1.");
+        clocks.configure_standby(hal::clock::ClockGenId::GCLK1, true);
+        
+        // let rtc_clk = clocks.
+        let rtc = hal::rtc::Rtc::count32_mode(peripherals.RTC, 1024.hz(), &mut peripherals.MCLK);
+        
+        sbg_init::spawn().ok();
+        // state_send::spawn().ok();
+        // sensor_send::spawn().ok();
+        // blink::spawn().ok();
         let sysclk: Hertz = clocks.gclk0().into();
         let mono = Systick::new(core.SYST, sysclk.0);
 
-        let mut sbg: sbg::SBG = sbg::SBG::new(sbg_tx);
-
+        let mut sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc);
         (
             Shared {
                 em: ErrorManager::new(),
-                sbg,
                 opt_xfer: xfer,
+                buf_select: AtomicU8::new(0),
+                sbg,
+
+                // buf: [0; 0]
                 // opt_channel: Some(chan0),
             },
-            Local { led, uart, sd, sbg_file},
+            Local {
+                led,
+                uart,
+                // sd,
+                // sbg_file,
+            },
             init::Monotonics(mono),
         )
     }
@@ -236,12 +281,12 @@ mod app {
         }
     }
 
-    #[task(local = [sd, sbg_file], shared = [opt_xfer])]
+    #[task( shared = [opt_xfer])]
     fn handleTransfer(mut cx: handleTransfer::Context) {
         // match cx.shared.opt_xfer.lock(|xfer| xfer.take()) {
         //     Some(mut xfer) => {
         //         let buf = xfer.recycle_source(unsafe{BUF_DST}).expect("err");
-        //         for i in 0..buf.len() {                
+        //         for i in 0..buf.len() {
         //             unsafe{SBG_RING_BUFFER.push(buf[i])};
         //         }
         //     },
@@ -252,149 +297,159 @@ mod app {
         // }
     }
 
-    #[task(binds = DMAC_0, shared = [opt_xfer])]
+    #[task(shared = [sbg])]
+    fn sbg_init(mut cx: sbg_init::Context) {
+        cx.shared.sbg.lock(|sbg| sbg.setup());
+    }
+
+    #[task(binds = DMAC_0, shared = [opt_xfer, buf_select, sbg])]
     fn dmac0(mut cx: dmac0::Context) {
-        cx.shared.opt_xfer.lock(|xfer| (
-            if xfer.complete() {
-                let buf = xfer.recycle_source(unsafe{BUF_DST}).expect("err");
-                for i in 0..buf.len() {                
-                    unsafe{SBG_RING_BUFFER.push(buf[i])};
+        cx.shared.opt_xfer.lock(|xfer| {
+            cx.shared.sbg.lock(|sbg| {
+                if xfer.complete() {
+                    let mut buf_select = cx.shared.buf_select.lock(|buf_select| *buf_select.get_mut());
+                    match buf_select {
+                        0 => {
+                            let buf: &'static [u8; SBG_BUFFER_SIZE] = xfer.recycle_source(unsafe { BUF_DST }).expect("err");
+                            sbg.readData(buf);
+                            cx.shared.buf_select.lock(|buf_select| *buf_select.get_mut() = 1)
+                        },
+                        1 => {
+                            let buf: &'static [u8; SBG_BUFFER_SIZE] = xfer.recycle_source(unsafe { BUF_DST2 }).expect("err");
+                            sbg.readData(buf);
+    
+                            cx.shared.buf_select.lock(|buf_select| *buf_select.get_mut() = 0)
+                        },
+                        // 2 => {
+                        //     let buf: &'static [u8; SBG_BUFFER_SIZE] = xfer.recycle_source(unsafe { BUF_DST3 }).expect("err");
+                        //     sbg.readData(buf);
+    
+                        //     cx.shared.buf_select.lock(|buf_select| *buf_select.get_mut() = 3)
+                        // },
+                        // 3 => {
+                        //     let buf: &'static [u8; SBG_BUFFER_SIZE] = xfer.recycle_source(unsafe { BUF_DST4 }).expect("err");
+                        //     sbg.readData(buf);
+    
+                        //     cx.shared.buf_select.lock(|buf_select| *buf_select.get_mut() = 0)
+                        // },
+                        _ => {
+                            ()
+                        }
+                    }
+                    // cx.shared.opt_xfer.lock(|xfer| *xfer = xfer);
+                    // spawn!(sensor_send).ok();
                 }
-                // cx.shared.opt_xfer.lock(|xfer| *xfer = Some(xfer));
-                spawn!(sensor_send).ok();
-            }
-        ));
-        
-        // let mut sd = cx.local.sd;
-        // // let mut sbg_rx = cx.local.sbg_rx.take().expect("err");
-        // match cx.shared.opt_xfer.lock(|xfer| xfer.take()) {
-        //     Some(mut xfer) => {
-                // let buf = xfer.recycle_source(unsafe{BUF_DST}).expect("err");
-                // for i in 0..buf.len() {                
-                //     unsafe{SBG_RING_BUFFER.push(buf[i])};
-                // }
-                // spawn!(sensor_send).ok();
-        //         // cx.shared.opt_xfer.lock(|xfer| *xfer = Some(xfer));
-        //     },
-        //     None => {
-
-        //     }
-            // Some(mut xfer) => {
-            //     let (chan, rx, buf) = xfer.wait();
-            //     let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
-            //     sd.write(&mut cx.local.sbg_file, buf).unwrap();
-            //     for i in 0..buf.len() {                
-            //         unsafe{SBG_RING_BUFFER.push(buf[i])};
-            //     }
-            //     spawn!(sensor_send).ok();
-            //     let newXfer = rx.receive_with_dma(buf, chan, waker);
-            //     cx.shared.opt_xfer.lock(|xfer| *xfer = Some(newXfer));
-            //     // cx.shared.opt_xfer.lock(|xfer| *xfer = Some(xfer));
-            // },
-            // None => {
-            //     // match cx.shared.opt_channel.lock(|chan| chan.take()) {
-            //     //     Some(chan) => {
-            //     //         let waker: SBGWaker = |_| {handleTransfer::spawn().ok();};
-            //     //     },
-            //     //     None => {
-            //     //         ()
-            //     //     }
-            //     // }
-            // }
-    }
-
-    #[task(capacity = 10, local = [uart], shared = [&em])]
-    fn send_message(cx: send_message::Context, m: Message) {
-        cx.shared.em.run(|| {
-            let uart = cx.local.uart;
-
-            let payload: Vec<u8, 64> = to_vec_cobs(&m)?;
-
-            for x in payload {
-                block!(uart.write(x))?;
-            }
-
-            info!("Sent message: {:?}", m);
-
-            Ok(())
-        });
-    }
-
-    #[task(shared = [&em])]
-    fn state_send(cx: state_send::Context) {
-        
-        let em = cx.shared.em;
-
-        let state = State {
-            status: Status::Uninitialized,
-            has_error: em.has_error(),
-            voltage: 12.1,
-        };
-
-        let message = Message::new(&monotonics::now(), MainBoard, state);
-
-        cx.shared.em.run(|| {
-            spawn!(send_message, message)?;
-
-            Ok(())
-        });
-
-        spawn_after!(state_send, 10.secs()).ok();
-    }
-
-    #[task(priority = 3, shared = [&em, sbg])]
-    fn sensor_send(mut cx: sensor_send::Context) {   
-
-        cx.shared.em.run(|| {
-            cx.shared.sbg.lock(|shared| {
-                // if shared.isInitialized == false {
-                //     shared.setup();
-                // } else {
-                    shared.readData();
-                // }
             });
 
-            let sbg = Sbg {
-                accel: 9.8,
-                speed: 0.0,
-                pressure: 100.1,
-                height: 200.4,
-            };
-
-            let message = Message::new(&monotonics::now(), MainBoard, Sensor::new(9, sbg));
-
-            spawn!(send_message, message)?;
-
-            Ok(())
-        });
-
-        // spawn_after!(sensor_send, 2.secs()).ok();
-    }
-
-    #[task(local = [led], shared = [&em])]
-    fn blink(cx: blink::Context) {
-        cx.shared.em.run(|| {
-            cx.local.led.toggle()?;
-        
-            let time = monotonics::now().duration_since_epoch().to_secs();
-            info!("Seconds since epoch: {}", time);
-            if cx.shared.em.has_error() {
-                spawn_after!(blink, 200.millis())?;
-            } else {
-                spawn_after!(blink, 1.secs())?;
-            }
-            Ok(())
         });
     }
 
-    #[task(priority = 2, shared = [&em])] 
-    fn tc2(cx: tc2::Context) {
-        cx.shared.em.run(|| {
-            unsafe {*SBG_COUNT.get_mut() += 100;}
-            spawn_after!(tc2, 100.millis());
-            Ok(())
-        });
-    }
+    // #[task(capacity = 10, local = [uart], shared = [&em])]
+    // fn send_message(cx: send_message::Context, m: Message) {
+    //     cx.shared.em.run(|| {
+    //         let uart = cx.local.uart;
+
+    //         // let payload: Vec<u8, 64> = to_vec_cobs(&m)?;
+
+    //         // for x in payload {
+    //         //     block!(uart.write(x))?;
+    //         // }
+
+    //         info!("Sent message: {:?}", m);
+
+    //         Ok(())
+    //     });
+    // }
+
+    // #[task(shared = [&em])]
+    // fn state_send(cx: state_send::Context) {
+    //     let em = cx.shared.em;
+
+    //     let state = State {
+    //         status: Status::Uninitialized,
+    //         has_error: em.has_error(),
+    //         voltage: 12.1,
+    //     };
+
+    //     let message = Message::new(&monotonics::now(), MainBoard, state);
+
+    //     cx.shared.em.run(|| {
+    //         spawn!(send_message, message)?;
+
+    //         Ok(())
+    //     });
+
+    //     spawn_after!(state_send, 10.secs()).ok();
+    // }
+
+    // #[task(shared = [&em, buf_select, buf])]
+    // fn sensor_send(mut cx: sensor_send::Context) {
+    //     // let sbg = cx.local.sbg;
+    //     cx.shared.em.run(|| {
+    //         // let buf_select = cx.shared.buf_select.lock(|buf_select| *buf_select);
+    //         // match buf_select {
+    //         //     0 => {
+    //             // cx.shared.buf.lock(|buf| {
+    //             //     sbg.readData(|data| {
+    //             //         buf.copy_from_slice(data);
+    //             //     });                
+    //             // });
+
+    //             //     sbg.readData(unsafe { BUF_DST2 });
+
+    //             // },
+    //             // 2 => {
+    //             //     sbg.readData(unsafe { BUF_DST3 });
+
+    //             // },
+    //             // 3 => {
+    //             //     sbg.readData(unsafe { BUF_DST4 });
+    //             // },
+    //             // _ => {
+    //             //     ()
+    //             // }
+    //         // });
+
+
+    //         let sbg = Sbg {
+    //             accel: 9.8,
+    //             speed: 0.0,
+    //             pressure: 100.1,
+    //             height: 200.4,
+    //         };
+
+    //         let message = Message::new(&monotonics::now(), MainBoard, Sensor::new(9, sbg));
+
+    //         // spawn!(send_message, message)?;
+
+    //         Ok(())
+    //     });
+
+    //     // spawn_after!(sensor_send, 2.secs()).ok();
+    // }
+
+    // #[task(local = [led], shared = [&em])]
+    // fn blink(cx: blink::Context) {
+    //     cx.shared.em.run(|| {
+    //         cx.local.led.toggle()?;
+
+    //         let time = monotonics::now().duration_since_epoch().to_secs();
+    //         info!("Seconds since epoch: {}", time);
+    //         if cx.shared.em.has_error() {
+    //             spawn_after!(blink, 200.millis())?;
+    //         } else {
+    //             spawn_after!(blink, 1.secs())?;
+    //         }
+    //         Ok(())
+    //     });
+    // }
+
+    // #[task(priority = 3, binds = TC3, local = [t3], shared = [&em])]
+    // fn tc2(cx: tc2::Context) {
+    //     unsafe {
+    //         *SBG_COUNT.get_mut() += 100;
+    //     }
+    // }
 }
 
 #[no_mangle]

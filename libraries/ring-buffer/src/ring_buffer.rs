@@ -1,4 +1,4 @@
-const BUFFER_SIZE: usize = 4096*3;
+const BUFFER_SIZE: usize = 4096*10;
 
 pub struct RingBuffer {
     buffer: [u8; BUFFER_SIZE],
@@ -22,7 +22,7 @@ impl RingBuffer {
      */
     pub fn push(&mut self, item: u8) {
         if self.size == BUFFER_SIZE {
-            panic!("Ring buffer is full!");
+            // panic!("Ring buffer is full!");
         }
         // push items into the circular buffer
         self.buffer[self.head] = item;
