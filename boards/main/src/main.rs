@@ -47,9 +47,7 @@ use hal::dmac;
 use hal::time::{Milliseconds, Nanoseconds};
 use sbg_rs::sbg;
 use core::sync::atomic::AtomicU8;
-// type TransferBuffer = &'static mut [u8; LENGTH];
-// static mut BUF_SRC: TransferBuffer = &mut [0; LENGTH];
-// static mut BUF_DST: TransferBuffer = &mut [0; LENGTH];
+
 type SBGWaker = fn(dmac::CallbackStatus) -> ();
 type SBGTransfer = dmac::Transfer<
     dmac::Channel<dmac::Ch0, dmac::Busy>,
@@ -61,10 +59,6 @@ const SBG_BUFFER_SIZE: usize = 4096;
 type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
 static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-// static mut BUF_DST3: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-// static mut BUF_DST4: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-
-// static mut BUF_SELECT: AtomicBool = AtomicBool::new(false);
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -78,9 +72,6 @@ mod app {
         opt_xfer: SBGTransfer,
         buf_select: AtomicU8,
         sbg: sbg::SBG,
-
-        // buf: [u8; 0],
-        // opt_channel: Option<dmac::Channel<dmac::Ch0, dmac::Ready>>,
     }
 
     #[local]
@@ -243,9 +234,15 @@ mod app {
             .expect("Could not get gclk 1.");
         clocks.configure_standby(hal::clock::ClockGenId::GCLK1, true);
         
-        // let rtc_clk = clocks.
-        let rtc = hal::rtc::Rtc::count32_mode(peripherals.RTC, 1024.hz(), &mut peripherals.MCLK);
-        
+        /**
+         * There is a bug within the HAL that improperly configures the RTC 
+         * in count32 mode. This is circumvented by first using clock mode then 
+         * converting to count32 mode.
+         */
+        let mut rtc_temp = hal::rtc::Rtc::clock_mode(peripherals.RTC, 1024.hz(), &mut peripherals.MCLK);
+        let mut rtc = rtc_temp.into_count32_mode();
+        rtc.set_count32(0);
+
         sbg_init::spawn().ok();
         // state_send::spawn().ok();
         // sensor_send::spawn().ok();
@@ -320,18 +317,6 @@ mod app {
     
                             cx.shared.buf_select.lock(|buf_select| *buf_select.get_mut() = 0)
                         },
-                        // 2 => {
-                        //     let buf: &'static [u8; SBG_BUFFER_SIZE] = xfer.recycle_source(unsafe { BUF_DST3 }).expect("err");
-                        //     sbg.readData(buf);
-    
-                        //     cx.shared.buf_select.lock(|buf_select| *buf_select.get_mut() = 3)
-                        // },
-                        // 3 => {
-                        //     let buf: &'static [u8; SBG_BUFFER_SIZE] = xfer.recycle_source(unsafe { BUF_DST4 }).expect("err");
-                        //     sbg.readData(buf);
-    
-                        //     cx.shared.buf_select.lock(|buf_select| *buf_select.get_mut() = 0)
-                        // },
                         _ => {
                             ()
                         }
