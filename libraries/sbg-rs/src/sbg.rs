@@ -3,7 +3,7 @@ use crate::bindings::{
     _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
     _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
     sbgEComCmdGetInfo, SbgEComDeviceInfo, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20,
-    sbgEComCmdOutputSetConf, sbgEComHandle, sbgEComSetReceiveLogCallback, _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_INVALID_PARAMETER, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200,
+    sbgEComCmdOutputSetConf, sbgEComHandle, sbgEComSetReceiveLogCallback, _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_INVALID_PARAMETER, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_NEW_DATA,
 };
 use crate::bindings::{
     _SbgBinaryLogData, _SbgDebugLogType, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
@@ -151,38 +151,32 @@ impl SBG {
                 _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20,
             );
         }
-        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-            info!("Unable to configure GPS logs to 20 cycles");
-        }
 
         unsafe {
             errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
         }
         if errorCode != _SbgErrorCode_SBG_NO_ERROR
         {
-            info!("Unable to configure Euler logs to 20 cycles");
+            info!("Unable to configure Euler logs to 200 cycles");
         }
+
+        unsafe {
+            errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_GPS1_POS, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
+        }
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR
+        {
+            info!("Unable to configure GPS logs to 200 cycles");
+        }
+
 
         unsafe {
             errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
         }
         if errorCode != _SbgErrorCode_SBG_NO_ERROR
         {
-            info!("Unable to configure IMU logs to 40 cycles");
+            info!("Unable to configure IMU logs to 200 cycles");
         }
 
-        //
-        // Define callbacks for received data and display header
-        // This should happen in the new method
-        //
-        unsafe {
-            sbgEComSetReceiveLogCallback(
-                &mut self.handle,
-                Some(SBG::SbgEComReceiveLogFunc),
-                null_mut(),
-            )
-        };
-        info!("Euler Angles display with estimated standard deviation - degrees\n");
         if errorCode == _SbgErrorCode_SBG_NO_ERROR {
             self.isInitialized = true;
         };
@@ -254,7 +248,6 @@ impl SBG {
             unsafe { (*pInterface).handle as *mut Uart<Config, Duplex> };
         let mut array: &[u8] = unsafe { from_raw_parts(pBuffer as *const u8, bytesToWrite) };
         let mut counter: usize = 0;
-
         loop {
             if bytesToWrite == counter {
                 break;
