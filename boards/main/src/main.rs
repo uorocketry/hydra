@@ -48,13 +48,11 @@ use hal::dmac;
 use hal::time::{Milliseconds, Nanoseconds};
 use sbg_rs::sbg;
 
-type SBGWaker = fn(dmac::CallbackStatus) -> ();
+// type SBGWaker = fn(dmac::CallbackStatus) -> ();
 type SBGTransfer = dmac::Transfer<
     dmac::Channel<dmac::Ch0, dmac::Busy>,
     BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>,
-    SBGWaker,
 >;
-// type SBGTransfer = dmac::Transfer<dmac::Channel<dmac::Ch0, dmac::Busy>, BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>, >;
 const SBG_BUFFER_SIZE: usize = 4096;
 type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
 static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
@@ -72,14 +70,15 @@ mod app {
         opt_xfer: SBGTransfer,
         buf_select: AtomicU8,
         sbg: sbg::SBG,
+        sensor_data: Sbg,
     }
 
     #[local]
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         uart: Uart<Config, Duplex>,
-        // sd: SdInterface,
-        // sbg_file: File,
+        sd: SdInterface,
+        sbg_file: File,
         // sbg_rx: Option<Uart<ConfigSBG, uart::RxDuplex>>,
     }
 
@@ -125,16 +124,16 @@ mod app {
         let gclk5 = clocks
             .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5)
             .expect("Could not get gclk 5.");
-        // let spi_clk = clocks
-        //     .sercom1_core(&gclk5)
-        //     .expect("Could not configure Sercom 1 clock.");
-        // let sercom = peripherals.SERCOM1;
-        // let cs = pins.pa18.into_push_pull_output();
-        // let sck = pins.pa17.into_push_pull_output();
-        // let miso = pins.pa19.into_push_pull_output();
-        // let mosi = pins.pa16.into_push_pull_output();
-        // let mut sd = sd::SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
-        // let sbg_file = sd.open_file("SBG_Raw.txt").expect("Could not open file");
+        let spi_clk = clocks
+            .sercom1_core(&gclk5)
+            .expect("Could not configure Sercom 1 clock.");
+        let sercom = peripherals.SERCOM1;
+        let cs = pins.pa18.into_push_pull_output();
+        let sck = pins.pa17.into_push_pull_output();
+        let miso = pins.pa19.into_push_pull_output();
+        let mosi = pins.pa16.into_push_pull_output();
+        let mut sd = sd::SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
+        let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
         /* End SD config */
         /* Start Radio config */
         let uart_clk = clocks
@@ -211,12 +210,11 @@ mod app {
         .enable();
 
         let (mut sbg_rx, sbg_tx) = uart_sbg.split();
-        let waker: SBGWaker = |_| {
-            handleTransfer::spawn().ok();
-        };
+        // let waker: SBGWaker = |_| {
+        //     handleTransfer::spawn().ok();
+        // };
         let xfer = Transfer::new(chan0, sbg_rx, unsafe { &mut *BUF_DST }, false)
             .expect("DMA err")
-            .with_waker(waker)
             .begin(
                 hal::sercom::Sercom0::DMA_RX_TRIGGER,
                 dmac::TriggerAction::BURST,
@@ -230,7 +228,7 @@ mod app {
         let mut rtc = rtc_temp.into_count32_mode();
         rtc.set_count32(0);
 
-        // sbg_init::spawn().ok();
+        sbg_init::spawn().ok();
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
@@ -244,12 +242,23 @@ mod app {
                 opt_xfer: xfer,
                 buf_select: AtomicU8::new(0),
                 sbg,
+                sensor_data: Sbg {
+                    accel: 0.0,
+                    speed: 0.0,
+                    pressure: 0.0,
+                    height: 0.0,
+                    roll: 0.0,
+                    yaw: 0.0,
+                    pitch: 0.0,
+                    latitude: 0.0,
+                    longitude: 0.0,
+                },
             },
             Local {
                 led,
                 uart,
-                // sd,
-                // sbg_file,
+                sd,
+                sbg_file,
             },
             init::Monotonics(mono),
         )
@@ -262,17 +271,14 @@ mod app {
         }
     }
 
-    #[task( shared = [opt_xfer])]
-    fn handleTransfer(mut cx: handleTransfer::Context) {}
-
-    #[task(shared = [sbg])]
+    #[task(priority = 3, shared = [sbg])]
     fn sbg_init(mut cx: sbg_init::Context) {
         cx.shared.sbg.lock(|sbg| {
             sbg.setup();
         });
     }
 
-    #[task(priority = 3, binds = DMAC_0, shared = [opt_xfer, buf_select, sbg])]
+    #[task(binds = DMAC_0, local = [sd, sbg_file], shared = [sensor_data, opt_xfer, buf_select, sbg])]
     fn dmac0(mut cx: dmac0::Context) {
         cx.shared.opt_xfer.lock(|xfer| {
             cx.shared.sbg.lock(|sbg| {
@@ -285,7 +291,10 @@ mod app {
                         0 => {
                             let buf: &'static [u8; SBG_BUFFER_SIZE] =
                                 xfer.recycle_source(unsafe { BUF_DST }).expect("err");
-                            sbg.readData(buf);
+                            cx.local.sd.write(&mut cx.local.sbg_file, buf);
+                            cx.shared
+                                .sensor_data
+                                .lock(|sensor_data| *sensor_data = sbg.readData(buf));
                             cx.shared
                                 .buf_select
                                 .lock(|buf_select| *buf_select.get_mut() = 1)
@@ -293,7 +302,10 @@ mod app {
                         1 => {
                             let buf: &'static [u8; SBG_BUFFER_SIZE] =
                                 xfer.recycle_source(unsafe { BUF_DST2 }).expect("err");
-                            sbg.readData(buf);
+                            cx.local.sd.write(&mut cx.local.sbg_file, buf);
+                            cx.shared
+                                .sensor_data
+                                .lock(|sensor_data| *sensor_data = sbg.readData(buf));
                             cx.shared
                                 .buf_select
                                 .lock(|buf_select| *buf_select.get_mut() = 0)
@@ -343,21 +355,20 @@ mod app {
         spawn_after!(state_send, 10.secs()).ok();
     }
 
-    #[task(shared = [&em])]
+    #[task(shared = [sensor_data, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        cx.shared.em.run(|| {
-            let sbg = Sbg {
-                accel: 9.8,
-                speed: 0.0,
-                pressure: 100.1,
-                height: 200.4,
-            };
+        cx.shared.sensor_data.lock(|sensor_data| {
+            cx.shared.em.run(|| {
+                let message = Message::new(
+                    &monotonics::now(),
+                    MainBoard,
+                    Sensor::new(9, sensor_data.clone()),
+                );
 
-            let message = Message::new(&monotonics::now(), MainBoard, Sensor::new(9, sbg));
+                spawn!(send_message, message)?;
 
-            spawn!(send_message, message)?;
-
-            Ok(())
+                Ok(())
+            });
         });
 
         spawn_after!(sensor_send, 2.secs()).ok();

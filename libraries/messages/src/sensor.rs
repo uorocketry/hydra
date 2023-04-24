@@ -19,6 +19,11 @@ pub struct Sbg {
     pub speed: f32,
     pub pressure: f32,
     pub height: f32,
+    pub roll: f32,
+    pub yaw: f32,
+    pub pitch: f32,
+    pub latitude: f64,
+    pub longitude: f64,
 }
 
 impl Sensor {

@@ -3,7 +3,12 @@ use crate::bindings::{
     _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
     _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
     sbgEComCmdGetInfo, SbgEComDeviceInfo, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20,
-    sbgEComCmdOutputSetConf, sbgEComHandle, sbgEComSetReceiveLogCallback, _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_INVALID_PARAMETER, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_NEW_DATA,
+    _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200,
+    _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+    _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_NEW_DATA, _SbgErrorCode_SBG_INVALID_PARAMETER,
+    _SbgErrorCode_SBG_NULL_POINTER, sbgEComCmdOutputSetConf, sbgEComHandle,
+    sbgEComSetReceiveLogCallback,
+    _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
 };
 use crate::bindings::{
     _SbgBinaryLogData, _SbgDebugLogType, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
@@ -18,7 +23,7 @@ use core::ops::Add;
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::{AtomicU32, AtomicUsize};
-use defmt::{debug, error, info, trace, warn, flush};
+use defmt::{debug, error, flush, info, trace, warn};
 use embedded_hal::serial::{Read, Write};
 use hal::gpio::{PA08, PA09, PB16, PB17};
 use hal::sercom::uart::Duplex;
@@ -36,7 +41,7 @@ type Config = uart::Config<Pads, EightBit>;
  * Overflows after roughly 600 hours.
  */
 pub static mut SBG_COUNT: fn() -> u32 = || 0;
-/** 
+/**
  * Represents the ring buffer that is used to store the incoming data from the SBG.
  */
 pub static mut SBG_RING_BUFFER: RingBuffer = RingBuffer::new();
@@ -49,6 +54,18 @@ static mut BUF_INDEX: AtomicUsize = AtomicUsize::new(0);
 static mut BUF: &'static [u8; SBG_BUFFER_SIZE] = &[0; SBG_BUFFER_SIZE];
 
 static mut RTC: Option<hal::rtc::Rtc<hal::rtc::Count32Mode>> = None;
+
+static mut DATA: Sbg = Sbg {
+        accel: 0.0,
+        speed: 0.0,
+        pressure: 0.0,
+        height: 0.0,
+        roll: 0.0,
+        yaw: 0.0,
+        pitch: 0.0,
+        latitude: 0.0,
+        longitude: 0.0,
+};
 
 const SBG_BUFFER_SIZE: usize = 4096;
 struct UARTSBGInterface {
@@ -66,8 +83,11 @@ impl SBG {
     /**
      * Creates a new SBG instance to control the desired UART peripheral.
      */
-    pub fn new(mut serial_device: Uart<Config, uart::TxDuplex>,  rtc: hal::rtc::Rtc<hal::rtc::Count32Mode>) -> Self {
-        unsafe{RTC = Some(rtc)};
+    pub fn new(
+        mut serial_device: Uart<Config, uart::TxDuplex>,
+        rtc: hal::rtc::Rtc<hal::rtc::Count32Mode>,
+    ) -> Self {
+        unsafe { RTC = Some(rtc) };
         let interface = UARTSBGInterface {
             interface: &mut _SbgInterface {
                 handle: &mut serial_device as *mut Uart<Config, uart::TxDuplex> as *mut c_void,
@@ -124,56 +144,75 @@ impl SBG {
     pub fn readData(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) -> Sbg {
         unsafe { BUF = buffer };
         unsafe {
-        *BUF_INDEX.get_mut() = 0;
+            *BUF_INDEX.get_mut() = 0;
         }
         unsafe {
             sbgEComHandle(&mut self.handle);
         }
-        Sbg {
-            accel: 8.0,
-            speed: 8.0,
-            pressure: 8.0,
-            height: 8.0,
-        }
+        unsafe{DATA.clone()}
     }
 
     pub fn setup(&mut self) -> u32 {
-        unsafe {
-            sbgEComInit(&mut self.handle, self.UARTSBGInterface.interface);
-        }
+        // unsafe {
+        //     sbgEComInit(&mut self.handle, self.UARTSBGInterface.interface);
+        // }
         let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
+        
         unsafe {
             errorCode = sbgEComCmdOutputSetConf(
                 &mut self.handle,
                 _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
                 _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
-                _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
-                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20,
+                _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
             );
         }
+        // unsafe {
+        //     errorCode = sbgEComCmdOutputSetConf(
+        //         &mut self.handle,
+        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+        //         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
+        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20,
+        //     );
+        // }
 
-        unsafe {
-            errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
-        }
-        if errorCode != _SbgErrorCode_SBG_NO_ERROR
-        {
-            info!("Unable to configure Euler logs to 200 cycles");
-        }
+        // unsafe {
+        //     errorCode = sbgEComCmdOutputSetConf(
+        //         &mut self.handle,
+        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+        //         _SbgEComLog_SBG_ECOM_LOG_EKF_EULER,
+        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200,
+        //     );
+        // }
+        // if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+        //     info!("Unable to configure Euler logs to 200 cycles");
+        // }
 
-        unsafe {
-            errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_GPS1_POS, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
-        }
-        if errorCode != _SbgErrorCode_SBG_NO_ERROR
-        {
-            info!("Unable to configure GPS logs to 200 cycles");
-        }
+        // unsafe {
+        //     errorCode = sbgEComCmdOutputSetConf(
+        //         &mut self.handle,
+        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+        //         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
+        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200,
+        //     );
+        // }
+        // if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+        //     info!("Unable to configure GPS logs to 200 cycles");
+        // }
 
-
-        unsafe {
-            errorCode = sbgEComCmdOutputSetConf(&mut self.handle, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200 );
-        }
-        if errorCode != _SbgErrorCode_SBG_NO_ERROR
-        {
+        // unsafe {
+        //     errorCode = sbgEComCmdOutputSetConf(
+        //         &mut self.handle,
+        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+        //         _SbgEComLog_SBG_ECOM_LOG_IMU_DATA,
+        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200,
+        //     );
+        // }
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
             info!("Unable to configure IMU logs to 200 cycles");
         }
 
@@ -216,21 +255,21 @@ impl SBG {
         }
         let mut array: &mut [u8] = from_raw_parts_mut(pBuffer as *mut u8, bytesToRead);
         let index = *BUF_INDEX.get_mut();
-        if index+bytesToRead > SBG_BUFFER_SIZE {
+        if index + bytesToRead > SBG_BUFFER_SIZE {
             // Read what we can.
             bytesToRead = SBG_BUFFER_SIZE - index;
             if bytesToRead == 0 {
                 *pBytesRead = 0;
-                return _SbgErrorCode_SBG_NO_ERROR; // no data 
+                return _SbgErrorCode_SBG_NO_ERROR; // no data
             }
-            let end = bytesToRead+index;
-            array[0..bytesToRead-1].copy_from_slice(&BUF[index..end-1]);
+            let end = bytesToRead + index;
+            array[0..bytesToRead - 1].copy_from_slice(&BUF[index..end - 1]);
             *BUF_INDEX.get_mut() = index + bytesToRead;
             *pBytesRead = bytesToRead;
             return _SbgErrorCode_SBG_NO_ERROR;
         }
-        let end = bytesToRead+index;
-        array[0..bytesToRead-1].copy_from_slice(&BUF[index..end-1]);
+        let end = bytesToRead + index;
+        array[0..bytesToRead - 1].copy_from_slice(&BUF[index..end - 1]);
         *BUF_INDEX.get_mut() = index + bytesToRead;
         *pBytesRead = bytesToRead;
         _SbgErrorCode_SBG_NO_ERROR
@@ -280,35 +319,44 @@ impl SBG {
         }
         if msgClass == _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0 {
             match msg {
+                _SbgEComLog_SBG_ECOM_LOG_AIR_DATA => {
+                    DATA.pressure = (*pLogData).airData.pressureAbs;
+                    DATA.speed = (*pLogData).airData.trueAirspeed;
+                    DATA.height = (*pLogData).airData.altitude;
+                }
                 _SbgEComLog_SBG_ECOM_LOG_EKF_EULER => {
+                    DATA.roll = (*pLogData).ekfEulerData.euler[0];
+                    DATA.pitch = (*pLogData).ekfEulerData.euler[1];
+                    DATA.yaw = (*pLogData).ekfEulerData.euler[2];
                     // if (*pLogData).ekfEulerData.status == 0 {
-                        info!(
-                            "Roll {}, Pitch {}, Yaw {}",
-                            (*pLogData).ekfEulerData.euler[0],
-                            (*pLogData).ekfEulerData.euler[1],
-                            (*pLogData).ekfEulerData.euler[2]
-                        )
-                
-                },
-                _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT => info!(
-                    "Quat X {}, Y {}, Z {}, W {}",
-                    (*pLogData).ekfQuatData.quaternion[0] ,
-                    (*pLogData).ekfQuatData.quaternion[1] ,
-                    (*pLogData).ekfQuatData.quaternion[2] ,
-                    (*pLogData).ekfQuatData.quaternion[3] 
-                ),
-                _SbgEComLog_SBG_ECOM_LOG_IMU_DATA => info!(
-                    "Accel X {}, Y {}, Z {}",
-                    (*pLogData).imuData.accelerometers[0] ,
-                    (*pLogData).imuData.accelerometers[1] ,
-                    (*pLogData).imuData.accelerometers[2] 
-                ),
-                _SbgEComLog_SBG_ECOM_LOG_GPS1_POS => info!(
-                    "GPS1 Lat {}, Long {}, Alt {}",
-                    (*pLogData).gpsPosData.latitude ,
-                    (*pLogData).gpsPosData.longitude ,
-                    (*pLogData).gpsPosData.altitude 
-                ),
+                    // info!(_SbgEComLog_SBG_ECOM_LOG_GPS1_POS
+                    //     "Roll {}, Pitch {}, Yaw {}",
+                    //     (*pLogData).ekfEulerData.euler[0],
+                    //     (*pLogData).ekfEulerData.euler[1],
+                    //     (*pLogData).ekfEulerData.euler[2]
+                    // )
+                }
+                _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT => {
+                    // "Quat X {}, Y {}, Z {}, W {}",
+                    // (*pLogData).ekfQuatData.quaternion[0] ,
+                    // (*pLogData).ekfQuatData.quaternion[1] ,
+                    // (*pLogData).ekfQuatData.quaternion[2] ,
+                    // (*pLogData).ekfQuatData.quaternion[3]
+                }
+                _SbgEComLog_SBG_ECOM_LOG_IMU_DATA => {
+                    // "Accel X {}, Y {}, Z {}",
+                    // (*pLogData).imuData.accelerometers[0] ,
+                    // (*pLogData).imuData.accelerometers[1] ,
+                    // (*pLogData).imuData.accelerometers[2]
+                }
+                _SbgEComLog_SBG_ECOM_LOG_GPS1_POS => {
+                    DATA.latitude = (*pLogData).gpsPosData.latitude;
+                    DATA.longitude = (*pLogData).gpsPosData.longitude;
+                    // "GPS1 Lat {}, Long {}, Alt {}",
+                    // (*pLogData).gpsPosData.latitude ,
+                    // (*pLogData).gpsPosData.longitude ,
+                    // (*pLogData).gpsPosData.altitude
+                }
                 _ => (),
             }
         }
@@ -392,7 +440,7 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     // }
     // let message = format_args!("{} {}", format, arg_message);
     match logType {
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug"),
