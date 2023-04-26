@@ -25,12 +25,9 @@ use heapless::Vec;
 use messages::sender::Sender::MainBoard;
 use messages::sensor::{Sbg, Sensor};
 use messages::*;
-
 use panic_halt as _;
 use postcard::to_vec_cobs;
 use systick_monotonic::*;
-
-/* Type Def */
 type Pads = uart::PadsFromIds<Sercom3, IoSet1, PA23, PA22>;
 type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 type Config = uart::Config<Pads, EightBit>;
@@ -70,7 +67,6 @@ mod app {
         uart: Uart<Config, Duplex>,
         sd: SdInterface,
         sbg_file: File,
-        // sbg_rx: Option<Uart<ConfigSBG, uart::RxDuplex>>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -92,14 +88,7 @@ mod app {
         let pins = Pins::new(peripherals.PORT);
         let led = pins.pa14.into_push_pull_output();
 
-        clocks.configure_gclk_divider_and_source(
-            pac::gclk::pchctrl::GEN_A::GCLK2,
-            1,
-            pac::gclk::genctrl::SRC_A::DFLL,
-            false,
-        );
-
-        /* Start SD config */
+        /* SD config */
         let mclk = &mut peripherals.MCLK;
         clocks.configure_gclk_divider_and_source(
             pac::gclk::pchctrl::GEN_A::GCLK5,
@@ -121,7 +110,13 @@ mod app {
         let mut sd = sd::SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
         let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
         /* End SD config */
-        /* Start Radio config */
+        /* Radio config */
+        clocks.configure_gclk_divider_and_source(
+            pac::gclk::pchctrl::GEN_A::GCLK2,
+            1,
+            pac::gclk::genctrl::SRC_A::DFLL,
+            false,
+        );
         let gclk2 = clocks
             .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
             .expect("Could not get gclk 2.");
@@ -145,15 +140,7 @@ mod app {
         .enable();
         /* End Radio config */
 
-        /* DMAC config */
-        let mut dmac = dmac::DmaController::init(peripherals.DMAC, &mut peripherals.PM);
-        let channels = dmac.split();
-        let mut chan0 = channels.0.init(dmac::PriorityLevel::LVL3);
-        // chan0.as_mut().enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        chan0
-            .as_mut()
-            .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        /* End DMAC config */
+        /* SBG config */
         clocks.configure_gclk_divider_and_source(
             pac::gclk::pchctrl::GEN_A::GCLK3,
             1,
@@ -164,7 +151,6 @@ mod app {
             .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK3)
             .expect("Could not get gclk 2.");
 
-        /* Start UART CDC config */
         let sbg_clk = clocks
             .sercom0_core(&gclk3)
             .expect("Could not configure Sercom 0 clock.");
@@ -185,15 +171,21 @@ mod app {
         .enable();
 
         let (sbg_rx, sbg_tx) = uart_sbg.split();
-        // let waker: SBGWaker = |_| {
-        //     handleTransfer::spawn().ok();
-        // };
+
+        /* DMAC config */
+        let mut dmac = dmac::DmaController::init(peripherals.DMAC, &mut peripherals.PM);
+        let channels = dmac.split();
+        let mut chan0 = channels.0.init(dmac::PriorityLevel::LVL3);
+        chan0
+            .as_mut()
+            .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
         let xfer = Transfer::new(chan0, sbg_rx, unsafe { &mut *BUF_DST }, false)
             .expect("DMA err")
             .begin(
                 hal::sercom::Sercom0::DMA_RX_TRIGGER,
                 dmac::TriggerAction::BURST,
             );
+        /* End DMAC config */
 
         // There is a bug within the HAL that improperly configures the RTC
         // in count32 mode. This is circumvented by first using clock mode then
@@ -245,6 +237,9 @@ mod app {
         }
     }
 
+    /**
+     * Setups the SBG to output the appropriate data.
+     */
     #[task(priority = 3, shared = [sbg])]
     fn sbg_init(mut cx: sbg_init::Context) {
         cx.shared.sbg.lock(|sbg| {
@@ -252,8 +247,14 @@ mod app {
         });
     }
 
+    /**
+     * Handles the DMA interrupt.
+     * Handles the SBG data.
+     * Logs data to the SD card.
+     */
     #[task(binds = DMAC_0, local = [sd, sbg_file], shared = [sensor_data, opt_xfer, buf_select, sbg])]
     fn dmac0(mut cx: dmac0::Context) {
+        // This can be optimized to reduce CPU cycles
         cx.shared.opt_xfer.lock(|xfer| {
             cx.shared.sbg.lock(|sbg| {
                 if xfer.complete() {
@@ -292,6 +293,9 @@ mod app {
         });
     }
 
+    /**
+     * Sends a message to the radio over UART.
+     */
     #[task(capacity = 10, local = [uart], shared = [&em])]
     fn send_message(cx: send_message::Context, m: Message) {
         cx.shared.em.run(|| {
@@ -309,6 +313,9 @@ mod app {
         });
     }
 
+    /**
+     * Sends the state of the system.
+     */
     #[task(shared = [&em])]
     fn state_send(cx: state_send::Context) {
         let em = cx.shared.em;
@@ -330,6 +337,9 @@ mod app {
         spawn_after!(state_send, 10.secs()).ok();
     }
 
+    /**
+     * Sends information about the sensors.
+     */
     #[task(shared = [sensor_data, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
         cx.shared.sensor_data.lock(|sensor_data| {
@@ -349,6 +359,9 @@ mod app {
         spawn_after!(sensor_send, 2.secs()).ok();
     }
 
+    /**
+     * Simple blink task to test the system.
+     */
     #[task(local = [led], shared = [&em])]
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {

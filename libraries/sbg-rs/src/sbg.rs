@@ -1,15 +1,13 @@
 use crate::bindings::{
-    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG,
-    _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
-    _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
-    sbgEComCmdGetInfo, SbgEComDeviceInfo, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
+    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO,
+    _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
     _SbgEComLog_SBG_ECOM_LOG_EKF_NAV, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
-    _SbgErrorCode_SBG_NULL_POINTER, sbgEComCmdOutputSetConf, sbgEComHandle,
+    _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_READ_ERROR,
+    _SbgErrorCode_SBG_WRITE_ERROR, sbgEComCmdOutputSetConf, sbgEComHandle,
 };
 use crate::bindings::{
-    _SbgBinaryLogData, _SbgDebugLogType, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
-    _SbgEComDeviceInfo, _SbgEComHandle, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER,
-    _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT,
+    _SbgBinaryLogData, _SbgDebugLogType, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComHandle,
+    _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT,
     _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol,
     _SbgErrorCode, _SbgInterface,
 };
@@ -30,19 +28,23 @@ type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
 
 /**
- * Represents the number of milliseconds that have passed.
- * Overflows after roughly 600 hours.
- */
-pub static mut SBG_COUNT: fn() -> u32 = || 0;
-/**
  * Represents the index of the buffer that is currently being used.
  */
 static mut BUF_INDEX: AtomicUsize = AtomicUsize::new(0);
 
+/**
+ * Points to the buffer that is currently being used.
+ */
 static mut BUF: &'static [u8; SBG_BUFFER_SIZE] = &[0; SBG_BUFFER_SIZE];
 
+/**
+ * Holds the RTC instance. This is used to get the current time.
+ */
 static mut RTC: Option<hal::rtc::Rtc<hal::rtc::Count32Mode>> = None;
 
+/**
+ * Holds the latest SBG data that was received.
+ */
 static mut DATA: Sbg = Sbg {
     accel: 0.0,
     speed: 0.0,
@@ -55,6 +57,9 @@ static mut DATA: Sbg = Sbg {
     longitude: 0.0,
 };
 
+/**
+ * Max buffer size for SBG messages.
+ */
 const SBG_BUFFER_SIZE: usize = 4096;
 struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface,
@@ -141,55 +146,32 @@ impl SBG {
     }
 
     pub fn setup(&mut self) -> u32 {
-        // unsafe {
-        //     sbgEComInit(&mut self.handle, self.UARTSBGInterface.interface);
-        // }
         let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
 
-        // unsafe {
-        //     errorCode = sbgEComCmdOutputSetConf(
-        //         &mut self.handle,
-        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
-        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
-        //         _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
-        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
-        //     );
-        // }
-        // unsafe {
-        //     errorCode = sbgEComCmdOutputSetConf(
-        //         &mut self.handle,
-        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
-        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
-        //         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
-        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
-        //     );
-        // }
-
-        // unsafe {
-        //     errorCode = sbgEComCmdOutputSetConf(
-        //         &mut self.handle,
-        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
-        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
-        //         _SbgEComLog_SBG_ECOM_LOG_EKF_EULER,
-        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
-        //     );
-        // }
-        // if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-        //     info!("Unable to configure Euler logs to 40 cycles");
-        // }
-
-        // unsafe {
-        //     errorCode = sbgEComCmdOutputSetConf(
-        //         &mut self.handle,
-        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
-        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
-        //         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
-        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
-        //     );
-        // }
-        // if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-        //     info!("Unable to configure GPS logs to 40 cycles");
-        // }
+        unsafe {
+            errorCode = sbgEComCmdOutputSetConf(
+                &mut self.handle,
+                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+                _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+            );
+        }
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+            warn!("Unable to configure Air Data logs to 40 cycles");
+        }
+        unsafe {
+            errorCode = sbgEComCmdOutputSetConf(
+                &mut self.handle,
+                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+                _SbgEComLog_SBG_ECOM_LOG_EKF_EULER,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+            );
+        }
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+            warn!("Unable to configure EKF Euler logs to 40 cycles");
+        }
         unsafe {
             errorCode = sbgEComCmdOutputSetConf(
                 &mut self.handle,
@@ -200,23 +182,21 @@ impl SBG {
             );
         }
         if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-            info!("Unable to configure GPS logs to 40 cycles");
+            warn!("Unable to configure EKF Nav logs to 40 cycles");
         }
 
-        // unsafe {
-        //     errorCode = sbgEComCmdOutputSetConf(
-        //         &mut self.handle,
-        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
-        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
-        //         _SbgEComLog_SBG_ECOM_LOG_IMU_DATA,
-        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
-        //     );
-        // }
-        // if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-        //     info!("Unable to configure IMU logs to 40 cycles");
-        // }
-
-        if errorCode == _SbgErrorCode_SBG_NO_ERROR {
+        unsafe {
+            errorCode = sbgEComCmdOutputSetConf(
+                &mut self.handle,
+                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+                _SbgEComLog_SBG_ECOM_LOG_IMU_DATA,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+            );
+        }
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+            warn!("Unable to configure IMU logs to 40 cycles");
+        } else {
             self.isInitialized = true;
         };
         errorCode
