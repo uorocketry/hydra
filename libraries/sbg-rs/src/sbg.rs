@@ -1,5 +1,5 @@
 use crate::bindings::{
-    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR,
+    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG,
     _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
     _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
     sbgEComCmdGetInfo, SbgEComDeviceInfo, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
@@ -9,16 +9,16 @@ use crate::bindings::{
 use crate::bindings::{
     _SbgBinaryLogData, _SbgDebugLogType, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
     _SbgEComDeviceInfo, _SbgEComHandle, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER,
-    _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT, _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
+    _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT,
     _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol,
     _SbgErrorCode, _SbgInterface,
 };
 use atsamd_hal as hal;
-use core::ffi::{c_void, CStr, VaListImpl};
+use core::ffi::{c_void, CStr};
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
-use defmt::{debug, error, flush, info, warn};
+use defmt::{debug, flush, info, warn};
 use embedded_hal::serial::Write;
 use hal::gpio::{PA08, PA09, PB16, PB17};
 use hal::sercom::uart::Duplex;
@@ -97,7 +97,7 @@ impl SBG {
         */
 
         let pLargeBuffer: *mut u8 = null_mut();
-        let mut protocol: _SbgEComProtocol = _SbgEComProtocol {
+        let protocol: _SbgEComProtocol = _SbgEComProtocol {
             pLinkedInterface: interface.interface,
             rxBuffer: [0; 4096usize],
             rxBufferSize: 0,
@@ -111,14 +111,14 @@ impl SBG {
             pageIndex: 0,
             nrPages: 0,
         };
-        let mut handle: _SbgEComHandle = _SbgEComHandle {
+        let handle: _SbgEComHandle = _SbgEComHandle {
             protocolHandle: protocol,
             pReceiveLogCallback: Some(SBG::SbgEComReceiveLogFunc),
             pUserArg: null_mut(),
             numTrials: 3,
             cmdDefaultTimeOut: 500,
         };
-        let mut isInitialized = false;
+        let isInitialized = false;
         SBG {
             UARTSBGInterface: interface,
             serial_device,
@@ -222,29 +222,11 @@ impl SBG {
         errorCode
     }
 
-    pub fn getAndPrintProductInfo(pHandle: *mut _SbgEComHandle) -> _SbgErrorCode {
-        let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
-        let mut pInfo: SbgEComDeviceInfo = _SbgEComDeviceInfo {
-            productCode: [0; 32],
-            serialNumber: 0,
-            calibationRev: 0,
-            calibrationYear: 0,
-            calibrationMonth: 0,
-            calibrationDay: 0,
-            hardwareRev: 0,
-            firmwareRev: 0,
-        };
-        unsafe {
-            errorCode = sbgEComCmdGetInfo(pHandle, &mut pInfo);
-            errorCode
-        }
-    }
-
     /**
      * Allows the SBG interface to read data from the serial ports.
      */
     pub unsafe extern "C" fn SbgInterfaceReadFunc(
-        pInterface: *mut _SbgInterface,
+        _pInterface: *mut _SbgInterface,
         pBuffer: *mut c_void,
         pBytesRead: *mut usize,
         mut bytesToRead: usize,
@@ -253,7 +235,7 @@ impl SBG {
         if pBuffer.is_null() {
             return _SbgErrorCode_SBG_NULL_POINTER;
         }
-        let mut array: &mut [u8] = from_raw_parts_mut(pBuffer as *mut u8, bytesToRead);
+        let array: &mut [u8] = from_raw_parts_mut(pBuffer as *mut u8, bytesToRead);
         let index = *BUF_INDEX.get_mut();
         if index + bytesToRead > SBG_BUFFER_SIZE {
             // Read what we can.
@@ -308,11 +290,11 @@ impl SBG {
      * To be implemented
      */
     pub unsafe extern "C" fn SbgEComReceiveLogFunc(
-        pHandle: *mut _SbgEComHandle,
+        _pHandle: *mut _SbgEComHandle,
         msgClass: u32,
         msg: u32,
         pLogData: *const _SbgBinaryLogData,
-        pUserArg: *mut c_void,
+        _pUserArg: *mut c_void,
     ) -> _SbgErrorCode {
         if pLogData.is_null() {
             return _SbgErrorCode_SBG_NULL_POINTER;
@@ -363,14 +345,14 @@ impl SBG {
     /**
      * To be implemented
      */
-    pub extern "C" fn SbgDestroyFunc(pInterface: *mut _SbgInterface) -> _SbgErrorCode {
+    pub extern "C" fn SbgDestroyFunc(_pInterface: *mut _SbgInterface) -> _SbgErrorCode {
         _SbgErrorCode_SBG_NO_ERROR
     }
 
     /**
      * To be implemented
      */
-    pub extern "C" fn SbgFlushFunc(pInterface: *mut _SbgInterface, flags: u32) -> _SbgErrorCode {
+    pub extern "C" fn SbgFlushFunc(pInterface: *mut _SbgInterface, _flags: u32) -> _SbgErrorCode {
         let serial: *mut Uart<Config, Duplex> =
             unsafe { (*pInterface).handle as *mut Uart<Config, Duplex> };
         let result = unsafe { serial.as_mut().unwrap().flush() };
@@ -384,8 +366,8 @@ impl SBG {
      * To be implemented
      */
     pub unsafe extern "C" fn SbgSetSpeedFunc(
-        pInterface: *mut _SbgInterface,
-        speed: u32,
+        _pInterface: *mut _SbgInterface,
+        _speed: u32,
     ) -> _SbgErrorCode {
         _SbgErrorCode_SBG_NO_ERROR
     }
@@ -393,7 +375,7 @@ impl SBG {
     /**
      * To be implemented
      */
-    pub unsafe extern "C" fn SbgGetSpeedFunc(pInterface: *const _SbgInterface) -> u32 {
+    pub unsafe extern "C" fn SbgGetSpeedFunc(_pInterface: *const _SbgInterface) -> u32 {
         115200
     }
 
@@ -401,8 +383,8 @@ impl SBG {
      * To be implemented
      */
     pub unsafe extern "C" fn SbgDelayFunc(
-        pInterface: *const _SbgInterface,
-        numBytes: usize,
+        _pInterface: *const _SbgInterface,
+        _numBytes: usize,
     ) -> u32 {
         501
     }
@@ -418,18 +400,18 @@ unsafe impl Send for SBG {}
 pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     pFileName: *const ::core::ffi::c_char,
     pFunctionName: *const ::core::ffi::c_char,
-    line: u32,
+    _line: u32,
     pCategory: *const ::core::ffi::c_char,
     logType: _SbgDebugLogType,
-    errorCode: _SbgErrorCode,
+    _errorCode: _SbgErrorCode,
     pFormat: *const ::core::ffi::c_char,
-    args: ...
+    _args: ...
 ) {
     // using defmt logs
     let file = CStr::from_ptr(pFileName).to_str().unwrap();
     let function = CStr::from_ptr(pFunctionName).to_str().unwrap();
-    let category = CStr::from_ptr(pCategory).to_str().unwrap();
-    let format = CStr::from_ptr(pFormat).to_str().unwrap();
+    let _category = CStr::from_ptr(pCategory).to_str().unwrap();
+    let _format = CStr::from_ptr(pFormat).to_str().unwrap();
     // let mut arg_message = *"";
     // for _ in 0..n {
     //     arg_message = arg_message + *args.arg::<&str>();
