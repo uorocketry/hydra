@@ -18,7 +18,7 @@ pub struct Sbg {
     pub accel: f32,
     pub speed: f32,
     pub pressure: f32,
-    pub height: f32,
+    pub height: f64,
     pub roll: f32,
     pub yaw: f32,
     pub pitch: f32,

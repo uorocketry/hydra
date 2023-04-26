@@ -2,50 +2,38 @@ use crate::bindings::{
     self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR,
     _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
     _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
-    sbgEComCmdGetInfo, SbgEComDeviceInfo, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20,
-    _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200,
-    _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
-    _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_NEW_DATA, _SbgErrorCode_SBG_INVALID_PARAMETER,
+    sbgEComCmdGetInfo, SbgEComDeviceInfo, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
+    _SbgEComLog_SBG_ECOM_LOG_EKF_NAV, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
     _SbgErrorCode_SBG_NULL_POINTER, sbgEComCmdOutputSetConf, sbgEComHandle,
-    sbgEComSetReceiveLogCallback,
-    _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
 };
 use crate::bindings::{
     _SbgBinaryLogData, _SbgDebugLogType, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
     _SbgEComDeviceInfo, _SbgEComHandle, _SbgEComLog_SBG_ECOM_LOG_EKF_EULER,
     _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT, _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
     _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol,
-    _SbgErrorCode, _SbgInterface, sbgEComInit,
+    _SbgErrorCode, _SbgInterface,
 };
 use atsamd_hal as hal;
 use core::ffi::{c_void, CStr, VaListImpl};
-use core::ops::Add;
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
-use core::sync::atomic::{AtomicU32, AtomicUsize};
-use defmt::{debug, error, flush, info, trace, warn};
-use embedded_hal::serial::{Read, Write};
+use core::sync::atomic::AtomicUsize;
+use defmt::{debug, error, flush, info, warn};
+use embedded_hal::serial::Write;
 use hal::gpio::{PA08, PA09, PB16, PB17};
 use hal::sercom::uart::Duplex;
 use hal::sercom::uart::{self, EightBit, Uart};
 use hal::sercom::{IoSet1, Sercom0, Sercom5};
 use messages::sensor::Sbg;
-use ring_buffer::ring_buffer::RingBuffer;
 type Pads = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
-// type SBGBuffer = &'static mut [u8; 4096];
 
 /**
  * Represents the number of milliseconds that have passed.
  * Overflows after roughly 600 hours.
  */
 pub static mut SBG_COUNT: fn() -> u32 = || 0;
-/**
- * Represents the ring buffer that is used to store the incoming data from the SBG.
- */
-pub static mut SBG_RING_BUFFER: RingBuffer = RingBuffer::new();
-
 /**
  * Represents the index of the buffer that is currently being used.
  */
@@ -56,15 +44,15 @@ static mut BUF: &'static [u8; SBG_BUFFER_SIZE] = &[0; SBG_BUFFER_SIZE];
 static mut RTC: Option<hal::rtc::Rtc<hal::rtc::Count32Mode>> = None;
 
 static mut DATA: Sbg = Sbg {
-        accel: 0.0,
-        speed: 0.0,
-        pressure: 0.0,
-        height: 0.0,
-        roll: 0.0,
-        yaw: 0.0,
-        pitch: 0.0,
-        latitude: 0.0,
-        longitude: 0.0,
+    accel: 0.0,
+    speed: 0.0,
+    pressure: 0.0,
+    height: 0.0,
+    roll: 0.0,
+    yaw: 0.0,
+    pitch: 0.0,
+    latitude: 0.0,
+    longitude: 0.0,
 };
 
 const SBG_BUFFER_SIZE: usize = 4096;
@@ -149,7 +137,7 @@ impl SBG {
         unsafe {
             sbgEComHandle(&mut self.handle);
         }
-        unsafe{DATA.clone()}
+        unsafe { DATA.clone() }
     }
 
     pub fn setup(&mut self) -> u32 {
@@ -157,23 +145,23 @@ impl SBG {
         //     sbgEComInit(&mut self.handle, self.UARTSBGInterface.interface);
         // }
         let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
-        
-        unsafe {
-            errorCode = sbgEComCmdOutputSetConf(
-                &mut self.handle,
-                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
-                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
-                _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
-                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
-            );
-        }
+
+        // unsafe {
+        //     errorCode = sbgEComCmdOutputSetConf(
+        //         &mut self.handle,
+        //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+        //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+        //         _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
+        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+        //     );
+        // }
         // unsafe {
         //     errorCode = sbgEComCmdOutputSetConf(
         //         &mut self.handle,
         //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
         //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
         //         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
-        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_20,
+        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
         //     );
         // }
 
@@ -183,11 +171,11 @@ impl SBG {
         //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
         //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
         //         _SbgEComLog_SBG_ECOM_LOG_EKF_EULER,
-        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200,
+        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
         //     );
         // }
         // if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-        //     info!("Unable to configure Euler logs to 200 cycles");
+        //     info!("Unable to configure Euler logs to 40 cycles");
         // }
 
         // unsafe {
@@ -196,12 +184,24 @@ impl SBG {
         //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
         //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
         //         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
-        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200,
+        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
         //     );
         // }
         // if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-        //     info!("Unable to configure GPS logs to 200 cycles");
+        //     info!("Unable to configure GPS logs to 40 cycles");
         // }
+        unsafe {
+            errorCode = sbgEComCmdOutputSetConf(
+                &mut self.handle,
+                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+                _SbgEComLog_SBG_ECOM_LOG_EKF_NAV,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+            );
+        }
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+            info!("Unable to configure GPS logs to 40 cycles");
+        }
 
         // unsafe {
         //     errorCode = sbgEComCmdOutputSetConf(
@@ -209,12 +209,12 @@ impl SBG {
         //         _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
         //         _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
         //         _SbgEComLog_SBG_ECOM_LOG_IMU_DATA,
-        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_200,
+        //         _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
         //     );
         // }
-        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-            info!("Unable to configure IMU logs to 200 cycles");
-        }
+        // if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+        //     info!("Unable to configure IMU logs to 40 cycles");
+        // }
 
         if errorCode == _SbgErrorCode_SBG_NO_ERROR {
             self.isInitialized = true;
@@ -260,7 +260,7 @@ impl SBG {
             bytesToRead = SBG_BUFFER_SIZE - index;
             if bytesToRead == 0 {
                 *pBytesRead = 0;
-                return _SbgErrorCode_SBG_NO_ERROR; // no data
+                return _SbgErrorCode_SBG_READ_ERROR; // no data
             }
             let end = bytesToRead + index;
             array[0..bytesToRead - 1].copy_from_slice(&BUF[index..end - 1]);
@@ -285,7 +285,7 @@ impl SBG {
     ) -> _SbgErrorCode {
         let serial: *mut Uart<Config, Duplex> =
             unsafe { (*pInterface).handle as *mut Uart<Config, Duplex> };
-        let mut array: &[u8] = unsafe { from_raw_parts(pBuffer as *const u8, bytesToWrite) };
+        let array: &[u8] = unsafe { from_raw_parts(pBuffer as *const u8, bytesToWrite) };
         let mut counter: usize = 0;
         loop {
             if bytesToWrite == counter {
@@ -321,8 +321,6 @@ impl SBG {
             match msg {
                 _SbgEComLog_SBG_ECOM_LOG_AIR_DATA => {
                     DATA.pressure = (*pLogData).airData.pressureAbs;
-                    DATA.speed = (*pLogData).airData.trueAirspeed;
-                    DATA.height = (*pLogData).airData.altitude;
                 }
                 _SbgEComLog_SBG_ECOM_LOG_EKF_EULER => {
                     DATA.roll = (*pLogData).ekfEulerData.euler[0];
@@ -349,13 +347,11 @@ impl SBG {
                     // (*pLogData).imuData.accelerometers[1] ,
                     // (*pLogData).imuData.accelerometers[2]
                 }
-                _SbgEComLog_SBG_ECOM_LOG_GPS1_POS => {
-                    DATA.latitude = (*pLogData).gpsPosData.latitude;
-                    DATA.longitude = (*pLogData).gpsPosData.longitude;
-                    // "GPS1 Lat {}, Long {}, Alt {}",
-                    // (*pLogData).gpsPosData.latitude ,
-                    // (*pLogData).gpsPosData.longitude ,
-                    // (*pLogData).gpsPosData.altitude
+                _SbgEComLog_SBG_ECOM_LOG_EKF_NAV => {
+                    DATA.latitude = (*pLogData).ekfNavData.position[0];
+                    DATA.longitude = (*pLogData).ekfNavData.position[1];
+                    DATA.height = (*pLogData).ekfNavData.position[2];
+                    DATA.speed = (*pLogData).ekfNavData.velocity[0];
                 }
                 _ => (),
             }
@@ -441,7 +437,7 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     // let message = format_args!("{} {}", format, arg_message);
     match logType {
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning {} {}", file, function),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug"),
         _ => (),
@@ -453,10 +449,12 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
  * Returns the number of milliseconds that have passed.
  */
 #[no_mangle]
-pub unsafe extern "C" fn sbgGetTime() -> u32 {
-    match &RTC {
-        Some(x) => x.count32(),
-        None => 0,
+pub extern "C" fn sbgGetTime() -> u32 {
+    unsafe {
+        match &RTC {
+            Some(x) => x.count32(),
+            None => 0,
+        }
     }
 }
 
@@ -464,7 +462,7 @@ pub unsafe extern "C" fn sbgGetTime() -> u32 {
  * Sleeps the sbg execution
  */
 #[no_mangle]
-pub unsafe extern "C" fn sbgSleep(ms: u32) {
+pub extern "C" fn sbgSleep(ms: u32) {
     let start_time = sbgGetTime();
     while (sbgGetTime() - start_time) < ms {
         // do nothing

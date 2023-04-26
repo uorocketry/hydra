@@ -1,5 +1,0 @@
-[package]
-name = "ring-buffer"
-description = "Simple static ring buffer"
-version = "0.1.0"
-edition = "2021"

@@ -14,7 +14,6 @@ atsamd-hal = { workspace = true }
 cortex-m = { workspace = true }
 cortex-m-rt = "^0.7.0"
 messages = { path = "../../libraries/messages" }
-ring-buffer = { path = "../../libraries/ring-buffer" }
 common-arm = { path = "../../libraries/common-arm" }
 
 [build-dependencies]

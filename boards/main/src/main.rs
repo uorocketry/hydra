@@ -2,7 +2,6 @@
 #![no_main]
 #[link(name = "c", kind = "static")]
 extern "C" {}
-use core::sync::atomic::AtomicBool;
 
 use atsamd_hal as hal;
 use atsamd_hal::gpio::*;
@@ -10,7 +9,7 @@ use atsamd_hal::pac;
 use atsamd_hal::prelude::nb::block;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
-use atsamd_hal::sercom::{uart, IoSet1, Sercom1, Sercom5};
+use atsamd_hal::sercom::{uart, IoSet1, Sercom5};
 use common_arm::*;
 use defmt::info;
 use defmt_rtt as _;
@@ -19,11 +18,9 @@ use hal::gpio::Pins;
 use hal::gpio::PA14;
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
-use hal::sercom::uart::NineBit;
 use hal::sercom::Sercom0;
 use hal::sercom::Sercom3;
 use hal::time::Hertz;
-use hal::timer;
 use heapless::Vec;
 use messages::sender::Sender::MainBoard;
 use messages::sensor::{Sbg, Sensor};
@@ -32,23 +29,17 @@ use messages::*;
 use panic_halt as _;
 use postcard::to_vec_cobs;
 use systick_monotonic::*;
-/* SBG */
-use sbg_rs::sbg::SBG_COUNT;
-use sbg_rs::sbg::SBG_RING_BUFFER;
+
 /* Type Def */
 type Pads = uart::PadsFromIds<Sercom3, IoSet1, PA23, PA22>;
-type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 type Config = uart::Config<Pads, EightBit>;
-type ConfigCDC = uart::Config<PadsCDC, EightBit>;
 type ConfigSBG = uart::Config<PadsSBG, EightBit>;
 use core::sync::atomic::AtomicU8;
 use embedded_sdmmc::File;
 use hal::dmac;
-use hal::time::{Milliseconds, Nanoseconds};
 use sbg_rs::sbg;
 
-// type SBGWaker = fn(dmac::CallbackStatus) -> ();
 type SBGTransfer = dmac::Transfer<
     dmac::Channel<dmac::Ch0, dmac::Busy>,
     BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>,
@@ -108,11 +99,6 @@ mod app {
             false,
         );
 
-        // UART
-        let gclk2 = clocks
-            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
-            .expect("Could not get gclk 2.");
-
         /* Start SD config */
         let mclk = &mut peripherals.MCLK;
         clocks.configure_gclk_divider_and_source(
@@ -136,6 +122,9 @@ mod app {
         let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
         /* End SD config */
         /* Start Radio config */
+        let gclk2 = clocks
+            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
+            .expect("Could not get gclk 2.");
         let uart_clk = clocks
             .sercom3_core(&gclk2)
             .expect("Could not configure Sercom 1 clock.");
@@ -176,28 +165,14 @@ mod app {
             .expect("Could not get gclk 2.");
 
         /* Start UART CDC config */
-        let cdc_clk = clocks
-            .sercom5_core(&gclk3)
-            .expect("Could not configure Sercom 5 clock.");
-
-        /* Start UART CDC config */
         let sbg_clk = clocks
             .sercom0_core(&gclk3)
             .expect("Could not configure Sercom 0 clock.");
 
-        let pads = uart::Pads::<Sercom5, _>::default()
-            .rx(pins.pb17)
-            .tx(pins.pb16);
-        let uart_cdc = ConfigCDC::new(&peripherals.MCLK, peripherals.SERCOM5, pads, cdc_clk.freq())
-            .baud(
-                115200.hz(),
-                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-            )
-            .enable();
         let padsSBG = uart::Pads::<Sercom0, _>::default()
             .rx(pins.pa09)
             .tx(pins.pa08);
-        let mut uart_sbg = ConfigSBG::new(
+        let uart_sbg = ConfigSBG::new(
             &peripherals.MCLK,
             peripherals.SERCOM0,
             padsSBG,
@@ -209,7 +184,7 @@ mod app {
         )
         .enable();
 
-        let (mut sbg_rx, sbg_tx) = uart_sbg.split();
+        let (sbg_rx, sbg_tx) = uart_sbg.split();
         // let waker: SBGWaker = |_| {
         //     handleTransfer::spawn().ok();
         // };
@@ -223,8 +198,7 @@ mod app {
         // There is a bug within the HAL that improperly configures the RTC
         // in count32 mode. This is circumvented by first using clock mode then
         // converting to count32 mode.
-        let mut rtc_temp =
-            hal::rtc::Rtc::clock_mode(peripherals.RTC, 1024.hz(), &mut peripherals.MCLK);
+        let rtc_temp = hal::rtc::Rtc::clock_mode(peripherals.RTC, 1024.hz(), &mut peripherals.MCLK);
         let mut rtc = rtc_temp.into_count32_mode();
         rtc.set_count32(0);
 
@@ -291,10 +265,11 @@ mod app {
                         0 => {
                             let buf: &'static [u8; SBG_BUFFER_SIZE] =
                                 xfer.recycle_source(unsafe { BUF_DST }).expect("err");
-                            cx.local.sd.write(&mut cx.local.sbg_file, buf);
                             cx.shared
                                 .sensor_data
                                 .lock(|sensor_data| *sensor_data = sbg.readData(buf));
+                            cx.local.sd.write(&mut cx.local.sbg_file, buf);
+
                             cx.shared
                                 .buf_select
                                 .lock(|buf_select| *buf_select.get_mut() = 1)
