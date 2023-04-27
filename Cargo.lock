@@ -461,7 +461,7 @@ dependencies = [
 [[package]]
 name = "mavlink"
 version = "0.11.1"
-source = "git+https://github.com/uorocketry/rust-mavlink?branch=hydra_dialect#3899cdffee56a023228267ebebe2196cb4a92d4d"
+source = "git+https://github.com/uorocketry/rust-mavlink?branch=hydra_dialect#3b94ae8785deb774b2fe5f85a610717a03e58afc"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -469,7 +469,7 @@ dependencies = [
  "embedded-hal",
  "heapless",
  "lazy_static",
- "nb 1.0.0",
+ "nb 1.1.0",
  "num-derive",
  "num-traits",
  "proc-macro2",
@@ -491,8 +491,12 @@ dependencies = [
  "derive_more",
  "fugit",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "heapless",
 =======
+=======
+ "heapless",
+>>>>>>> cf990e8 (Resolve errors)
  "mavlink",
 >>>>>>> a03247f (Refactor top-level cargo.toml)
  "serde",
@@ -558,7 +562,7 @@ checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -677,6 +681,13 @@ name = "regex-syntax"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5996294f19bd3aae0453a862ad728f60e6600695733dd5df01da90c54363a3c"
+<<<<<<< HEAD
+=======
+
+[[package]]
+name = "ring-buffer"
+version = "0.1.0"
+>>>>>>> cf990e8 (Resolve errors)
 
 [[package]]
 name = "rtic-core"
@@ -757,6 +768,10 @@ dependencies = [
  "libc",
  "messages",
  "nb 1.1.0",
+<<<<<<< HEAD
+=======
+ "ring-buffer",
+>>>>>>> cf990e8 (Resolve errors)
 ]
 
 [[package]]
