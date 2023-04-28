@@ -242,43 +242,33 @@ impl SBG {
         // Safe because we check if pBuffer is null and the SBGECom library ensures the buffer given is of the correct size
         unsafe {
             let array: &mut [u8] = from_raw_parts_mut(pBuffer as *mut u8, bytesToRead);
-        }
         // Could be unsafe
-        unsafe {
             let index = *BUF_INDEX.get_mut();
-        }
+        
         if index + bytesToRead > SBG_BUFFER_SIZE {
             // Read what we can.
             bytesToRead = SBG_BUFFER_SIZE - index;
             if bytesToRead == 0 {
                 // Safe because we check if pBytesRead is null
-                unsafe {
                     *pBytesRead = 0;
-                }
                 return _SbgErrorCode_SBG_READ_ERROR; // no data
             }
             let end = bytesToRead + index;
             // Could be unsafe  
-            array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
+            array[0..bytesToRead - 1].copy_from_slice( &BUF[index..end - 1] );
             // Could be unsafe 
-            unsafe {
                 *BUF_INDEX.get_mut() = index + bytesToRead;
-            }
             // Safe because we check if pBytesRead is null
-            unsafe {
                 *pBytesRead = bytesToRead;
-            }
             return _SbgErrorCode_SBG_NO_ERROR;
         }
         let end = bytesToRead + index;
         // Could be unsafe
-        array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
+        array[0..bytesToRead - 1].copy_from_slice(&BUF[index..end - 1] );
         // Could be unsafe
-        unsafe {
             *BUF_INDEX.get_mut() = index + bytesToRead;
-        }
+        
         // Safe because we check if pBytesRead is null
-        unsafe {
             *pBytesRead = bytesToRead;
         }
         _SbgErrorCode_SBG_NO_ERROR
@@ -434,7 +424,7 @@ unsafe impl Send for SBG {}
  */
 #[no_mangle]
 #[feature(c_variadic)]
-pub extern "C" fn sbgPlatformDebugLogMsg(
+pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     pFileName: *const ::core::ffi::c_char,
     pFunctionName: *const ::core::ffi::c_char,
     _line: u32,
@@ -448,12 +438,11 @@ pub extern "C" fn sbgPlatformDebugLogMsg(
         return;
     }
     // Safe since we check that the pointers are not null
-    unsafe {
         let file = CStr::from_ptr(pFileName).to_str().unwrap();
         let function = CStr::from_ptr(pFunctionName).to_str().unwrap();
         let _category = CStr::from_ptr(pCategory).to_str().unwrap();
         let _format = CStr::from_ptr(pFormat).to_str().unwrap();
-    }
+    
     match logType {
         // silently handle errors
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
