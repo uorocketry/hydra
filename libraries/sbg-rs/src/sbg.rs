@@ -31,7 +31,6 @@ type Config = uart::Config<Pads, EightBit>;
  * Represents the index of the buffer that is currently being used.
  */
 static mut BUF_INDEX: AtomicUsize = AtomicUsize::new(0);
-
 /**
  * Points to the buffer that is currently being used.
  */
@@ -46,8 +45,16 @@ static mut RTC: Option<hal::rtc::Rtc<hal::rtc::Count32Mode>> = None;
  * Holds the latest SBG data that was received.
  */
 static mut DATA: Sbg = Sbg {
-    accel: 0.0,
-    speed: 0.0,
+    accel_x: 0.0,
+    accel_y: 0.0,
+    accel_z: 0.0,
+    velocity_n: 0.0,
+    velocity_e: 0.0,
+    velocity_d: 0.0,
+    quant_w: 0.0,
+    quant_x: 0.0,
+    quant_y: 0.0,
+    quant_z: 0.0,
     pressure: 0.0,
     height: 0.0,
     roll: 0.0,
@@ -67,19 +74,21 @@ struct UARTSBGInterface {
 
 pub struct SBG {
     UARTSBGInterface: UARTSBGInterface,
-    pub serial_device: Uart<Config, uart::TxDuplex>,
+    serial_device: Uart<Config, uart::TxDuplex>,
     handle: _SbgEComHandle,
-    pub isInitialized: bool,
+    isInitialized: bool,
 }
 
 impl SBG {
     /**
-     * Creates a new SBG instance to control the desired UART peripheral.
+     * Creates a new SBG instance.
+     * Takes ownership of the serial device and RTC instance.
      */
     pub fn new(
         mut serial_device: Uart<Config, uart::TxDuplex>,
         rtc: hal::rtc::Rtc<hal::rtc::Count32Mode>,
     ) -> Self {
+        // Safe because we are in a static context
         unsafe { RTC = Some(rtc) };
         let interface = UARTSBGInterface {
             interface: &mut _SbgInterface {
@@ -95,12 +104,6 @@ impl SBG {
                 pDelayFunc: Some(SBG::SbgDelayFunc),
             },
         };
-
-        /*
-           The stack is not forever, the handle will not stay.
-           Justify the use of unsafe!
-        */
-
         let pLargeBuffer: *mut u8 = null_mut();
         let protocol: _SbgEComProtocol = _SbgEComProtocol {
             pLinkedInterface: interface.interface,
@@ -132,22 +135,39 @@ impl SBG {
         }
     }
     /**
-     * Reads a data frame from the SBG.
+     * Returns true if the SBG is initialized.
+     */
+    pub fn isInitialized(&self) -> bool {
+        self.isInitialized
+    }
+    /**
+     * Reads SBG data frames for a buffer and returns the most recent data.
      */
     pub fn readData(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) -> Sbg {
         unsafe { BUF = buffer };
+        // safe because we are in an atomic context
         unsafe {
             *BUF_INDEX.get_mut() = 0;
         }
+        // unsafe because we are calling a C function
         unsafe {
             sbgEComHandle(&mut self.handle);
         }
+        // safe because DATA is not accessed by another task and we are on a single threaded system
         unsafe { DATA.clone() }
     }
 
+    /**
+     * Configures the SBG to output the following data
+     * Air data
+     * IMU data
+     * Extended Kalman Filter Euler data
+     * Extended Kalman Filter Quaternions
+     * Extended Kalman Filter Navigation data
+     */
     pub fn setup(&mut self) -> u32 {
         let mut errorCode: _SbgErrorCode = _SbgErrorCode_SBG_NO_ERROR;
-
+        // unsafe because we are calling a C function
         unsafe {
             errorCode = sbgEComCmdOutputSetConf(
                 &mut self.handle,
@@ -160,6 +180,7 @@ impl SBG {
         if errorCode != _SbgErrorCode_SBG_NO_ERROR {
             warn!("Unable to configure Air Data logs to 40 cycles");
         }
+        // unsafe because we are calling a C function
         unsafe {
             errorCode = sbgEComCmdOutputSetConf(
                 &mut self.handle,
@@ -172,6 +193,7 @@ impl SBG {
         if errorCode != _SbgErrorCode_SBG_NO_ERROR {
             warn!("Unable to configure EKF Euler logs to 40 cycles");
         }
+        // unsafe because we are calling a C function
         unsafe {
             errorCode = sbgEComCmdOutputSetConf(
                 &mut self.handle,
@@ -184,7 +206,7 @@ impl SBG {
         if errorCode != _SbgErrorCode_SBG_NO_ERROR {
             warn!("Unable to configure EKF Nav logs to 40 cycles");
         }
-
+        // unsafe because we are calling a C function
         unsafe {
             errorCode = sbgEComCmdOutputSetConf(
                 &mut self.handle,
@@ -205,35 +227,60 @@ impl SBG {
     /**
      * Allows the SBG interface to read data from the serial ports.
      */
-    pub unsafe extern "C" fn SbgInterfaceReadFunc(
+    pub extern "C" fn SbgInterfaceReadFunc(
         _pInterface: *mut _SbgInterface,
         pBuffer: *mut c_void,
         pBytesRead: *mut usize,
         mut bytesToRead: usize,
     ) -> _SbgErrorCode {
-        // check if pBuffer is valid
         if pBuffer.is_null() {
             return _SbgErrorCode_SBG_NULL_POINTER;
         }
-        let array: &mut [u8] = from_raw_parts_mut(pBuffer as *mut u8, bytesToRead);
-        let index = *BUF_INDEX.get_mut();
+        if pBytesRead.is_null() {
+            return _SbgErrorCode_SBG_NULL_POINTER;
+        }
+        // Safe because we check if pBuffer is null and the SBGECom library ensures the buffer given is of the correct size
+        unsafe {
+            let array: &mut [u8] = from_raw_parts_mut(pBuffer as *mut u8, bytesToRead);
+        }
+        // Could be unsafe
+        unsafe {
+            let index = *BUF_INDEX.get_mut();
+        }
         if index + bytesToRead > SBG_BUFFER_SIZE {
             // Read what we can.
             bytesToRead = SBG_BUFFER_SIZE - index;
             if bytesToRead == 0 {
-                *pBytesRead = 0;
+                // Safe because we check if pBytesRead is null
+                unsafe {
+                    *pBytesRead = 0;
+                }
                 return _SbgErrorCode_SBG_READ_ERROR; // no data
             }
             let end = bytesToRead + index;
-            array[0..bytesToRead - 1].copy_from_slice(&BUF[index..end - 1]);
-            *BUF_INDEX.get_mut() = index + bytesToRead;
-            *pBytesRead = bytesToRead;
+            // Could be unsafe  
+            array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
+            // Could be unsafe 
+            unsafe {
+                *BUF_INDEX.get_mut() = index + bytesToRead;
+            }
+            // Safe because we check if pBytesRead is null
+            unsafe {
+                *pBytesRead = bytesToRead;
+            }
             return _SbgErrorCode_SBG_NO_ERROR;
         }
         let end = bytesToRead + index;
-        array[0..bytesToRead - 1].copy_from_slice(&BUF[index..end - 1]);
-        *BUF_INDEX.get_mut() = index + bytesToRead;
-        *pBytesRead = bytesToRead;
+        // Could be unsafe
+        array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
+        // Could be unsafe
+        unsafe {
+            *BUF_INDEX.get_mut() = index + bytesToRead;
+        }
+        // Safe because we check if pBytesRead is null
+        unsafe {
+            *pBytesRead = bytesToRead;
+        }
         _SbgErrorCode_SBG_NO_ERROR
     }
 
@@ -245,8 +292,16 @@ impl SBG {
         pBuffer: *const c_void,
         bytesToWrite: usize,
     ) -> _SbgErrorCode {
+        if pInterface.is_null() {
+            return _SbgErrorCode_SBG_NULL_POINTER;
+        }
+        if pBuffer.is_null() {
+            return _SbgErrorCode_SBG_NULL_POINTER;
+        }
+        // Safe because we check if pInterface is null
         let serial: *mut Uart<Config, Duplex> =
             unsafe { (*pInterface).handle as *mut Uart<Config, Duplex> };
+        // Safe because we check if pBuffer is null
         let array: &[u8] = unsafe { from_raw_parts(pBuffer as *const u8, bytesToWrite) };
         let mut counter: usize = 0;
         loop {
@@ -254,8 +309,7 @@ impl SBG {
                 break;
             }
             // The block is needed otherwise the operation will not complete.
-
-            // write a u8 from the array
+            // Safe because serial is valid
             let result = unsafe { nb::block!(serial.as_mut().unwrap().write(array[counter])) };
             match result {
                 Ok(_) => counter += 1,
@@ -267,9 +321,8 @@ impl SBG {
 
     /**
      * Callback function for handling logs.
-     * To be implemented
      */
-    pub unsafe extern "C" fn SbgEComReceiveLogFunc(
+    pub extern "C" fn SbgEComReceiveLogFunc(
         _pHandle: *mut _SbgEComHandle,
         msgClass: u32,
         msg: u32,
@@ -281,58 +334,64 @@ impl SBG {
         }
         if msgClass == _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0 {
             match msg {
-                _SbgEComLog_SBG_ECOM_LOG_AIR_DATA => {
+                _SbgEComLog_SBG_ECOM_LOG_AIR_DATA => 
+                // Safe because we check if pLogData is null, but DATA could be unsafe and may need a MUTEX. 
+                unsafe {
                     DATA.pressure = (*pLogData).airData.pressureAbs;
-                }
-                _SbgEComLog_SBG_ECOM_LOG_EKF_EULER => {
+                },
+                _SbgEComLog_SBG_ECOM_LOG_EKF_EULER => 
+                // Safe because we check if pLogData is null, but DATA could be unsafe and may need a MUTEX. 
+                unsafe {
                     DATA.roll = (*pLogData).ekfEulerData.euler[0];
                     DATA.pitch = (*pLogData).ekfEulerData.euler[1];
                     DATA.yaw = (*pLogData).ekfEulerData.euler[2];
-                    // if (*pLogData).ekfEulerData.status == 0 {
-                    // info!(_SbgEComLog_SBG_ECOM_LOG_GPS1_POS
-                    //     "Roll {}, Pitch {}, Yaw {}",
-                    //     (*pLogData).ekfEulerData.euler[0],
-                    //     (*pLogData).ekfEulerData.euler[1],
-                    //     (*pLogData).ekfEulerData.euler[2]
-                    // )
-                }
-                _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT => {
-                    // "Quat X {}, Y {}, Z {}, W {}",
-                    // (*pLogData).ekfQuatData.quaternion[0] ,
-                    // (*pLogData).ekfQuatData.quaternion[1] ,
-                    // (*pLogData).ekfQuatData.quaternion[2] ,
-                    // (*pLogData).ekfQuatData.quaternion[3]
-                }
-                _SbgEComLog_SBG_ECOM_LOG_IMU_DATA => {
-                    // "Accel X {}, Y {}, Z {}",
-                    // (*pLogData).imuData.accelerometers[0] ,
-                    // (*pLogData).imuData.accelerometers[1] ,
-                    // (*pLogData).imuData.accelerometers[2]
-                }
-                _SbgEComLog_SBG_ECOM_LOG_EKF_NAV => {
+                },
+                _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT => 
+                // Safe because we check if pLogData is null, but DATA could be unsafe and may need a MUTEX. 
+                unsafe {
+                    DATA.quant_w = (*pLogData).ekfQuatData.quaternion[0];
+                    DATA.quant_x = (*pLogData).ekfQuatData.quaternion[1];
+                    DATA.quant_y = (*pLogData).ekfQuatData.quaternion[2];
+                    DATA.quant_z = (*pLogData).ekfQuatData.quaternion[3];
+                },
+                _SbgEComLog_SBG_ECOM_LOG_IMU_DATA => 
+                // Safe because we check if pLogData is null, but DATA could be unsafe and may need a MUTEX. 
+                unsafe {
+                    DATA.accel_x = (*pLogData).imuData.accelerometers[0];
+                    DATA.accel_y = (*pLogData).imuData.accelerometers[1];
+                    DATA.accel_z = (*pLogData).imuData.accelerometers[2];
+                },
+                _SbgEComLog_SBG_ECOM_LOG_EKF_NAV => 
+                // Safe because we check if pLogData is null, but DATA could be unsafe and may need a MUTEX. 
+                unsafe {
                     DATA.latitude = (*pLogData).ekfNavData.position[0];
                     DATA.longitude = (*pLogData).ekfNavData.position[1];
                     DATA.height = (*pLogData).ekfNavData.position[2];
-                    DATA.speed = (*pLogData).ekfNavData.velocity[0];
-                }
+                    DATA.velocity_n = (*pLogData).ekfNavData.velocity[0];
+                    DATA.velocity_e = (*pLogData).ekfNavData.velocity[1];
+                    DATA.velocity_d = (*pLogData).ekfNavData.velocity[2];
+                },
                 _ => (),
             }
         }
-        flush();
         _SbgErrorCode_SBG_NO_ERROR
     }
 
     /**
-     * To be implemented
+     * The SBG interface does not need to be destroyed.
      */
     pub extern "C" fn SbgDestroyFunc(_pInterface: *mut _SbgInterface) -> _SbgErrorCode {
         _SbgErrorCode_SBG_NO_ERROR
     }
 
     /**
-     * To be implemented
+     * Flushes the UART peripheral.
      */
     pub extern "C" fn SbgFlushFunc(pInterface: *mut _SbgInterface, _flags: u32) -> _SbgErrorCode {
+        if pInterface.is_null() {
+            return _SbgErrorCode_SBG_NULL_POINTER;
+        }
+        // Safe because we check if pInterface is null
         let serial: *mut Uart<Config, Duplex> =
             unsafe { (*pInterface).handle as *mut Uart<Config, Duplex> };
         let result = unsafe { serial.as_mut().unwrap().flush() };
@@ -343,9 +402,9 @@ impl SBG {
     }
 
     /**
-     * To be implemented
+     * The baud rate is fixed to 115200 and hence this function does nothing.
      */
-    pub unsafe extern "C" fn SbgSetSpeedFunc(
+    pub extern "C" fn SbgSetSpeedFunc(
         _pInterface: *mut _SbgInterface,
         _speed: u32,
     ) -> _SbgErrorCode {
@@ -353,31 +412,29 @@ impl SBG {
     }
 
     /**
-     * To be implemented
+     * The baud rate is fixed to 115200
      */
-    pub unsafe extern "C" fn SbgGetSpeedFunc(_pInterface: *const _SbgInterface) -> u32 {
+    pub extern "C" fn SbgGetSpeedFunc(_pInterface: *const _SbgInterface) -> u32 {
         115200
     }
 
     /**
-     * To be implemented
+     * Optional method used to compute an expected delay to transmit/receive X bytes
      */
-    pub unsafe extern "C" fn SbgDelayFunc(
-        _pInterface: *const _SbgInterface,
-        _numBytes: usize,
-    ) -> u32 {
-        501
+    pub extern "C" fn SbgDelayFunc(_pInterface: *const _SbgInterface, _numBytes: usize) -> u32 {
+        0
     }
 }
 
 unsafe impl Send for SBG {}
 
 /**
- * To be implemented
+ * Logs the message to the console.
+ * Needs to be updated to handle the Variadic arguments.
  */
 #[no_mangle]
 #[feature(c_variadic)]
-pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
+pub extern "C" fn sbgPlatformDebugLogMsg(
     pFileName: *const ::core::ffi::c_char,
     pFunctionName: *const ::core::ffi::c_char,
     _line: u32,
@@ -387,24 +444,25 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     pFormat: *const ::core::ffi::c_char,
     _args: ...
 ) {
-    // using defmt logs
-    let file = CStr::from_ptr(pFileName).to_str().unwrap();
-    let function = CStr::from_ptr(pFunctionName).to_str().unwrap();
-    let _category = CStr::from_ptr(pCategory).to_str().unwrap();
-    let _format = CStr::from_ptr(pFormat).to_str().unwrap();
-    // let mut arg_message = *"";
-    // for _ in 0..n {
-    //     arg_message = arg_message + *args.arg::<&str>();
-    // }
-    // let message = format_args!("{} {}", format, arg_message);
+    if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
+        return;
+    }
+    // Safe since we check that the pointers are not null
+    unsafe {
+        let file = CStr::from_ptr(pFileName).to_str().unwrap();
+        let function = CStr::from_ptr(pFunctionName).to_str().unwrap();
+        let _category = CStr::from_ptr(pCategory).to_str().unwrap();
+        let _format = CStr::from_ptr(pFormat).to_str().unwrap();
+    }
     match logType {
+        // silently handle errors
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning {} {}", file, function),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info"),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug"),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),
         _ => (),
     };
-    flush();
+    flush(); 
 }
 
 /**
@@ -412,10 +470,11 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
  */
 #[no_mangle]
 pub extern "C" fn sbgGetTime() -> u32 {
+    // Could be unsafe  
     unsafe {
         match &RTC {
             Some(x) => x.count32(),
-            None => 0,
+            None => 0, // bad error handling but we can't panic, maybe we should force the timeout to be zero in the event there is no RTC.
         }
     }
 }
