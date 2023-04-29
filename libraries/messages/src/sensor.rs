@@ -24,10 +24,23 @@ pub enum SensorData {
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Sbg {
-    pub accel: f32,
-    pub speed: f32,
+    pub accel_x: f32,
+    pub accel_y: f32,
+    pub accel_z: f32,
+    pub velocity_n: f32,
+    pub velocity_e: f32,
+    pub velocity_d: f32,
     pub pressure: f32,
-    pub height: f32,
+    pub height: f64,
+    pub roll: f32,
+    pub yaw: f32,
+    pub pitch: f32,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub quant_w: f32,
+    pub quant_x: f32,
+    pub quant_y: f32,
+    pub quant_z: f32,
 }
 
 impl Sensor {

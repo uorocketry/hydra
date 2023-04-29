@@ -1,0 +1,8 @@
+{
+    "cmake.configureOnOpen": false,
+    "cSpell.words": [
+        "UART"
+    ],
+    "cortex-debug.variableUseNaturalFormat": true,
+    "cmake.sourceDirectory": "${workspaceFolder}/libraries/sbg-rs/sbgECom"
+}
