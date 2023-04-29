@@ -11,9 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+            # Install CMake
+      - name: Install CMake
+        run: sudo apt-get -y install cmake
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           target: thumbv7em-none-eabihf
       - uses: actions-rs/cargo@v1
         with:
