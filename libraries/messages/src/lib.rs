@@ -18,10 +18,13 @@ pub use mavlink;
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
+mod logging;
 pub mod sender;
 pub mod sensor;
 
 pub const MAX_SIZE: usize = 85;
+
+pub use logging::{ErrorContext, Event, Log, LogLevel};
 
 /// Topmost message. Encloses all the other possible messages, and is the only thing that should
 /// be sent over the wire.
@@ -47,6 +50,7 @@ pub struct Message {
 pub enum Data {
     State(State),
     Sensor(Sensor),
+    Log(Log),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]

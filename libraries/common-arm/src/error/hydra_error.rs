@@ -1,12 +1,14 @@
 use atsamd_hal;
 use core::convert::Infallible;
-use defmt::write;
+use defmt::{write, Format};
 use derive_more::From;
 use embedded_sdmmc as sd;
+use messages::ErrorContext;
 
-/// Standard HYDRA error. Add variants to this enum for any errors that can occur in the codebase.
+/// Contains all the various error types that can be encountered in the Hydra codebase. Extra errors
+/// types should be added to this list whenever needed.
 #[derive(From)]
-pub enum HydraError {
+pub enum HydraErrorType {
     /// An Infallible error. This error should never happen.
     Infallible(Infallible),
     /// Error from the Postcard serialization library.
@@ -25,34 +27,48 @@ pub enum HydraError {
     CanMessageError(mcan::message::TooMuchData),
 }
 
-impl defmt::Format for HydraError {
+impl defmt::Format for HydraErrorType {
     fn format(&self, f: defmt::Formatter) {
         match self {
-            HydraError::Infallible(_) => {
+            HydraErrorType::Infallible(_) => {
                 write!(f, "Infallible error encountered!")
             }
-            HydraError::PostcardError(e) => {
+            HydraErrorType::PostcardError(e) => {
                 write!(f, "Postcard error: {}", e)
             }
-            HydraError::SpawnError(e) => {
+            HydraErrorType::SpawnError(e) => {
                 write!(f, "Could not spawn task '{}'", e);
             }
-            HydraError::SdCardError(_) => {
+            HydraErrorType::SdCardError(_) => {
                 write!(f, "SD card error!");
             }
-            HydraError::MavlinkError(_) => {
+            HydraErrorType::MavlinkError(_) => {
                 write!(f, "Mavlink error!");
             }
-            HydraError::DmaError(_) => {
+            HydraErrorType::DmaError(_) => {
                 write!(f, "DMA error!");
             }
-            HydraError::CanError(_) => {
+            HydraErrorType::CanError(_) => {
                 write!(f, "CAN error!");
             }
-            HydraError::CanMessageError(_) => {
+            HydraErrorType::CanMessageError(_) => {
                 write!(f, "CAN message error!");
             }
         }
+    }
+}
+
+/// Standard HYDRA error. This type should be used as the return type for most functions that can
+/// fail and that returns a `Result`.
+#[derive(Format)]
+pub struct HydraError {
+    error: HydraErrorType,
+    context: Option<ErrorContext>,
+}
+
+impl HydraError {
+    pub fn get_context(&self) -> Option<ErrorContext> {
+        self.context
     }
 }
 
@@ -68,7 +84,41 @@ impl<T, E> SpawnError for Result<T, E> {
     fn spawn_error(self, task: &'static str) -> Result<(), HydraError> {
         match self {
             Ok(_) => Ok(()),
-            Err(_) => Err(HydraError::SpawnError(task)),
+            // Err(_) => Err(HydraError::SpawnError(task)),
+            Err(_) => Err(HydraError {
+                error: HydraErrorType::SpawnError(task),
+                context: None,
+            }),
         }
+    }
+}
+
+/// Allow the HydraErrorType to convert into an HydraError.
+impl<E> From<E> for HydraError
+where
+    E: Into<HydraErrorType>,
+{
+    fn from(value: E) -> Self {
+        HydraError {
+            error: value.into(),
+            context: None,
+        }
+    }
+}
+
+/// Trait to allow converting some errors to a HydraError, while also adding a ErrorContext to it.
+pub trait ErrorContextTrait<T> {
+    fn context(self, context: ErrorContext) -> Result<T, HydraError>;
+}
+
+impl<T, E> ErrorContextTrait<T> for Result<T, E>
+where
+    E: Into<HydraErrorType>,
+{
+    fn context(self, context: ErrorContext) -> Result<T, HydraError> {
+        self.map_err(|e| HydraError {
+            error: e.into(),
+            context: Some(context),
+        })
     }
 }

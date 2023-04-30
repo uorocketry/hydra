@@ -9,7 +9,14 @@ use hal::dmac;
 use hal::dmac::BufferPair;
 use hal::sercom::Sercom0;
 use hal::sercom::Sercom5;
+use messages::sender::Sender;
+use messages::sender::Sender::LogicBoard;
 use sbg_rs::sbg::SBG_BUFFER_SIZE;
+
+// -------
+// Sender ID
+// -------
+pub static COM_ID: Sender = LogicBoard;
 
 // -------
 // Ground Station
