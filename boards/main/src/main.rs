@@ -321,10 +321,6 @@ mod app {
                 &mav_message
             );
 
-            // for x in payload {
-            //     block!(uart.write(x))?;
-            // }
-
             info!("Sent message: {:?}", m);
 
             Ok(())

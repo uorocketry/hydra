@@ -490,15 +490,8 @@ dependencies = [
  "defmt",
  "derive_more",
  "fugit",
-<<<<<<< HEAD
-<<<<<<< HEAD
  "heapless",
-=======
-=======
- "heapless",
->>>>>>> cf990e8 (Resolve errors)
  "mavlink",
->>>>>>> a03247f (Refactor top-level cargo.toml)
  "serde",
 ]
 
@@ -681,13 +674,6 @@ name = "regex-syntax"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5996294f19bd3aae0453a862ad728f60e6600695733dd5df01da90c54363a3c"
-<<<<<<< HEAD
-=======
-
-[[package]]
-name = "ring-buffer"
-version = "0.1.0"
->>>>>>> cf990e8 (Resolve errors)
 
 [[package]]
 name = "rtic-core"
@@ -768,10 +754,6 @@ dependencies = [
  "libc",
  "messages",
  "nb 1.1.0",
-<<<<<<< HEAD
-=======
- "ring-buffer",
->>>>>>> cf990e8 (Resolve errors)
 ]
 
 [[package]]
