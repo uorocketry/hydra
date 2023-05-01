@@ -203,7 +203,7 @@ mod app {
         cx.shared.em.run(|| {
             let mut uart = cx.local.uart;
 
-            let payload: Vec<u8, 64> = to_vec(&m)?;
+            let payload: Vec<u8, 255> = to_vec(&m)?;
 
             let mav_message = mav_message::mavlink_postcard_message(payload);
 
