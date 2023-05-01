@@ -311,12 +311,16 @@ mod app {
             let mut uart = cx.local.uart;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             let payload: Vec<u8, 255> = to_vec(&m)?;
             
             let mav_message = mavlink_postcard_message(&payload[..]);
 =======
             let payload: Vec<u8, 64> = to_vec(&m)?;
 >>>>>>> 06787f8 (add mav_message to library)
+=======
+            let payload: Vec<u8, 255> = to_vec(&m)?;
+>>>>>>> 611f1c8 (Change buffer size)
 
             let mav_message = mav_message::mavlink_postcard_message(payload);
 
