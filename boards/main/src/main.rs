@@ -157,10 +157,23 @@ mod app {
     fn sensor_send(cx: sensor_send::Context) {
         cx.shared.em.run(|| {
             let sbg = Sbg {
-                accel: 9.8,
-                speed: 0.0,
-                pressure: 100.1,
-                height: 200.4,
+                accel_x: 0.0,
+                accel_y: 0.0,
+                accel_z: 0.0,
+                velocity_n: 0.0,
+                velocity_e: 0.0,
+                velocity_d: 0.0,
+                pressure: 0.0,
+                height: 0.0,
+                roll: 0.0,
+                yaw: 0.0,
+                pitch: 0.0,
+                latitude: 0.0,
+                longitude: 0.0,
+                quant_w: 0.0,
+                quant_x: 0.0,
+                quant_y: 0.0,
+                quant_z: 0.0,
             };
 
             let message = Message::new(&monotonics::now(), MainBoard, Sensor::new(9, sbg));

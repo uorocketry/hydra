@@ -10,3 +10,8 @@ derive_more = "0.99.17"
 serde = { workspace = true }
 defmt = "0.3.2"
 fugit = "0.3.6"
+ts-rs = { version = "6.2.1", optional = true }
+
+[features]
+std = []
+ts = ["std", "dep:ts-rs"]
