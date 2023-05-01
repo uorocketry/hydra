@@ -199,6 +199,19 @@ impl SBG {
                 &mut self.handle,
                 _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
                 _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+                _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+            );
+        }
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+            warn!("Unable to configure EKF Euler logs to 40 cycles");
+        }
+        // unsafe because we are calling a C function
+        unsafe {
+            errorCode = sbgEComCmdOutputSetConf(
+                &mut self.handle,
+                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
                 _SbgEComLog_SBG_ECOM_LOG_EKF_NAV,
                 _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
             );
@@ -289,8 +302,8 @@ impl SBG {
             return _SbgErrorCode_SBG_NULL_POINTER;
         }
         // Safe because we check if pInterface is null
-        let serial: *mut Uart<Config, Duplex> =
-            unsafe { (*pInterface).handle as *mut Uart<Config, Duplex> };
+        let serial: *mut Uart<Config, uart::TxDuplex> =
+            unsafe { (*pInterface).handle as *mut Uart<Config, uart::TxDuplex> };
         // Safe because we check if pBuffer is null
         let array: &[u8] = unsafe { from_raw_parts(pBuffer as *const u8, bytesToWrite) };
         let mut counter: usize = 0;
@@ -412,7 +425,7 @@ impl SBG {
      * Optional method used to compute an expected delay to transmit/receive X bytes
      */
     pub extern "C" fn SbgDelayFunc(_pInterface: *const _SbgInterface, _numBytes: usize) -> u32 {
-        0
+        501
     }
 }
 

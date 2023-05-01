@@ -36,7 +36,6 @@ use core::sync::atomic::AtomicU8;
 use embedded_sdmmc::File;
 use hal::dmac;
 use sbg_rs::sbg;
-
 type SBGTransfer = dmac::Transfer<
     dmac::Channel<dmac::Ch0, dmac::Busy>,
     BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>,
@@ -134,7 +133,7 @@ mod app {
             uart_clk.freq(),
         )
         .baud(
-            9600.hz(),
+            57600.hz(),
             uart::BaudMode::Fractional(uart::Oversampling::Bits16),
         )
         .enable();
@@ -309,7 +308,7 @@ mod app {
         cx.shared.em.run(|| {
             let uart = cx.local.uart;
 
-            let payload: Vec<u8, 64> = to_vec_cobs(&m)?;
+            let payload: Vec<u8, 255> = to_vec_cobs(&m)?;
 
             for x in payload {
                 block!(uart.write(x))?;
