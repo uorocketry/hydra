@@ -12,13 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v2
             # Install CMake
-      - name: Install CMake
-        run: sudo apt-get -y install cmake
-      - name: Install arm
-        run: sudo apt-get -y install gcc-arm-none-eabi
+      - name: Install packages
+        run: sudo apt update && sudo apt install -y cmake libnewlib-dev
+      - name: Use correct cargo config
+        run: mv .cargo/config-ci .cargo/config
+      - name: Install Arm GNU Toolchain (arm-none-eabi-gcc)
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
+        with:
+          release: 'latest'
+#      - name: Install arm
+#        run: sudo apt-get -y install gcc-arm-none-eabi
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
           target: thumbv7em-none-eabihf
       - uses: actions-rs/cargo@v1
         with:
