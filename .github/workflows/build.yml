@@ -20,8 +20,6 @@ jobs:
         uses: carlosperate/arm-none-eabi-gcc-action@v1
         with:
           release: 'latest'
-#      - name: Install arm
-#        run: sudo apt-get -y install gcc-arm-none-eabi
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
