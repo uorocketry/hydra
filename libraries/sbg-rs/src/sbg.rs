@@ -436,7 +436,6 @@ unsafe impl Send for SBG {}
  * Needs to be updated to handle the Variadic arguments.
  */
 #[no_mangle]
-#[feature(c_variadic)]
 pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     pFileName: *const ::core::ffi::c_char,
     pFunctionName: *const ::core::ffi::c_char,
@@ -445,7 +444,6 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     logType: _SbgDebugLogType,
     _errorCode: _SbgErrorCode,
     pFormat: *const ::core::ffi::c_char,
-    _args: ...
 ) {
     if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
         return;
