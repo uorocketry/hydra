@@ -16,8 +16,9 @@
 2. Build: `cargo build`
 3. Install probe-run: `cargo install --git https://github.com/uorocketry/probe-run`
     - `probe-run` currently requires a patch to flash our chip, so please use the above version while the patch is upstreamed
+4, Install cargo-make: `cargo install cargo-make`
 4. Flash: `cargo run --bin main`
-5. Run tests: `cargo test -p common-arm-test`
+5. Run tests: `cargo make test-host` or `cargo make test-device`
 
 For more detailed instructions on flashing, debugging, and more, please see [the wiki](https://avwiki.uorocketry.ca/en/Avionics/HYDRA/Software).
 

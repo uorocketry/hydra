@@ -1,4 +1,4 @@
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(all(not(feature = "std"), not(test)), no_std)]
 
 //! # HYDRA Messages
 //!
@@ -17,6 +17,9 @@ use ts_rs::TS;
 
 pub mod sender;
 pub mod sensor;
+
+pub const MAX_SIZE: usize = 85;
+
 /// Topmost message. Encloses all the other possible messages, and is the only thing that should
 /// be sent over the wire.
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
