@@ -14,8 +14,12 @@
 
 1. Install Rust: https://www.rust-lang.org/tools/install
 2. Build: `cargo build`
+3. Install probe-run: `cargo install --git https://github.com/uorocketry/probe-run`
+    - `probe-run` currently requires a patch to flash our chip, so please use the above version while the patch is upstreamed
+4. Flash: `cargo run --bin main`
+5. Run tests: `cargo test -p common-arm-test`
 
-For instructions on flashing, debugging, and more, please see [the wiki](https://avwiki.uorocketry.ca/en/Avionics/HYDRA/Software).
+For more detailed instructions on flashing, debugging, and more, please see [the wiki](https://avwiki.uorocketry.ca/en/Avionics/HYDRA/Software).
 
 ## Documentation
 

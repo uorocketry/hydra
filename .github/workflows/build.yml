@@ -39,4 +39,5 @@ jobs:
       - uses: actions-rs/cargo@v1
         name: "Check that tests compile"
         with:
-          command: test -p common-arm-test --no-run
+          command: test
+          args: -p common-arm-test --no-run
