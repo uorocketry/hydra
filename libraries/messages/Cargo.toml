@@ -11,3 +11,8 @@ serde = { workspace = true }
 defmt = "0.3.2"
 fugit = "0.3.6"
 heapless = "0.7.16"
+ts-rs = { version = "6.2.1", optional = true }
+
+[features]
+std = []
+ts = ["std", "dep:ts-rs"]

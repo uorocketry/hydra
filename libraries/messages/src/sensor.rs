@@ -2,18 +2,27 @@ use defmt::Format;
 use derive_more::From;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ts")]
+use ts_rs::TS;
+
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct Sensor {
     pub component_id: u8,
     pub data: SensorData,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub enum SensorData {
     Sbg(Sbg),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct Sbg {
     pub accel_x: f32,
     pub accel_y: f32,

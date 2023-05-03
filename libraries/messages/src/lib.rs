@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 //! # HYDRA Messages
 //!
@@ -12,11 +12,16 @@ use derive_more::From;
 use fugit::Instant;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ts")]
+use ts_rs::TS;
+
 pub mod sender;
 pub mod sensor;
 /// Topmost message. Encloses all the other possible messages, and is the only thing that should
 /// be sent over the wire.
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct Message {
     /// Time in milliseconds since epoch. Note that the epoch here can be arbitrary and is not the
     /// Unix epoch.
@@ -30,6 +35,8 @@ pub struct Message {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 #[serde(rename_all = "lowercase")]
 pub enum Data {
     State(State),
@@ -37,6 +44,8 @@ pub enum Data {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub enum Status {
     Uninitialized,
     Initializing,
@@ -44,6 +53,8 @@ pub enum Status {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct State {
     pub status: Status,
     pub has_error: bool,
