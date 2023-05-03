@@ -4,7 +4,8 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
-
+/// Required bindings for the SBGECom C library.
 mod bindings;
-
+/// This modules contains the Rust API for the SBGECom C library.
+/// Covers the implementation of the SBGECom struct and its related functions.
 pub mod sbg;

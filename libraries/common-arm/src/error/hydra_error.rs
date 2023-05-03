@@ -1,6 +1,7 @@
 use core::convert::Infallible;
 use defmt::write;
 use derive_more::From;
+use embedded_sdmmc as sd;
 
 /// Standard HYDRA error. Add variants to this enum for any errors that can occur in the codebase.
 #[derive(From)]
@@ -11,6 +12,8 @@ pub enum HydraError {
     PostcardError(postcard::Error),
     /// Error that occurred while spawning an RTIC task. Contains the name of the failed task.
     SpawnError(&'static str),
+    /// Error from the SD card library.
+    SdCardError(sd::Error<sd::SdMmcError>),
 }
 
 impl defmt::Format for HydraError {
@@ -24,6 +27,9 @@ impl defmt::Format for HydraError {
             }
             HydraError::SpawnError(e) => {
                 write!(f, "Could not spawn task '{}'", e);
+            }
+            HydraError::SdCardError(_) => {
+                write!(f, "SD card error!");
             }
         }
     }

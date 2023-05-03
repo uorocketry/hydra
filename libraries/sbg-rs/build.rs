@@ -2,8 +2,8 @@ use cmake;
 
 extern crate bindgen;
 
-use std::env;
-use std::path::PathBuf;
+// use std::env;
+// use std::path::PathBuf;
 
 fn main() {
     let dst = cmake::build("sbgECom")

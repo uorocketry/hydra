@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#tinyrlibc = "0.3.0"
 embedded-hal = "0.2.7"
 nb = "1.0.0"
 defmt = "0.3.2"
@@ -17,7 +16,6 @@ messages = { path = "../../libraries/messages" }
 common-arm = { path = "../../libraries/common-arm" }
 
 [build-dependencies]
-#tinyrlibc = "0.3.0"
 libc = "0.2"
 bindgen = "0.63.0"
 cmake = "0.1"
