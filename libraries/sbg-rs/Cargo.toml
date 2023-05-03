@@ -1,0 +1,21 @@
+[package]
+name = "sbg-rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+embedded-hal = "0.2.7"
+nb = "1.0.0"
+defmt = "0.3.2"
+atsamd-hal = { workspace = true }
+cortex-m = { workspace = true }
+cortex-m-rt = "^0.7.0"
+messages = { path = "../../libraries/messages" }
+common-arm = { path = "../../libraries/common-arm" }
+
+[build-dependencies]
+libc = "0.2"
+bindgen = "0.63.0"
+cmake = "0.1"

@@ -17,12 +17,12 @@
                 "decoders": [
                     {
                         "port": 0,
-                        "type": "console",
+                        "type": "binary",
                     },
                 ]
             },
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/main_board",
+            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/main",
             "name": "OpenOCD Debug",
             "device": "ATSAME51J20A",
             "preLaunchTask": "build",
@@ -39,8 +39,20 @@
             "servertype": "openocd",
             "interface": "swd",
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/main_board",
+            "executable": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/main",
             "name": "OpenOCD Release",
+            "rttConfig": {
+                "enabled": true,
+                "address": "0x20000000",
+                "searchSize": 262144,
+                "searchId": "SEGGER RTT",
+                "decoders": [
+                    {
+                        "port": 0,
+                        "type": "console",
+                    },
+                ]
+            },
             "device": "ATSAME51J20A",
             "preLaunchTask": "release",
             "configFiles": [

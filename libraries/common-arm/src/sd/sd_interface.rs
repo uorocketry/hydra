@@ -158,3 +158,5 @@ impl SdInterface {
             .close_dir(&self.volume, self.root_directory);
     }
 }
+
+unsafe impl Send for SdInterface {}
