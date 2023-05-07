@@ -10,6 +10,7 @@ jobs:
     name: Deploy Documentation
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Install packages
         run: sudo apt update && sudo apt install -y cmake libnewlib-dev
       - name: Use correct cargo config
@@ -17,8 +18,7 @@ jobs:
       - name: Install Arm GNU Toolchain (arm-none-eabi-gcc)
         uses: carlosperate/arm-none-eabi-gcc-action@v1
         with:
-          release: 'latest'
-      - uses: actions/checkout@v2
+          release: '12.2.Rel1'
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
