@@ -1,6 +1,6 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
 rustflags = [
-  "-C", "linker=arm-none-eabi-gcc",  
+  "-C", "linker=arm-none-eabi-gcc",
   "-C", "link-arg=-nostartfiles",
   "-C", "link-arg=-L/usr/arm-none-eabi/lib/thumb/v7e-m+fp/hard/",
   "-C", "link-arg=-Tlink.x",
