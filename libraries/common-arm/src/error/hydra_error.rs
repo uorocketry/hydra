@@ -14,6 +14,8 @@ pub enum HydraError {
     SpawnError(&'static str),
     /// Error from the SD card library.
     SdCardError(sd::Error<sd::SdMmcError>),
+    /// Error from the Mavlink library.
+    MavlinkError(mavlink::error::MessageWriteError)
 }
 
 impl defmt::Format for HydraError {
@@ -30,6 +32,9 @@ impl defmt::Format for HydraError {
             }
             HydraError::SdCardError(_) => {
                 write!(f, "SD card error!");
+            }
+            HydraError::MavlinkError(_) => {
+                write!(f, "Mavlink error!");
             }
         }
     }

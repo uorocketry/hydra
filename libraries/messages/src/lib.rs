@@ -17,6 +17,7 @@ use ts_rs::TS;
 
 pub mod sender;
 pub mod sensor;
+pub mod mav_message;
 /// Topmost message. Encloses all the other possible messages, and is the only thing that should
 /// be sent over the wire.
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]

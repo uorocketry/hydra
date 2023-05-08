@@ -3,7 +3,6 @@
 use atsamd_hal as hal;
 use atsamd_hal::gpio::*;
 use atsamd_hal::pac;
-use atsamd_hal::prelude::nb::block;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1};
@@ -30,6 +29,8 @@ use embedded_sdmmc::File;
 use hal::dmac;
 use sbg_rs::sbg;
 use hal::{dmac::Transfer, sercom::Sercom};
+use messages::mav_message;
+use mavlink;
 const SBG_BUFFER_SIZE: usize = 4096;
 static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
@@ -309,9 +310,14 @@ mod app {
 
             let payload: Vec<u8, 255> = to_vec_cobs(&m)?;
 
-            for x in payload {
-                block!(uart.write(x))?;
-            }
+            let mav_message = mav_message::mavlink_postcard_message(payload);
+
+            mavlink::write_versioned_msg(
+                uart,
+                mavlink::MavlinkVersion::V2,
+                mav_message::MAV_HEADER_MAIN,
+                &mav_message
+            )?;
 
             info!("Sent message: {:?}", m);
 

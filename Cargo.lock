@@ -170,6 +170,7 @@ dependencies = [
  "embedded-hal",
  "embedded-sdmmc",
  "heapless",
+ "mavlink",
  "postcard",
 ]
 
@@ -239,6 +240,12 @@ dependencies = [
  "rtic-syntax",
  "syn 1.0.109",
 ]
+
+[[package]]
+name = "crc-any"
+version = "2.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "774646b687f63643eb0f4bf13dc263cb581c8c9e57973b6ddf78bda3994d88df"
 
 [[package]]
 name = "critical-section"
@@ -450,11 +457,31 @@ dependencies = [
  "embedded-sdmmc",
  "fugit",
  "heapless",
+ "mavlink",
  "messages",
  "panic-halt",
  "postcard",
  "sbg-rs",
  "systick-monotonic",
+]
+
+[[package]]
+name = "mavlink"
+version = "0.11.1"
+source = "git+https://github.com/uorocketry/rust-mavlink?branch=hydra_dialect#9227fdb4e733af1f50fba0fbbabd717d06f2e830"
+dependencies = [
+ "bitflags",
+ "byteorder",
+ "crc-any",
+ "embedded-hal",
+ "heapless",
+ "lazy_static",
+ "nb 1.1.0",
+ "num-derive",
+ "num-traits",
+ "proc-macro2",
+ "quick-xml",
+ "quote",
 ]
 
 [[package]]
@@ -471,6 +498,7 @@ dependencies = [
  "derive_more",
  "fugit",
  "heapless",
+ "mavlink",
  "serde",
  "ts-rs",
 ]
@@ -525,6 +553,17 @@ checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
 dependencies = [
  "memchr",
  "minimal-lexical",
+]
+
+[[package]]
+name = "num-derive"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -603,6 +642,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b63bdb0cd06f1f4dedf69b254734f9b45af66e4a031e42a7480257d9898b435"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f50b1c63b38611e7d4d7f68b82d3ad0cc71a2ad2e7f61fc10f1328d917c93cd"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
