@@ -30,7 +30,7 @@ use panic_halt as _;
 use postcard::to_vec_cobs;
 use sbg_rs::sbg;
 use systick_monotonic::*;
-const SBG_BUFFER_SIZE: usize = 4096;
+const SBG_BUFFER_SIZE: usize = 512;
 static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 type Pads = uart::PadsFromIds<Sercom3, IoSet1, PA23, PA22>;
@@ -189,7 +189,7 @@ mod app {
         let mut rtc = rtc_temp.into_count32_mode();
         rtc.set_count32(0);
 
-        sbg_init::spawn().ok();
+        // sbg_init::spawn().ok();
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
@@ -305,7 +305,7 @@ mod app {
             mavlink::write_versioned_msg(
                 uart,
                 mavlink::MavlinkVersion::V2,
-                mav_message::MAV_HEADER_MAIN,
+                mav_message::get_mav_header(),
                 &mav_message,
             )?;
 
@@ -344,21 +344,20 @@ mod app {
      */
     #[task(shared = [sensor_data, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        cx.shared.sensor_data.lock(|sensor_data| {
+        let data = cx.shared.sensor_data.lock(|sensor_data| sensor_data.clone());
             cx.shared.em.run(|| {
                 let message = Message::new(
                     &monotonics::now(),
                     MainBoard,
-                    Sensor::new(9, sensor_data.clone()),
+                    Sensor::new(9, data),
                 );
 
                 spawn!(send_message, message)?;
 
                 Ok(())
             });
-        });
 
-        spawn_after!(sensor_send, 2.secs()).ok();
+        spawn_after!(sensor_send, 200.millis()).ok();
     }
 
     /**
