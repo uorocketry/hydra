@@ -21,4 +21,3 @@ atsamd-hal = { workspace = true }
 messages = { path = "../../libraries/messages" }
 sbg-rs = {path = "../../libraries/sbg-rs"}
 embedded-sdmmc = "0.3.0"
-mavlink = {workspace = true}

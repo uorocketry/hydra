@@ -16,4 +16,4 @@ atsamd-hal = { workspace = true }
 cortex-m-rt = "^0.7.0"
 embedded-sdmmc = "0.3.0"
 embedded-hal = "0.2.7"
-mavlink = {workspace = true }
+messages = { path = "../messages" }

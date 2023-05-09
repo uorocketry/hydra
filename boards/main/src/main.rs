@@ -21,7 +21,7 @@ use hal::sercom::Sercom3;
 use hal::time::Hertz;
 use hal::{dmac::Transfer, sercom::Sercom};
 use heapless::Vec;
-use mavlink;
+use messages::mavlink;
 use messages::mav_message;
 use messages::sender::Sender::MainBoard;
 use messages::sensor::{Sbg, Sensor};

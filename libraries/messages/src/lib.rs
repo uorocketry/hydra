@@ -12,6 +12,8 @@ use derive_more::From;
 use fugit::Instant;
 use serde::{Deserialize, Serialize};
 
+pub use mavlink;
+
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 

@@ -16,7 +16,7 @@ pub enum HydraError {
     /// Error from the SD card library.
     SdCardError(sd::Error<sd::SdMmcError>),
     /// Error from the Mavlink library.
-    MavlinkError(mavlink::error::MessageWriteError),
+    MavlinkError(messages::mavlink::error::MessageWriteError),
     /// DMA error.
     DmaError(atsamd_hal::dmac::Error),
 }

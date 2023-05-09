@@ -19,12 +19,6 @@ features = ["derive"]
 version = "0.7.6"
 features = ["critical-section-single-core"]
 
-[workspace.dependencies.mavlink]
-git = "https://github.com/uorocketry/rust-mavlink"
-branch = "hydra_dialect"
-features = ["embedded", "uorocketry"]
-default-features = false
-
 [profile.dev]
 # Using LTO causes issues with GDB
 lto = false
