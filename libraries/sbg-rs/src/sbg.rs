@@ -15,7 +15,7 @@ use atsamd_hal as hal;
 use core::ffi::{c_void, CStr};
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
-use core::sync::atomic::{AtomicUsize};
+use core::sync::atomic::AtomicUsize;
 use defmt::{debug, flush, info, warn};
 use embedded_hal::serial::Write;
 use hal::gpio::{PA08, PA09, PB16, PB17};
@@ -151,7 +151,7 @@ impl SBG {
     /**
      * Reads SBG data frames for a buffer and returns the most recent data.
      */
-    pub fn readData(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) -> Sbg {
+    pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) -> Sbg {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
         unsafe { BUF = buffer };
