@@ -258,7 +258,7 @@ impl SBG {
     /**
      * Allows the SBG interface to read data from the serial ports.
      */
-    pub extern "C" fn SbgInterfaceReadFunc(
+    pub unsafe extern "C" fn SbgInterfaceReadFunc(
         _pInterface: *mut _SbgInterface,
         pBuffer: *mut c_void,
         pBytesRead: *mut usize,
@@ -322,7 +322,7 @@ impl SBG {
     /**
      * Allows the SBG interface to write to the UART peripheral
      */
-    pub extern "C" fn SbgInterfaceWriteFunc(
+    pub unsafe extern "C" fn SbgInterfaceWriteFunc(
         pInterface: *mut _SbgInterface,
         pBuffer: *const c_void,
         bytesToWrite: usize,
@@ -361,7 +361,7 @@ impl SBG {
     /**
      * Callback function for handling logs.
      */
-    pub extern "C" fn SbgEComReceiveLogFunc(
+    pub unsafe extern "C" fn SbgEComReceiveLogFunc(
         _pHandle: *mut _SbgEComHandle,
         msgClass: u32,
         msg: u32,
@@ -436,7 +436,10 @@ impl SBG {
     /**
      * Flushes the UART peripheral.
      */
-    pub extern "C" fn SbgFlushFunc(pInterface: *mut _SbgInterface, _flags: u32) -> _SbgErrorCode {
+    pub unsafe extern "C" fn SbgFlushFunc(
+        pInterface: *mut _SbgInterface,
+        _flags: u32,
+    ) -> _SbgErrorCode {
         if pInterface.is_null() {
             return _SbgErrorCode_SBG_NULL_POINTER;
         }
@@ -486,7 +489,7 @@ unsafe impl Send for SBG {}
  * Needs to be updated to handle the Variadic arguments.
  */
 #[no_mangle]
-pub extern "C" fn sbgPlatformDebugLogMsg(
+pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     pFileName: *const ::core::ffi::c_char,
     pFunctionName: *const ::core::ffi::c_char,
     _line: u32,
