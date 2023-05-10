@@ -6,6 +6,13 @@ members = [
     "libraries/*"
 ]
 
+# Specify which members to build by default. Some libraries, such as messages, contain dev-dependencies that will give
+# compile errors if built directly.
+default-members = [
+    "boards/*",
+    "examples/*"
+]
+
 [workspace.dependencies.atsamd-hal]
 version = "0.15.1"
 features = ["same51j", "same51j-rt", "dma"]

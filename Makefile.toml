@@ -1,0 +1,31 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[config]
+default_to_workspace = false
+
+# -----------------------
+# Host Testing
+# -----------------------
+
+[tasks.test-host]
+dependencies = [
+    "test-messages",
+]
+
+[tasks.test-messages]
+command = "cargo"
+args = ["test", "-p", "messages", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+
+# -----------------------
+# Embedded Testing
+# -----------------------
+
+[tasks.test-device]
+dependencies = [
+    "test-common-arm",
+]
+
+[tasks.test-common-arm]
+command = "cargo"
+args = ["test", "-p", "common-arm-test", "${@}"]

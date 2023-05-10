@@ -51,3 +51,50 @@ impl Sensor {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::sender::Sender::MainBoard;
+    use crate::sensor::{Sbg, Sensor};
+    use crate::Message;
+    use crate::MAX_SIZE;
+    use fugit::Instant;
+    use quickcheck::{Arbitrary, Gen};
+    use quickcheck_macros::quickcheck;
+
+    impl Arbitrary for Sbg {
+        fn arbitrary(g: &mut Gen) -> Self {
+            Sbg {
+                accel_x: f32::arbitrary(g),
+                accel_y: f32::arbitrary(g),
+                accel_z: f32::arbitrary(g),
+                velocity_n: f32::arbitrary(g),
+                velocity_e: f32::arbitrary(g),
+                pressure: f32::arbitrary(g),
+                height: f64::arbitrary(g),
+                roll: f32::arbitrary(g),
+                yaw: f32::arbitrary(g),
+                pitch: f32::arbitrary(g),
+                latitude: f64::arbitrary(g),
+                longitude: f64::arbitrary(g),
+                quant_w: f32::arbitrary(g),
+                quant_x: f32::arbitrary(g),
+                quant_y: f32::arbitrary(g),
+                velocity_d: f32::arbitrary(g),
+                quant_z: f32::arbitrary(g),
+            }
+        }
+    }
+
+    #[quickcheck]
+    fn sbg_size(component_id: u8, sbg: Sbg) -> postcard::Result<()> {
+        let msg = Message::new(
+            &Instant::<u64, 1, 1000>::from_ticks(0),
+            MainBoard,
+            Sensor::new(component_id, sbg),
+        );
+        let bytes = postcard::to_allocvec(&msg)?;
+        assert!(dbg!(bytes.len()) <= MAX_SIZE);
+        Ok(())
+    }
+}

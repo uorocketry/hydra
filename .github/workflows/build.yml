@@ -33,5 +33,22 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions-rs/cargo@v1
+        name: "Install cargo-make"
+        with:
+          command: install
+          args: cargo-make
+      - uses: actions-rs/cargo@v1
+        name: "Build all binaries"
         with:
           command: build
+      - uses: actions-rs/cargo@v1
+        name: "Compile Device Tests (no running)"
+        with:
+          command: make
+          args: test-device --no-run
+      - uses: actions-rs/cargo@v1
+        name: "Run Host Tests"
+        with:
+          command: make
+          args: test-host
+

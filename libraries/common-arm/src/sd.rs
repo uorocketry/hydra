@@ -1,14 +1,33 @@
 use core::marker::PhantomData;
 
-use defmt::{info, warn};
-
-// use atsamd_hal as hal;
-use embedded_sdmmc as sd;
-use atsamd_hal::gpio::{Pin, PA17, PA19, PA16, PA18, Output, PushPull, Alternate, C};
-use atsamd_hal::sercom::{spi, IoSet1, Sercom1};
-use atsamd_hal::clock::{Sercom1CoreClock};
+use atsamd_hal::clock::Sercom1CoreClock;
+use atsamd_hal::gpio::{Alternate, Output, Pin, PushPull, C, PA16, PA17, PA18, PA19};
 use atsamd_hal::pac;
+use atsamd_hal::sercom::{spi, IoSet1, Sercom1};
+use defmt::{info, warn};
+use embedded_sdmmc as sd;
 
+type SdController = sd::Controller<
+    sd::SdMmcSpi<
+        spi::Spi<
+            spi::Config<
+                spi::Pads<
+                    Sercom1,
+                    IoSet1,
+                    Pin<PA19, Alternate<C>>,
+                    Pin<PA16, Alternate<C>>,
+                    Pin<PA17, Alternate<C>>,
+                >,
+            >,
+            spi::Duplex,
+        >,
+        Pin<PA18, Output<PushPull>>,
+    >,
+    TimeSink,
+>;
+
+/// Time source for `[SdInterface]`. It doesn't return any useful information for now, and will
+/// always return an arbitrary time.
 pub struct TimeSink {
     _marker: PhantomData<*const ()>,
 }
@@ -34,25 +53,9 @@ impl sd::TimeSource for TimeSink {
     }
 }
 
+/// Wrapper for the SD Card. For now, the pins are hard-coded.
 pub struct SdInterface {
-    pub sd_controller: sd::Controller<
-        sd::SdMmcSpi<
-            spi::Spi<
-                spi::Config<
-                    spi::Pads<
-                        Sercom1,
-                        IoSet1,
-                        Pin<PA19, Alternate<C>>,
-                        Pin<PA16, Alternate<C>>,
-                        Pin<PA17, Alternate<C>>,
-                    >,
-                >,
-                spi::Duplex,
-            >,
-            Pin<PA18, Output<PushPull>>,
-        >,
-        TimeSink,
-    >,
+    pub sd_controller: SdController,
     pub volume: sd::Volume,
     pub root_directory: sd::Directory,
     pub file: sd::File,
@@ -68,11 +71,10 @@ impl SdInterface {
         miso: Pin<PA19, Output<PushPull>>,
         mosi: Pin<PA16, Output<PushPull>>,
     ) -> Self {
-        let pads_spi =
-            spi::Pads::<Sercom1, IoSet1>::default()
-                .sclk(sck)
-                .data_in(miso)
-                .data_out(mosi);
+        let pads_spi = spi::Pads::<Sercom1, IoSet1>::default()
+            .sclk(sck)
+            .data_in(miso)
+            .data_out(mosi);
         let sdmmc_spi = spi::Config::new(mclk, sercom, pads_spi, spi_clk.freq())
             .length::<spi::lengths::U1>()
             .bit_order(spi::BitOrder::MsbFirst)
@@ -119,12 +121,12 @@ impl SdInterface {
                 panic!("Cannot create file.");
             }
         };
-        // create interface
+
         SdInterface {
             sd_controller: sd_cont,
-            volume: volume,
-            root_directory: root_directory,
-            file: file,
+            volume,
+            root_directory,
+            file,
         }
     }
     pub fn write(
@@ -132,7 +134,7 @@ impl SdInterface {
         file: &mut sd::File,
         buffer: &[u8],
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
-        return self.sd_controller.write(&mut self.volume, file, buffer);
+        self.sd_controller.write(&mut self.volume, file, buffer)
     }
     pub fn write_str(
         &mut self,
@@ -140,7 +142,7 @@ impl SdInterface {
         msg: &str,
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
         let buffer: &[u8] = msg.as_bytes();
-        return self.sd_controller.write(&mut self.volume, file, buffer);
+        self.sd_controller.write(&mut self.volume, file, buffer)
     }
     pub fn open_file(&mut self, file_name: &str) -> Result<sd::File, sd::Error<sd::SdMmcError>> {
         self.sd_controller.open_file_in_dir(
@@ -151,7 +153,7 @@ impl SdInterface {
         )
     }
     pub fn close_file(&mut self, file: sd::File) -> Result<(), sd::Error<sd::SdMmcError>> {
-        return self.sd_controller.close_file(&self.volume, file);
+        self.sd_controller.close_file(&self.volume, file)
     }
     pub fn close(mut self) {
         self.sd_controller

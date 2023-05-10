@@ -8,7 +8,6 @@ use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1};
 use common_arm::*;
 use defmt::info;
-use defmt_rtt as _;
 use embedded_sdmmc::File;
 use hal::dmac;
 use hal::dmac::BufferPair;
@@ -101,7 +100,7 @@ mod app {
         let sck = pins.pa17.into_push_pull_output();
         let miso = pins.pa19.into_push_pull_output();
         let mosi = pins.pa16.into_push_pull_output();
-        let mut sd = sd::SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
+        let mut sd = SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
         let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
         /* End SD config */
         /* Radio config */
