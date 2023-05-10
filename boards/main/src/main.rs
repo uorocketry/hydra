@@ -7,7 +7,6 @@ use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1};
 use common_arm::*;
-use core::sync::atomic::AtomicU8;
 use defmt::info;
 use embedded_sdmmc::File;
 use hal::dmac;

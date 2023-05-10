@@ -575,10 +575,10 @@ dependencies = [
  "derive_more",
  "fugit",
  "heapless",
+ "mavlink",
  "postcard",
  "quickcheck",
  "quickcheck_macros",
- "mavlink",
  "serde",
  "ts-rs",
 ]
@@ -735,6 +735,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f50b1c63b38611e7d4d7f68b82d3ad0cc71a2ad2e7f61fc10f1328d917c93cd"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "quickcheck"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -754,13 +763,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-[[package]]
-name = "quick-xml"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f50b1c63b38611e7d4d7f68b82d3ad0cc71a2ad2e7f61fc10f1328d917c93cd"
-dependencies = [
- "memchr",
 ]
 
 [[package]]
