@@ -3,13 +3,14 @@
 use atsamd_hal as hal;
 use atsamd_hal::gpio::*;
 use atsamd_hal::pac;
-use atsamd_hal::prelude::nb::block;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::sercom::{uart, IoSet1};
 use common_arm::*;
 use defmt::info;
 use defmt_rtt as _;
+use embedded_sdmmc::File;
+use hal::dmac;
 use hal::dmac::BufferPair;
 use hal::gpio::Pins;
 use hal::gpio::PA14;
@@ -18,19 +19,17 @@ use hal::prelude::*;
 use hal::sercom::Sercom0;
 use hal::sercom::Sercom3;
 use hal::time::Hertz;
+use hal::{dmac::Transfer, sercom::Sercom};
 use heapless::Vec;
+use messages::mav_message;
+use messages::mavlink;
 use messages::sender::Sender::MainBoard;
 use messages::sensor::{Sbg, Sensor};
 use messages::*;
 use panic_halt as _;
-use postcard::to_vec_cobs;
-use systick_monotonic::*;
-use core::sync::atomic::AtomicU8;
-use embedded_sdmmc::File;
-use hal::dmac;
 use sbg_rs::sbg;
-use hal::{dmac::Transfer, sercom::Sercom};
-const SBG_BUFFER_SIZE: usize = 4096;
+use systick_monotonic::*;
+const SBG_BUFFER_SIZE: usize = 1024;
 static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 type Pads = uart::PadsFromIds<Sercom3, IoSet1, PA23, PA22>;
@@ -45,14 +44,13 @@ type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
-
     use super::*;
 
     #[shared]
     struct Shared {
         em: ErrorManager,
         opt_xfer: SBGTransfer,
-        buf_select: AtomicU8,
+        buf_select: bool,
         sbg: sbg::SBG,
         sensor_data: Sbg,
     }
@@ -190,7 +188,6 @@ mod app {
         let mut rtc = rtc_temp.into_count32_mode();
         rtc.set_count32(0);
 
-        sbg_init::spawn().ok();
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
@@ -202,7 +199,7 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 opt_xfer: xfer,
-                buf_select: AtomicU8::new(0),
+                buf_select: false,
                 sbg,
                 sensor_data: Sbg {
                     accel_x: 0.0,
@@ -242,60 +239,42 @@ mod app {
     }
 
     /**
-     * Setups the SBG to output the appropriate data.
-     */
-    #[task(priority = 3, shared = [sbg])]
-    fn sbg_init(mut cx: sbg_init::Context) {
-        cx.shared.sbg.lock(|sbg| {
-            sbg.setup();
-        });
-    }
-
-    /**
      * Handles the DMA interrupt.
      * Handles the SBG data.
      * Logs data to the SD card.
      */
     #[task(binds = DMAC_0, local = [sd, sbg_file], shared = [sensor_data, opt_xfer, buf_select, sbg, &em])]
     fn dmac0(mut cx: dmac0::Context) {
-        // This can be optimized to reduce CPU cycles
         cx.shared.opt_xfer.lock(|xfer| {
-            cx.shared.sbg.lock(|sbg| {
-                if xfer.complete() {
-                    let buf_select = cx
-                        .shared
-                        .buf_select
-                        .lock(|buf_select| *buf_select.get_mut());
+            if xfer.complete() {
+                cx.shared.buf_select.lock(|buf_select| {
                     cx.shared.em.run(|| {
                         match buf_select {
-                            0 => {
-                                let buf: &'static [u8; SBG_BUFFER_SIZE] =
-                                    xfer.recycle_source(unsafe { BUF_DST }).expect("err");
-                                cx.shared
-                                    .sensor_data
-                                    .lock(|sensor_data| *sensor_data = sbg.readData(buf));
-                                cx.local.sd.write(&mut cx.local.sbg_file, buf)?;
-                                cx.shared
-                                    .buf_select
-                                    .lock(|buf_select| *buf_select.get_mut() = 1)
+                            false => {
+                                *buf_select = true;
+                                let buf = xfer.recycle_source(unsafe { &mut *BUF_DST })?;
+                                cx.shared.sbg.lock(|sbg| {
+                                    cx.shared.sensor_data.lock(|sensor_data| {
+                                        *sensor_data = sbg.read_data(buf);
+                                    });
+                                    cx.local.sd.write(&mut cx.local.sbg_file, buf)
+                                })?;
                             }
-                            1 => {
-                                let buf: &'static [u8; SBG_BUFFER_SIZE] =
-                                    xfer.recycle_source(unsafe { BUF_DST2 }).expect("err");
-                                cx.shared
-                                    .sensor_data
-                                    .lock(|sensor_data| *sensor_data = sbg.readData(buf));
-                                cx.local.sd.write(&mut cx.local.sbg_file, buf)?;
-                                cx.shared
-                                    .buf_select
-                                    .lock(|buf_select| *buf_select.get_mut() = 0)
+                            true => {
+                                *buf_select = false;
+                                let buf = xfer.recycle_source(unsafe { &mut *BUF_DST2 })?;
+                                cx.shared.sbg.lock(|sbg| {
+                                    cx.shared.sensor_data.lock(|sensor_data| {
+                                        *sensor_data = sbg.read_data(buf);
+                                    });
+                                    cx.local.sd.write(&mut cx.local.sbg_file, buf)
+                                })?;
                             }
-                            _ => (),
                         }
                         Ok(())
-                    })
-                }
-            });
+                    });
+                });
+            }
         });
     }
 
@@ -307,11 +286,16 @@ mod app {
         cx.shared.em.run(|| {
             let uart = cx.local.uart;
 
-            let payload: Vec<u8, 255> = to_vec_cobs(&m)?;
+            let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
 
-            for x in payload {
-                block!(uart.write(x))?;
-            }
+            let mav_message = mav_message::mavlink_postcard_message(payload);
+
+            mavlink::write_versioned_msg(
+                uart,
+                mavlink::MavlinkVersion::V2,
+                mav_message::get_mav_header(),
+                &mav_message,
+            )?;
 
             info!("Sent message: {:?}", m);
 
@@ -348,21 +332,19 @@ mod app {
      */
     #[task(shared = [sensor_data, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        cx.shared.sensor_data.lock(|sensor_data| {
-            cx.shared.em.run(|| {
-                let message = Message::new(
-                    &monotonics::now(),
-                    MainBoard,
-                    Sensor::new(9, sensor_data.clone()),
-                );
+        let data = cx
+            .shared
+            .sensor_data
+            .lock(|sensor_data| sensor_data.clone());
+        cx.shared.em.run(|| {
+            let message = Message::new(&monotonics::now(), MainBoard, Sensor::new(9, data));
 
-                spawn!(send_message, message)?;
+            spawn!(send_message, message)?;
 
-                Ok(())
-            });
+            Ok(())
         });
 
-        spawn_after!(sensor_send, 2.secs()).ok();
+        spawn_after!(sensor_send, 250.millis()).ok();
     }
 
     /**

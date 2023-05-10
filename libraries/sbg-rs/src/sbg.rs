@@ -67,7 +67,7 @@ static mut DATA: Sbg = Sbg {
 /**
  * Max buffer size for SBG messages.
  */
-const SBG_BUFFER_SIZE: usize = 4096;
+const SBG_BUFFER_SIZE: usize = 1024;
 struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface,
 }
@@ -151,7 +151,7 @@ impl SBG {
     /**
      * Reads SBG data frames for a buffer and returns the most recent data.
      */
-    pub fn readData(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) -> Sbg {
+    pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) -> Sbg {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
         unsafe { BUF = buffer };
