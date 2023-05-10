@@ -1,3 +1,4 @@
+use atsamd_hal;
 use core::convert::Infallible;
 use defmt::write;
 use derive_more::From;
@@ -14,6 +15,10 @@ pub enum HydraError {
     SpawnError(&'static str),
     /// Error from the SD card library.
     SdCardError(sd::Error<sd::SdMmcError>),
+    /// Error from the Mavlink library.
+    MavlinkError(messages::mavlink::error::MessageWriteError),
+    /// DMA error.
+    DmaError(atsamd_hal::dmac::Error),
 }
 
 impl defmt::Format for HydraError {
@@ -30,6 +35,12 @@ impl defmt::Format for HydraError {
             }
             HydraError::SdCardError(_) => {
                 write!(f, "SD card error!");
+            }
+            HydraError::MavlinkError(_) => {
+                write!(f, "Mavlink error!");
+            }
+            HydraError::DmaError(_) => {
+                write!(f, "DMA error!");
             }
         }
     }
