@@ -21,16 +21,15 @@ use hal::sercom::Sercom3;
 use hal::time::Hertz;
 use hal::{dmac::Transfer, sercom::Sercom};
 use heapless::Vec;
-use messages::mavlink;
 use messages::mav_message;
+use messages::mavlink;
 use messages::sender::Sender::MainBoard;
 use messages::sensor::{Sbg, Sensor};
 use messages::*;
 use panic_halt as _;
-use postcard::to_vec_cobs;
 use sbg_rs::sbg;
 use systick_monotonic::*;
-const SBG_BUFFER_SIZE: usize = 512;
+const SBG_BUFFER_SIZE: usize = 1024;
 static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 type Pads = uart::PadsFromIds<Sercom3, IoSet1, PA23, PA22>;
@@ -189,7 +188,6 @@ mod app {
         let mut rtc = rtc_temp.into_count32_mode();
         rtc.set_count32(0);
 
-        // sbg_init::spawn().ok();
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
@@ -241,16 +239,6 @@ mod app {
     }
 
     /**
-     * Setups the SBG to output the appropriate data.
-     */
-    #[task(priority = 3, shared = [sbg])]
-    fn sbg_init(mut cx: sbg_init::Context) {
-        cx.shared.sbg.lock(|sbg| {
-            sbg.setup();
-        });
-    }
-
-    /**
      * Handles the DMA interrupt.
      * Handles the SBG data.
      * Logs data to the SD card.
@@ -298,7 +286,7 @@ mod app {
         cx.shared.em.run(|| {
             let uart = cx.local.uart;
 
-            let payload: Vec<u8, 255> = to_vec_cobs(&m)?;
+            let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
 
             let mav_message = mav_message::mavlink_postcard_message(payload);
 
@@ -344,20 +332,19 @@ mod app {
      */
     #[task(shared = [sensor_data, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let data = cx.shared.sensor_data.lock(|sensor_data| sensor_data.clone());
-            cx.shared.em.run(|| {
-                let message = Message::new(
-                    &monotonics::now(),
-                    MainBoard,
-                    Sensor::new(9, data),
-                );
+        let data = cx
+            .shared
+            .sensor_data
+            .lock(|sensor_data| sensor_data.clone());
+        cx.shared.em.run(|| {
+            let message = Message::new(&monotonics::now(), MainBoard, Sensor::new(9, data));
 
-                spawn!(send_message, message)?;
+            spawn!(send_message, message)?;
 
-                Ok(())
-            });
+            Ok(())
+        });
 
-        spawn_after!(sensor_send, 200.millis()).ok();
+        spawn_after!(sensor_send, 250.millis()).ok();
     }
 
     /**

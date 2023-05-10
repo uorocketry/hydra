@@ -476,7 +476,7 @@ dependencies = [
 [[package]]
 name = "mavlink"
 version = "0.11.1"
-source = "git+https://github.com/uorocketry/rust-mavlink?branch=hydra_dialect#4944f1663c257b85d8940f326620455540daa2a6"
+source = "git+https://github.com/uorocketry/rust-mavlink?branch=hydra_dialect#26623dfbc6b32b2f48f03c1206b815fce0d1f1d3"
 dependencies = [
  "bitflags",
  "byteorder",
