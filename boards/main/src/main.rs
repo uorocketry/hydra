@@ -5,10 +5,11 @@ use atsamd_hal::gpio::*;
 use atsamd_hal::pac;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
-use atsamd_hal::sercom::{uart, IoSet1};
+use atsamd_hal::sercom::{uart, IoSet1, IoSet6};
 use common_arm::*;
 use defmt::info;
 use embedded_sdmmc::File;
+use fugit::RateExtU32;
 use hal::dmac;
 use hal::dmac::BufferPair;
 use hal::gpio::Pins;
@@ -16,10 +17,24 @@ use hal::gpio::PA14;
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use hal::sercom::Sercom0;
-use hal::sercom::Sercom3;
+use hal::sercom::Sercom5;
 use hal::time::Hertz;
 use hal::{dmac::Transfer, sercom::Sercom};
 use heapless::Vec;
+use mcan::embedded_can as ecan;
+use mcan::generic_array::typenum::consts::*;
+use mcan::interrupt::{Interrupt, InterruptLine, OwnedInterruptSet};
+use mcan::message::rx;
+use mcan::message::tx;
+use mcan::messageram::SharedMemory;
+use mcan::prelude::*;
+use mcan::rx_fifo::Fifo0;
+use mcan::rx_fifo::Fifo1;
+use mcan::rx_fifo::RxFifo;
+use mcan::{
+    config::{BitTiming, Mode},
+    filter::{Action, ExtFilter, Filter},
+};
 use messages::mav_message;
 use messages::mavlink;
 use messages::sender::Sender::MainBoard;
@@ -31,7 +46,7 @@ use systick_monotonic::*;
 const SBG_BUFFER_SIZE: usize = 1024;
 static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-type Pads = uart::PadsFromIds<Sercom3, IoSet1, PA23, PA22>;
+type Pads = uart::PadsFromIds<Sercom5, IoSet6, PB00, PB02>;
 type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 type Config = uart::Config<Pads, EightBit>;
 type ConfigSBG = uart::Config<PadsSBG, EightBit>;
@@ -40,6 +55,51 @@ type SBGTransfer = dmac::Transfer<
     BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>,
 >;
 type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
+
+pub struct Capacities;
+
+impl mcan::messageram::Capacities for Capacities {
+    type StandardFilters = U1;
+    type ExtendedFilters = U1;
+    type RxBufferMessage = rx::Message<64>;
+    type DedicatedRxBuffers = U0;
+    type RxFifo0Message = rx::Message<64>;
+    type RxFifo0 = U64;
+    type RxFifo1Message = rx::Message<64>;
+    type RxFifo1 = U64;
+    type TxMessage = tx::Message<64>;
+    type TxBuffers = U32;
+    type DedicatedTxBuffers = U0;
+    type TxEventFifo = U32;
+}
+
+type RxFifo0 = RxFifo<
+    'static,
+    Fifo0,
+    hal::clock::v2::types::Can0,
+    <Capacities as mcan::messageram::Capacities>::RxFifo0Message,
+>;
+
+type RxFifo1 = RxFifo<
+    'static,
+    Fifo1,
+    hal::clock::v2::types::Can0,
+    <Capacities as mcan::messageram::Capacities>::RxFifo1Message,
+>;
+
+type Tx = mcan::tx_buffers::Tx<'static, hal::clock::v2::types::Can0, Capacities>;
+type TxEventFifo = mcan::tx_event_fifo::TxEventFifo<'static, hal::clock::v2::types::Can0>;
+type Aux = mcan::bus::Aux<
+    'static,
+    hal::clock::v2::types::Can0,
+    hal::can::Dependencies<
+        hal::clock::v2::types::Can0,
+        hal::clock::v2::gclk::Gclk0Id,
+        Pin<PA23, AlternateI>, // Could be an issue. Need to find the right type level enum.
+        Pin<PA22, AlternateI>,
+        pac::CAN0,
+    >,
+>;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -60,108 +120,171 @@ mod app {
         uart: Uart<Config, Duplex>,
         sd: SdInterface,
         sbg_file: File,
+        line_interrupts: OwnedInterruptSet<hal::clock::v2::types::Can0>,
+        rx_fifo_0: RxFifo0,
+        rx_fifo_1: RxFifo1,
+        tx: Tx,
+        tx_event_fifo: TxEventFifo,
+        aux: Aux,
     }
 
     #[monotonic(binds = SysTick, default = true)]
     type SysMono = Systick<100>; // 100 Hz / 10 ms granularity
 
-    #[init]
+    #[init(local = [#[link_section = ".can"] can_memory: SharedMemory<Capacities> = SharedMemory::new()])]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut peripherals = cx.device;
         let core = cx.core;
 
-        let mut clocks = hal::clock::GenericClockController::with_external_32kosc(
+        let (_buses, v2_clocks, tokens) = atsamd_hal::clock::v2::clock_system_at_reset(
+            peripherals.OSCCTRL,
+            peripherals.OSC32KCTRL,
             peripherals.GCLK,
-            &mut peripherals.MCLK,
-            &mut peripherals.OSC32KCTRL,
-            &mut peripherals.OSCCTRL,
+            peripherals.MCLK,
             &mut peripherals.NVMCTRL,
         );
+
+        // /// SAFTEY
+        // /// Verify this won't cause issues
+        let (_, _, _, mut mclk) = unsafe { v2_clocks.pac.steal() };
+
+        // let mut clocks = hal::clock::GenericClockController::with_external_32kosc(
+        //     gclk,
+        //     &mut mclk,
+        //     &mut osc32kctrl,
+        //     &mut oscctrl,
+        //     &mut peripherals.NVMCTRL,
+        // );
 
         let pins = Pins::new(peripherals.PORT);
         let led = pins.pa14.into_push_pull_output();
 
         /* SD config */
-        let mclk = &mut peripherals.MCLK;
-        clocks.configure_gclk_divider_and_source(
-            pac::gclk::pchctrl::GEN_A::GCLK5,
-            1,
-            pac::gclk::genctrl::SRC_A::DFLL,
-            false,
-        );
-        let gclk5 = clocks
-            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5)
-            .expect("Could not get gclk 5.");
-        let spi_clk = clocks
-            .sercom1_core(&gclk5)
-            .expect("Could not configure Sercom 1 clock.");
+        let (pclk_sd, gclk0) =
+            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, v2_clocks.gclk0);
+        // clocks.configure_gclk_divider_and_source(
+        //     pac::gclk::pchctrl::GEN_A::GCLK5,
+        //     1,
+        //     pac::gclk::genctrl::SRC_A::DFLL,
+        //     false,
+        // );
+        // let gclk5 = clocks
+        //     .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5)
+        //     .expect("Could not get gclk 5.");
+        // let spi_clk = clocks
+        //     .sercom1_core(&gclk5)
+        //     .expect("Could not configure Sercom 1 clock.");
         let sercom = peripherals.SERCOM1;
         let cs = pins.pa18.into_push_pull_output();
         let sck = pins.pa17.into_push_pull_output();
         let miso = pins.pa19.into_push_pull_output();
         let mosi = pins.pa16.into_push_pull_output();
-        let mut sd = SdInterface::new(mclk, sercom, spi_clk, cs, sck, miso, mosi);
+        let mut sd = SdInterface::new(&mclk, sercom, pclk_sd.freq(), cs, sck, miso, mosi);
         let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
         /* End SD config */
         /* Radio config */
-        clocks.configure_gclk_divider_and_source(
-            pac::gclk::pchctrl::GEN_A::GCLK2,
-            1,
-            pac::gclk::genctrl::SRC_A::DFLL,
-            false,
-        );
-        let gclk2 = clocks
-            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK2)
-            .expect("Could not get gclk 2.");
-        let uart_clk = clocks
-            .sercom3_core(&gclk2)
-            .expect("Could not configure Sercom 1 clock.");
+        let (pclk_radio, gclk0) =
+            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom5, gclk0);
 
-        let pads = uart::Pads::<hal::sercom::Sercom3, _>::default()
-            .rx(pins.pa23)
-            .tx(pins.pa22);
-        let uart = Config::new(
-            &peripherals.MCLK,
-            peripherals.SERCOM3,
-            pads,
-            uart_clk.freq(),
-        )
-        .baud(
-            57600.hz(),
-            uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-        )
-        .enable();
+        let pads = uart::Pads::<hal::sercom::Sercom5, hal::sercom::IoSet6>::default()
+            .rx(pins.pb00)
+            .tx(pins.pb02);
+        let uart = Config::new(&mclk, peripherals.SERCOM5, pads, pclk_radio.freq())
+            .baud(
+                57600.hz(),
+                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+            )
+            .enable();
         /* End Radio config */
 
-        /* SBG config */
-        clocks.configure_gclk_divider_and_source(
-            pac::gclk::pchctrl::GEN_A::GCLK3,
-            1,
-            pac::gclk::genctrl::SRC_A::DFLL,
-            false,
-        );
-        let gclk3 = clocks
-            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK3)
-            .expect("Could not get gclk 2.");
+        /* CAN config */
+        let (pclk_eic, gclk0) = atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.eic, gclk0);
+        let can0_rx = pins.pa23.into_mode();
+        let can0_tx = pins.pa22.into_mode();
+        // let mut cFLASHan1_standby =
+        let (pclk_can0, gclk0) =
+            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.can0, gclk0);
 
-        let sbg_clk = clocks
-            .sercom0_core(&gclk3)
-            .expect("Could not configure Sercom 0 clock.");
+        let (can_dependencies, gclk0) = hal::can::Dependencies::new(
+            gclk0,
+            pclk_can0,
+            v2_clocks.ahbs.can0,
+            can0_rx,
+            can0_tx,
+            peripherals.CAN0,
+        );
+
+        let mut can = mcan::bus::CanConfigurable::new(
+            200.kHz().into(),
+            can_dependencies,
+            cx.local.can_memory,
+        )
+        .unwrap();
+
+        can.config().mode = Mode::Classic {
+
+        };
+        // can.config().mode = Mode::Fd {
+        //     allow_bit_rate_switching: true,
+        //     data_phase_timing: BitTiming::new(750.kHz().into()),
+        // };
+
+        let line_interrupts = can
+            .interrupts()
+            .enable(
+                [
+                    Interrupt::RxFifo0NewMessage,
+                    Interrupt::RxFifo0Full,
+                    Interrupt::RxFifo0MessageLost,
+                    Interrupt::RxFifo1NewMessage,
+                    Interrupt::RxFifo1Full,
+                    Interrupt::RxFifo1MessageLost,
+                ]
+                .into_iter()
+                .collect(),
+                InterruptLine::Line0,
+            )
+            .unwrap();
+
+        can.filters_standard()
+            .push(Filter::Classic {
+                action: Action::StoreFifo0,
+                filter: ecan::StandardId::MAX,
+                mask: ecan::StandardId::ZERO,
+            })
+            .unwrap_or_else(|_| panic!("Standard filter application failed"));
+
+        can.filters_extended()
+            .push(ExtFilter::Classic {
+                action: Action::StoreFifo1,
+                filter: ecan::ExtendedId::MAX,
+                mask: ecan::ExtendedId::ZERO,
+            })
+            .unwrap_or_else(|_| panic!("Extended filter application failed"));
+
+        let can = can.finalize().unwrap();
+
+        let rx_fifo_0 = can.rx_fifo_0;
+        let rx_fifo_1 = can.rx_fifo_1;
+        let tx = can.tx;
+        let tx_event_fifo = can.tx_event_fifo;
+        let aux = can.aux;
+
+        /* End CAN config */
+
+        /* SBG config */
+        let (pclk_sbg, gclk0) =
+            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom0, gclk0);
 
         let padsSBG = uart::Pads::<Sercom0, _>::default()
             .rx(pins.pa09)
             .tx(pins.pa08);
-        let uart_sbg = ConfigSBG::new(
-            &peripherals.MCLK,
-            peripherals.SERCOM0,
-            padsSBG,
-            sbg_clk.freq(),
-        )
-        .baud(
-            115200.hz(),
-            uart::BaudMode::Fractional(uart::Oversampling::Bits8),
-        )
-        .enable();
+        let uart_sbg = ConfigSBG::new(&mclk, peripherals.SERCOM0, padsSBG, pclk_sbg.freq())
+            .baud(
+                115200.hz(),
+                uart::BaudMode::Fractional(uart::Oversampling::Bits8),
+            )
+            .enable();
 
         let (sbg_rx, sbg_tx) = uart_sbg.split();
 
@@ -183,15 +306,15 @@ mod app {
         // There is a bug within the HAL that improperly configures the RTC
         // in count32 mode. This is circumvented by first using clock mode then
         // converting to count32 mode.
-        let rtc_temp = hal::rtc::Rtc::clock_mode(peripherals.RTC, 1024.hz(), &mut peripherals.MCLK);
+        let rtc_temp = hal::rtc::Rtc::clock_mode(peripherals.RTC, 1024.hz(), &mut mclk);
         let mut rtc = rtc_temp.into_count32_mode();
         rtc.set_count32(0);
 
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
-        let sysclk: Hertz = clocks.gclk0().into();
-        let mono = Systick::new(core.SYST, sysclk.0);
+        // let sysclk: Hertz = gclk0.enable_gclk_out(pins.pa00.into_alternate()).0.freq();
+        let mono = Systick::new(core.SYST, 48000000);
 
         let sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc);
         (
@@ -225,6 +348,12 @@ mod app {
                 uart,
                 sd,
                 sbg_file,
+                rx_fifo_0,
+                rx_fifo_1,
+                line_interrupts,
+                tx,
+                tx_event_fifo,
+                aux,
             },
             init::Monotonics(mono),
         )
@@ -237,6 +366,25 @@ mod app {
         }
     }
 
+    #[task(priority = 3, binds = CAN0, local = [line_interrupts, rx_fifo_0, rx_fifo_1])]
+    fn can0(mut cx: can0::Context) {
+        let line_interrupts = cx.local.line_interrupts;
+        for interrupt in line_interrupts.iter_flagged() {
+            match interrupt {
+                Interrupt::RxFifo0NewMessage => {
+                    for message in &mut cx.local.rx_fifo_0 {
+                        info!("Message: {:?}", message.data())
+                    }
+                }
+                Interrupt::RxFifo1NewMessage => {
+                    for message in &mut cx.local.rx_fifo_1 {
+                        info!("Message: {:?}", message.data())
+                    }
+                }
+                i => info!("interrupt triggered"),
+            }
+        }
+    }
     /**
      * Handles the DMA interrupt.
      * Handles the SBG data.
@@ -280,7 +428,7 @@ mod app {
     /**
      * Sends a message to the radio over UART.
      */
-    #[task(capacity = 10, local = [uart], shared = [&em])]
+    #[task(priority = 3, capacity = 10, local = [uart, tx_event_fifo, aux, tx], shared = [&em])]
     fn send_message(cx: send_message::Context, m: Message) {
         cx.shared.em.run(|| {
             let uart = cx.local.uart;
@@ -294,6 +442,24 @@ mod app {
                 mavlink::MavlinkVersion::V2,
                 mav_message::get_mav_header(),
                 &mav_message,
+            )?;
+
+            let mut payload = [0_u8; 8];
+            payload.fill(0);
+            cx.local.tx.transmit_queued(
+                tx::MessageBuilder {
+                    id: ecan::Id::Standard(ecan::StandardId::new(0).unwrap()),
+                    frame_type: tx::FrameType::Classic(tx::ClassicFrameType::Data(&payload)),
+                    // }, 
+                    // // {
+                    // //     payload: &payload,
+                    // //     bit_rate_switching: true,
+                    // //     force_error_state_indicator: false,
+                    // // },
+                    store_tx_event: Some(0),
+                }
+                .build()
+                .unwrap(),
             )?;
 
             info!("Sent message: {:?}", m);

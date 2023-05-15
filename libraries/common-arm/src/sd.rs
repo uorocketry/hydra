@@ -4,6 +4,7 @@ use atsamd_hal::clock::Sercom1CoreClock;
 use atsamd_hal::gpio::{Alternate, Output, Pin, PushPull, C, PA16, PA17, PA18, PA19};
 use atsamd_hal::pac;
 use atsamd_hal::sercom::{spi, IoSet1, Sercom1};
+use atsamd_hal::time::Hertz;
 use defmt::{info, warn};
 use embedded_sdmmc as sd;
 
@@ -65,7 +66,7 @@ impl SdInterface {
     pub fn new(
         mclk: &pac::MCLK,
         sercom: pac::SERCOM1,
-        spi_clk: Sercom1CoreClock,
+        freq: Hertz,
         cs: Pin<PA18, Output<PushPull>>,
         sck: Pin<PA17, Output<PushPull>>,
         miso: Pin<PA19, Output<PushPull>>,
@@ -75,7 +76,7 @@ impl SdInterface {
             .sclk(sck)
             .data_in(miso)
             .data_out(mosi);
-        let sdmmc_spi = spi::Config::new(mclk, sercom, pads_spi, spi_clk.freq())
+        let sdmmc_spi = spi::Config::new(mclk, sercom, pads_spi, freq)
             .length::<spi::lengths::U1>()
             .bit_order(spi::BitOrder::MsbFirst)
             .spi_mode(spi::MODE_0)

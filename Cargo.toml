@@ -14,8 +14,8 @@ default-members = [
 ]
 
 [workspace.dependencies.atsamd-hal]
-version = "0.15.1"
-features = ["same51j", "same51j-rt", "dma"]
+path = "../atsamd/hal"
+features = ["same51j", "same51j-rt", "dma", "can"]
 
 [workspace.dependencies.serde]
 version = "1.0.150"
