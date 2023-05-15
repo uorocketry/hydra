@@ -59,10 +59,10 @@ type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
 pub struct Capacities;
 
 impl mcan::messageram::Capacities for Capacities {
-    type StandardFilters = U1;
-    type ExtendedFilters = U1;
+    type StandardFilters = U128;
+    type ExtendedFilters = U64;
     type RxBufferMessage = rx::Message<64>;
-    type DedicatedRxBuffers = U0;
+    type DedicatedRxBuffers = U64;
     type RxFifo0Message = rx::Message<64>;
     type RxFifo0 = U64;
     type RxFifo1Message = rx::Message<64>;
@@ -103,6 +103,8 @@ type Aux = mcan::bus::Aux<
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+    use hal::clock::v2::types::Can0;
+
     use super::*;
 
     #[shared]
@@ -132,7 +134,7 @@ mod app {
     type SysMono = Systick<100>; // 100 Hz / 10 ms granularity
 
     #[init(local = [#[link_section = ".can"] can_memory: SharedMemory<Capacities> = SharedMemory::new()])]
-    fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
+    fn init(mut cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut peripherals = cx.device;
         let core = cx.core;
 
@@ -148,32 +150,12 @@ mod app {
         // /// Verify this won't cause issues
         let (_, _, _, mut mclk) = unsafe { v2_clocks.pac.steal() };
 
-        // let mut clocks = hal::clock::GenericClockController::with_external_32kosc(
-        //     gclk,
-        //     &mut mclk,
-        //     &mut osc32kctrl,
-        //     &mut oscctrl,
-        //     &mut peripherals.NVMCTRL,
-        // );
-
         let pins = Pins::new(peripherals.PORT);
         let led = pins.pa14.into_push_pull_output();
 
         /* SD config */
         let (pclk_sd, gclk0) =
             atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, v2_clocks.gclk0);
-        // clocks.configure_gclk_divider_and_source(
-        //     pac::gclk::pchctrl::GEN_A::GCLK5,
-        //     1,
-        //     pac::gclk::genctrl::SRC_A::DFLL,
-        //     false,
-        // );
-        // let gclk5 = clocks
-        //     .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK5)
-        //     .expect("Could not get gclk 5.");
-        // let spi_clk = clocks
-        //     .sercom1_core(&gclk5)
-        //     .expect("Could not configure Sercom 1 clock.");
         let sercom = peripherals.SERCOM1;
         let cs = pins.pa18.into_push_pull_output();
         let sck = pins.pa17.into_push_pull_output();
@@ -201,7 +183,7 @@ mod app {
         let (pclk_eic, gclk0) = atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.eic, gclk0);
         let can0_rx = pins.pa23.into_mode();
         let can0_tx = pins.pa22.into_mode();
-        // let mut cFLASHan1_standby =
+        // let mut can1_standby =
         let (pclk_can0, gclk0) =
             atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.can0, gclk0);
 
@@ -214,20 +196,18 @@ mod app {
             peripherals.CAN0,
         );
 
-        let mut can = mcan::bus::CanConfigurable::new(
-            200.kHz().into(),
+        // Need to properly calculate the baud rate
+        let mut can = mcan::bus::CanConfigurable::<'_, Can0, _, _>::new(
+            50.kHz().into(),
             can_dependencies,
             cx.local.can_memory,
         )
         .unwrap();
-
-        can.config().mode = Mode::Classic {
-
+        // Need to properly calculate the baud rate
+        can.config().mode = Mode::Fd {
+            allow_bit_rate_switching: true,
+            data_phase_timing: BitTiming::new(200.kHz().into()),
         };
-        // can.config().mode = Mode::Fd {
-        //     allow_bit_rate_switching: true,
-        //     data_phase_timing: BitTiming::new(750.kHz().into()),
-        // };
 
         let line_interrupts = can
             .interrupts()
@@ -449,13 +429,12 @@ mod app {
             cx.local.tx.transmit_queued(
                 tx::MessageBuilder {
                     id: ecan::Id::Standard(ecan::StandardId::new(0).unwrap()),
-                    frame_type: tx::FrameType::Classic(tx::ClassicFrameType::Data(&payload)),
-                    // }, 
-                    // // {
-                    // //     payload: &payload,
-                    // //     bit_rate_switching: true,
-                    // //     force_error_state_indicator: false,
-                    // // },
+                    frame_type: tx::FrameType::FlexibleDatarate
+                    {
+                        payload: &payload,
+                        bit_rate_switching: true,
+                        force_error_state_indicator: false,
+                    },
                     store_tx_event: Some(0),
                 }
                 .build()
