@@ -22,7 +22,7 @@ use hal::gpio::{PA08, PA09, PB16, PB17};
 use hal::sercom::uart::Duplex;
 use hal::sercom::uart::{self, EightBit, Uart};
 use hal::sercom::{IoSet1, Sercom0, Sercom5};
-use messages::sensor::Sbg;
+use messages::sensor::{Sbg, SbgShort};
 type Pads = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
@@ -151,7 +151,7 @@ impl SBG {
     /**
      * Reads SBG data frames for a buffer and returns the most recent data.
      */
-    pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) -> Sbg {
+    pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) -> (Sbg, SbgShort) {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
         unsafe { BUF = buffer };
@@ -167,7 +167,8 @@ impl SBG {
         }
         // SAFETY: We are cloning a static variable.
         // This is safe because DATA cannot be modified by other tasks while SBG is locked.
-        unsafe { DATA.clone() }
+        let data = unsafe { DATA.clone() }; // Probably inefficient to clone twice, but using into is more portable. 
+        (data.clone(), data.into())
     }
 
     /**

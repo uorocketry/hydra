@@ -41,6 +41,7 @@ dependencies = [
 [[package]]
 name = "atsamd-hal"
 version = "0.15.1"
+source = "git+https://github.com/atsamd-rs/atsamd#67561d0e8e695fd276bd839bd9e47212dec67802"
 dependencies = [
  "aes",
  "atsame51j",
@@ -65,6 +66,7 @@ dependencies = [
 [[package]]
 name = "atsame51j"
 version = "0.12.0"
+source = "git+https://github.com/atsamd-rs/atsamd#67561d0e8e695fd276bd839bd9e47212dec67802"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -590,7 +592,6 @@ dependencies = [
  "embedded-sdmmc",
  "fugit",
  "heapless",
- "mcan",
  "messages",
  "panic-halt",
  "postcard",
@@ -621,9 +622,9 @@ dependencies = [
 
 [[package]]
 name = "mcan"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ded26b87c1eb73e5a5a0c5ade21d8e66e26ae096cd0218c5b91f0f7e31cfafcf"
+checksum = "1db1ad48f562b804bfe83828dc0d87622ea96bdc435a8513ecaa45a5f88d2f2f"
 dependencies = [
  "bitfield 0.14.0",
  "embedded-can",
@@ -815,9 +816,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.56"
+version = "1.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b63bdb0cd06f1f4dedf69b254734f9b45af66e4a031e42a7480257d9898b435"
+checksum = "fa1fb82fc0c281dd9671101b66b771ebbe1eaf967b96ac8740dcba4b70005ca8"
 dependencies = [
  "unicode-ident",
 ]

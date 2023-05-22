@@ -12,6 +12,7 @@ use derive_more::From;
 use fugit::Instant;
 use serde::{Deserialize, Serialize};
 
+/// This is to help control versions. 
 pub use mavlink;
 
 #[cfg(feature = "ts")]

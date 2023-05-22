@@ -18,6 +18,34 @@ pub struct Sensor {
 #[cfg_attr(feature = "ts", ts(export))]
 pub enum SensorData {
     Sbg(Sbg),
+    SbgShort(SbgShort),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct SbgShort {
+    pub accel_y: f32,
+    pub pressure: f32,
+    pub height: f64,
+    pub quant_w: f32,
+    pub quant_x: f32,
+    pub quant_y: f32,
+    pub quant_z: f32,
+}
+
+impl From<Sbg> for SbgShort {
+    fn from(sbg: Sbg) -> Self {
+        SbgShort {
+            accel_y: sbg.accel_y,
+            pressure: sbg.pressure,
+            height: sbg.height,
+            quant_w: sbg.quant_w,
+            quant_x: sbg.quant_x,
+            quant_y: sbg.quant_y,
+            quant_z: sbg.quant_z,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
