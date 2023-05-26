@@ -2,6 +2,8 @@
 #![no_main]
 mod communication;
 mod types;
+mod statemachine;
+use common_arm::sfsm::StateMachine;
 use atsamd_hal as hal;
 use atsamd_hal::sercom::uart;
 use common_arm::mcan;
@@ -39,6 +41,7 @@ mod app {
         sbg: sbg::SBG,
         sbg_data: (Sbg, SbgShort),
         can0: communication::CanDevice0,
+        state_machine: statemachine::LogicBoard,
     }
 
     #[local]
@@ -142,6 +145,15 @@ mod app {
         rtc.set_count32(0);
 
         let sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc);
+
+        /* State Machine Setup */
+        let mut rocket = statemachine::LogicBoard::new();
+        let wait_for_launch = statemachine::WaitForLaunch {
+            tries: 0,
+            malfunction: false,
+            countdown: 3,
+        };
+        rocket.start(wait_for_launch);
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
@@ -183,6 +195,7 @@ mod app {
                     },
                 ),
                 can0,
+                state_machine: rocket,
             },
             Local {
                 led,
@@ -275,12 +288,14 @@ mod app {
     /**
      * Sends the state of the system.
      */
-    #[task(shared = [&em])]
-    fn state_send(cx: state_send::Context) {
+    #[task(shared = [state_machine, &em])]
+    fn state_send(mut cx: state_send::Context) {
         let em = cx.shared.em;
-
+        let state = cx.shared.state_machine.lock(|rocket| {
+            rocket.peek_state().into()
+        });
         let state = State {
-            status: Status::Uninitialized,
+            status: state,
             has_error: em.has_error(),
             voltage: 12.1,
         };

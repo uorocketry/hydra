@@ -27,7 +27,7 @@ version = "0.7.6"
 features = ["critical-section-single-core"]
 
 [profile.dev]
-# Using LTO causes issues with GDB
+# Using LTO causes issues with GDB.
 lto = false
 
 # Only optimize dependencies for size in debug, keeping the top crate debug friendly

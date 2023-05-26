@@ -12,15 +12,15 @@ use derive_more::From;
 use fugit::Instant;
 use serde::{Deserialize, Serialize};
 
-/// This is to help control versions. 
+/// This is to help control versions.
 pub use mavlink;
 
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
+pub mod mav_message;
 pub mod sender;
 pub mod sensor;
-pub mod mav_message;
 
 pub const MAX_SIZE: usize = 85;
 
