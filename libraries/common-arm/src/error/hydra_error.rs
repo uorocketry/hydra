@@ -19,8 +19,10 @@ pub enum HydraError {
     MavlinkError(messages::mavlink::error::MessageWriteError),
     /// DMA error.
     DmaError(atsamd_hal::dmac::Error),
-    /// CAN error
+    /// CAN send error.
     CanError(nb::Error<mcan::tx_buffers::Error>),
+    /// CAN message build error.
+    CanMessageError(mcan::message::TooMuchData),
 }
 
 impl defmt::Format for HydraError {
@@ -46,6 +48,9 @@ impl defmt::Format for HydraError {
             }
             HydraError::CanError(_) => {
                 write!(f, "CAN error!");
+            }
+            HydraError::CanMessageError(_) => {
+                write!(f, "CAN message error!");
             }
         }
     }

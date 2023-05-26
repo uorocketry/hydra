@@ -1,109 +1,34 @@
 #![no_std]
 #![no_main]
+mod communication;
+mod types;
 use atsamd_hal as hal;
-use atsamd_hal::gpio::*;
-use atsamd_hal::gpio::{AlternateI, PA22, PA23};
-use atsamd_hal::pac;
-use atsamd_hal::sercom::uart::EightBit;
-use atsamd_hal::sercom::uart::{Duplex, Uart};
-use atsamd_hal::sercom::{uart, IoSet1};
+use atsamd_hal::sercom::uart;
 use common_arm::mcan;
 use common_arm::*;
 use defmt::info;
 use embedded_sdmmc::File;
 use hal::dmac;
-use hal::dmac::BufferPair;
 use hal::gpio::Pins;
+use atsamd_hal::clock::v2::pclk::Pclk;
 use hal::gpio::PA14;
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use hal::sercom::Sercom0;
-use hal::sercom::Sercom5;
 use hal::{dmac::Transfer, sercom::Sercom};
-use heapless::Vec;
-use mcan::embedded_can as ecan;
-use mcan::generic_array::typenum::consts::*;
-use mcan::interrupt::state::EnabledLine1;
-use mcan::interrupt::{Interrupt, OwnedInterruptSet};
-use mcan::message::rx;
-use mcan::message::tx;
 use mcan::messageram::SharedMemory;
-use mcan::prelude::*;
-use mcan::rx_fifo::Fifo0;
-use mcan::rx_fifo::Fifo1;
-use mcan::rx_fifo::RxFifo;
-use mcan::{
-    config::{BitTiming, Mode},
-    filter::{Action, ExtFilter, Filter},
-};
-use messages::mav_message;
-use messages::mavlink;
 use messages::sender::Sender::LogicBoard;
 use messages::sensor::{Sbg, SbgShort, Sensor};
 use messages::*;
 use panic_halt as _;
 use sbg_rs::sbg;
-use systick_monotonic::fugit::RateExtU32;
 use systick_monotonic::*;
-const SBG_BUFFER_SIZE: usize = 1024;
-static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-type Pads = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
-type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
-type Config = uart::Config<Pads, EightBit>;
-type ConfigSBG = uart::Config<PadsSBG, EightBit>;
-type SBGTransfer = dmac::Transfer<
-    dmac::Channel<dmac::Ch0, dmac::Busy>,
-    BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>,
->;
-type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
-pub struct Capacities;
-
-impl mcan::messageram::Capacities for Capacities {
-    type StandardFilters = U128;
-    type ExtendedFilters = U64;
-    type RxBufferMessage = rx::Message<64>;
-    type DedicatedRxBuffers = U64;
-    type RxFifo0Message = rx::Message<64>;
-    type RxFifo0 = U64;
-    type RxFifo1Message = rx::Message<64>;
-    type RxFifo1 = U64;
-    type TxMessage = tx::Message<64>;
-    type TxBuffers = U32;
-    type DedicatedTxBuffers = U0;
-    type TxEventFifo = U32;
-}
-
-type RxFifo0 = RxFifo<
-    'static,
-    Fifo0,
-    hal::clock::v2::types::Can0,
-    <Capacities as mcan::messageram::Capacities>::RxFifo0Message,
->;
-
-type RxFifo1 = RxFifo<
-    'static,
-    Fifo1,
-    hal::clock::v2::types::Can0,
-    <Capacities as mcan::messageram::Capacities>::RxFifo1Message,
->;
-
-type Tx = mcan::tx_buffers::Tx<'static, hal::clock::v2::types::Can0, Capacities>;
-type TxEventFifo = mcan::tx_event_fifo::TxEventFifo<'static, hal::clock::v2::types::Can0>;
-type Aux = mcan::bus::Aux<
-    'static,
-    hal::clock::v2::types::Can0,
-    hal::can::Dependencies<
-        hal::clock::v2::types::Can0,
-        hal::clock::v2::gclk::Gclk0Id,
-        Pin<PA23, AlternateI>, // Could be an issue. Need to find the right type level enum.
-        Pin<PA22, AlternateI>,
-        pac::CAN0,
-    >,
->;
+use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+    use crate::communication::RadioDevice;
+
     use super::*;
 
     #[shared]
@@ -113,20 +38,15 @@ mod app {
         buf_select: bool,
         sbg: sbg::SBG,
         sbg_data: (Sbg, SbgShort),
+        can0: communication::CanDevice0,
     }
 
     #[local]
     struct Local {
         led: Pin<PA14, PushPullOutput>,
-        uart: Uart<Config, Duplex>,
+        radio: communication::RadioDevice,
         sd: SdInterface,
         sbg_file: File,
-        line_interrupts: OwnedInterruptSet<hal::clock::v2::types::Can0, EnabledLine1>,
-        rx_fifo_0: RxFifo0,
-        rx_fifo_1: RxFifo1,
-        tx: Tx,
-        tx_event_fifo: TxEventFifo,
-        aux: Aux,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -152,100 +72,38 @@ mod app {
         // This is safe because we only steal the MCLK.
         let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
         let gclk0 = clocks.gclk0;
-
         let pins = Pins::new(peripherals.PORT);
         let led = pins.pa14.into_push_pull_output();
         /* CAN config */
-        let can0_rx = pins.pa23.into_mode();
-        let can0_tx = pins.pa22.into_mode();
-        let (pclk_can0, gclk0) =
-            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.can0, gclk0);
-        let (can_dependencies, gclk0) = hal::can::Dependencies::new(
-            gclk0,
-            pclk_can0,
+        // ! This is needs to be ran before calling the constructor.
+        // ! This is because gclk0 does not play nice and cannot 
+        // ! be incremented twice in a single function since we 
+        // ! then no longer can return the gclk0.
+        let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
+        let (can0, gclk0) = communication::CanDevice0::new(
+            pins.pa23.into_mode(),
+            pins.pa22.into_mode(),
+            pclk_can,
             clocks.ahbs.can0,
-            can0_rx,
-            can0_tx,
             peripherals.CAN0,
+            gclk0,
+            cx.local.can_memory,
         );
-
-        let mut can =
-            mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, cx.local.can_memory)
-                .unwrap();
-        can.config().mode = Mode::Fd {
-            allow_bit_rate_switching: false,
-            data_phase_timing: BitTiming::new(500.kHz()),
-        };
-
-        // Only for testing purposes
-        can.config().loopback = true;
-
-        let interrupts_to_be_enabled = can
-            .interrupts()
-            .split(
-                [
-                    Interrupt::RxFifo0NewMessage,
-                    Interrupt::RxFifo0Full,
-                    Interrupt::RxFifo0MessageLost,
-                    Interrupt::RxFifo1NewMessage,
-                    Interrupt::RxFifo1Full,
-                    Interrupt::RxFifo1MessageLost,
-                ]
-                .into_iter()
-                .collect(),
-            )
-            .unwrap();
-
-        // Line 0 and 1 are connected to the same interrupt line
-        let line_interrupts = can
-            .interrupt_configuration()
-            .enable_line_1(interrupts_to_be_enabled);
-
-        can.filters_standard()
-            .push(Filter::Classic {
-                action: Action::StoreFifo0,
-                filter: ecan::StandardId::ZERO,
-                mask: ecan::StandardId::MAX,
-            })
-            .unwrap_or_else(|_| panic!("Standard filter application failed"));
-
-        can.filters_extended()
-            .push(ExtFilter::Classic {
-                action: Action::StoreFifo1,
-                filter: ecan::ExtendedId::ZERO,
-                mask: ecan::ExtendedId::MAX,
-            })
-            .unwrap_or_else(|_| panic!("Extended filter application failed"));
-
-        let can = can.finalize().unwrap();
-        let rx_fifo_0 = can.rx_fifo_0;
-        let rx_fifo_1 = can.rx_fifo_1;
-        let tx = can.tx;
-        let tx_event_fifo = can.tx_event_fifo;
-        let aux = can.aux;
-
         /* SD config */
         let (pclk_sd, gclk0) =
             atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, gclk0);
-        let sercom = peripherals.SERCOM1;
-        let cs = pins.pa18.into_push_pull_output();
-        let sck = pins.pa17.into_push_pull_output();
-        let miso = pins.pa19.into_push_pull_output();
-        let mosi = pins.pa16.into_push_pull_output();
-        let mut sd = SdInterface::new(&mclk, sercom, pclk_sd.freq(), cs, sck, miso, mosi);
+        let mut sd = SdInterface::new(
+            &mclk,
+            peripherals.SERCOM1,
+            pclk_sd.freq(),
+            pins.pa18.into_push_pull_output(),
+            pins.pa17.into_push_pull_output(),
+            pins.pa19.into_push_pull_output(),
+            pins.pa16.into_push_pull_output(),
+        );
         let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
         /* Radio config */
-        let (pclk_radio, gclk0) =
-            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom5, gclk0);
-        let pads = uart::Pads::<hal::sercom::Sercom5, _>::default()
-            .rx(pins.pb17)
-            .tx(pins.pb16);
-        let uart = Config::new(&mclk, peripherals.SERCOM5, pads, pclk_radio.freq())
-            .baud(
-                57600.hz(),
-                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-            )
-            .enable();
+        let (radio, gclk0) = RadioDevice::new(tokens.pclks.sercom5, &mclk, peripherals.SERCOM5, pins.pb17, pins.pb16, gclk0);
 
         /* SBG config */
         let (pclk_sbg, _gclk0) =
@@ -283,12 +141,11 @@ mod app {
         let mut rtc = rtc_temp.into_count32_mode();
         rtc.set_count32(0);
 
+        let sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc);
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
         let mono = Systick::new(core.SYST, 48000000);
-
-        let sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc);
         (
             Shared {
                 em: ErrorManager::new(),
@@ -325,18 +182,13 @@ mod app {
                         quant_z: 0.0,
                     },
                 ),
+                can0,
             },
             Local {
                 led,
-                uart,
+                radio,
                 sd,
                 sbg_file,
-                rx_fifo_0,
-                rx_fifo_1,
-                line_interrupts,
-                tx,
-                tx_event_fifo,
-                aux,
             },
             init::Monotonics(mono),
         )
@@ -349,25 +201,11 @@ mod app {
         }
     }
 
-    #[task(binds = CAN0, local = [line_interrupts, rx_fifo_0, rx_fifo_1])]
+    #[task(priority = 3, binds = CAN0, shared = [can0])]
     fn can0(mut cx: can0::Context) {
-        info!("CAN0 interrupt triggered");
-        let line_interrupts = cx.local.line_interrupts;
-        for interrupt in line_interrupts.iter_flagged() {
-            match interrupt {
-                Interrupt::RxFifo0NewMessage => {
-                    for message in &mut cx.local.rx_fifo_0 {
-                        info!("Message: {:?}", message.data())
-                    }
-                }
-                Interrupt::RxFifo1NewMessage => {
-                    for message in &mut cx.local.rx_fifo_1 {
-                        info!("Message: {:?}", message.data())
-                    }
-                }
-                _ => info!("interrupt triggered"),
-            }
-        }
+        cx.shared.can0.lock(|can| {
+            can.process_data();
+        });
     }
 
     /**
@@ -413,25 +251,12 @@ mod app {
     /**
      * Sends a message over CAN.
      */
-    #[task(capacity = 10, local = [counter: u16 = 0, tx, tx_event_fifo, aux], shared = [&em])]
-    fn send_can(cx: send_can::Context, m: Message) {
-        info!("operational? {}", cx.local.aux.is_operational());
+    #[task(capacity = 10, local = [counter: u16 = 0], shared = [can0, &em])]
+    fn send_can(mut cx: send_can::Context, m: Message) {
         cx.shared.em.run(|| {
-            let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
-            cx.local.tx.transmit_queued(
-                tx::MessageBuilder {
-                    id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
-                    frame_type: tx::FrameType::FlexibleDatarate {
-                        payload: &payload[..],
-                        bit_rate_switching: false,
-                        force_error_state_indicator: false,
-                    },
-                    store_tx_event: None,
-                }
-                .build()
-                .unwrap(),
-            )?;
-            *cx.local.counter += 1;
+            cx.shared.can0.lock(|can| {
+                can.send_message(m)
+            })?;
             Ok(())
         });
     }
@@ -439,24 +264,10 @@ mod app {
     /**
      * Sends a message to the radio over UART.
      */
-    #[task(priority = 3, capacity = 10, local = [uart], shared = [&em])]
+    #[task(capacity = 10, local = [radio], shared = [&em])]
     fn send_message(cx: send_message::Context, m: Message) {
         cx.shared.em.run(|| {
-            let uart = cx.local.uart;
-
-            let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
-
-            let mav_message = mav_message::mavlink_postcard_message(payload);
-
-            mavlink::write_versioned_msg(
-                uart,
-                mavlink::MavlinkVersion::V2,
-                mav_message::get_mav_header(),
-                &mav_message,
-            )?;
-
-            info!("Sent message: {:?}", m);
-
+            cx.local.radio.send_message(m)?;
             Ok(())
         });
     }
@@ -490,11 +301,15 @@ mod app {
      */
     #[task(shared = [sbg_data, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (data_long_sbg, data_short_sbg) = cx
-            .shared
-            .sbg_data
-            .lock(|(sbg_long_data, sbg_short_data)| (sbg_long_data.clone(), sbg_short_data.clone()));
-        let message_radio = Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, data_long_sbg));
+        let (data_long_sbg, data_short_sbg) =
+            cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
+                (sbg_long_data.clone(), sbg_short_data.clone())
+            });
+        let message_radio = Message::new(
+            &monotonics::now(),
+            LogicBoard,
+            Sensor::new(9, data_long_sbg),
+        );
         let message_can = Message::new(
             &monotonics::now(),
             LogicBoard,
@@ -513,6 +328,7 @@ mod app {
 
     /**
      * Simple blink task to test the system.
+     * Acts as a heartbeat for the system.
      */
     #[task(local = [led], shared = [&em])]
     fn blink(cx: blink::Context) {

@@ -10,6 +10,7 @@ mod sd;
 
 pub use mcan;
 
+pub use crate::error::hydra_error::HydraError;
 pub use crate::error::error_manager::ErrorManager;
 pub use crate::error::hydra_error::SpawnError;
 pub use crate::sd::SdInterface;
