@@ -19,7 +19,7 @@ use mcan::message::tx;
 
 use panic_halt as _;
 
-const SBG_BUFFER_SIZE: usize = 1024;
+const SBG_BUFFER_SIZE: usize = 4096;
 pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 

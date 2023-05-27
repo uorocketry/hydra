@@ -48,8 +48,8 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         radio: communication::RadioDevice,
-        sd: SdInterface,
-        sbg_file: File,
+        // sd: SdInterface,
+        // sbg_file: File,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -93,18 +93,18 @@ mod app {
             cx.local.can_memory,
         );
         /* SD config */
-        let (pclk_sd, gclk0) =
-            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, gclk0);
-        let mut sd = SdInterface::new(
-            &mclk,
-            peripherals.SERCOM1,
-            pclk_sd.freq(),
-            pins.pa18.into_push_pull_output(),
-            pins.pa17.into_push_pull_output(),
-            pins.pa19.into_push_pull_output(),
-            pins.pa16.into_push_pull_output(),
-        );
-        let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
+        // let (pclk_sd, gclk0) =
+        //     atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, gclk0);
+        // let mut sd = SdInterface::new(
+        //     &mclk,
+        //     peripherals.SERCOM1,
+        //     pclk_sd.freq(),
+        //     pins.pa18.into_push_pull_output(),
+        //     pins.pa17.into_push_pull_output(),
+        //     pins.pa19.into_push_pull_output(),
+        //     pins.pa16.into_push_pull_output(),
+        // );
+        // let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
         /* Radio config */
         let (radio, gclk0) = RadioDevice::new(tokens.pclks.sercom5, &mclk, peripherals.SERCOM5, pins.pb17, pins.pb16, gclk0);
 
@@ -200,8 +200,8 @@ mod app {
             Local {
                 led,
                 radio,
-                sd,
-                sbg_file,
+                // sd,
+                // sbg_file,
             },
             init::Monotonics(mono),
         )
@@ -226,8 +226,9 @@ mod app {
      * Handles the SBG data.
      * Logs data to the SD card.
      */
-    #[task(binds = DMAC_0, local = [sd, sbg_file], shared = [sbg_data, opt_xfer, buf_select, sbg, &em])]
+    #[task(binds = DMAC_0, shared = [sbg_data, opt_xfer, buf_select, sbg, &em])]
     fn dmac0(mut cx: dmac0::Context) {
+        // info!("DMA interrupt");
         cx.shared.opt_xfer.lock(|xfer| {
             if xfer.complete() {
                 cx.shared.buf_select.lock(|buf_select| {
@@ -240,8 +241,8 @@ mod app {
                                     cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
                                         (*sbg_long_data, *sbg_short_data) = sbg.read_data(buf);
                                     });
-                                    cx.local.sd.write(&mut cx.local.sbg_file, buf)
-                                })?;
+                                    // cx.local.sd.write(&mut cx.local.sbg_file, buf)
+                                });
                             }
                             true => {
                                 *buf_select = false;
@@ -250,8 +251,8 @@ mod app {
                                     cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
                                         (*sbg_long_data, *sbg_short_data) = sbg.read_data(buf);
                                     });
-                                    cx.local.sd.write(&mut cx.local.sbg_file, buf)
-                                })?;
+                                    // cx.local.sd.write(&mut cx.local.sbg_file, buf)
+                                });
                             }
                         }
                         Ok(())

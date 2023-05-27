@@ -34,8 +34,24 @@ lto = false
 [profile.dev.package."*"]
 opt-level = "s"
 
+[profile.dev.package.sbg-rs]
+opt-level = 0
+debug = true
+
+[profile.dev.build-override]
+opt-level = 0
+debug = true
+
 [profile.release]
 # symbols are nice and they don't increase the size on Flash
 debug = true
-lto = true
-opt-level = "s"
+lto = false
+opt-level = 2
+
+[profile.release.package.sbg-rs]
+debug = true
+opt-level = 0
+
+[profile.release.build-override]
+opt-level = 0
+debug = true

@@ -67,7 +67,7 @@ static mut DATA: Sbg = Sbg {
 /**
  * Max buffer size for SBG messages.
  */
-const SBG_BUFFER_SIZE: usize = 1024;
+const SBG_BUFFER_SIZE: usize = 4096;
 struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface,
 }
