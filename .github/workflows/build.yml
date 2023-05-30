@@ -56,5 +56,9 @@ jobs:
         with:
           command: test
           args: --features ts --target x86_64-unknown-linux-gnu
-
-
+      - uses: actions/upload-artifact@v3
+        name: "Upload Binding Artifacts"
+        with:
+          name: bindings
+          path: hydra/libraries/messages/bindings
+      
