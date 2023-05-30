@@ -5,6 +5,13 @@ CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 default_to_workspace = false
 
 # -----------------------
+# Typescript Bindings
+# -----------------------
+[tasks.generate-ts-bindings]
+command = "cargo"
+args = ["test", "-p", "messages", "--no-default-features", "--features", "ts", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+
+# -----------------------
 # Host Testing
 # -----------------------
 
