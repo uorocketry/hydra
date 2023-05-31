@@ -167,7 +167,7 @@ impl SBG {
         }
         // SAFETY: We are cloning a static variable.
         // This is safe because DATA cannot be modified by other tasks while SBG is locked.
-        let data = unsafe { DATA.clone() }; // Probably inefficient to clone twice, but using into is more portable. 
+        let data = unsafe { DATA.clone() }; // Probably inefficient to clone twice, but using into is more portable.
         (data.clone(), data.into())
     }
 

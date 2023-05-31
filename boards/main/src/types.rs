@@ -1,7 +1,6 @@
 use atsamd_hal as hal;
 use atsamd_hal::gpio::*;
 
-
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::Uart;
 use atsamd_hal::sercom::{uart, IoSet1};
@@ -14,8 +13,6 @@ use hal::sercom::Sercom5;
 use mcan::generic_array::typenum::consts::*;
 use mcan::message::rx;
 use mcan::message::tx;
-
-
 
 use panic_halt as _;
 
@@ -71,7 +68,7 @@ impl mcan::messageram::Capacities for Capacities {
 //     hal::can::Dependencies<
 //         hal::clock::v2::types::Can0,
 //         hal::clock::v2::gclk::Gclk0Id,
-//         Pin<PA23, AlternateI>, 
+//         Pin<PA23, AlternateI>,
 //         Pin<PA22, AlternateI>,
 //         pac::CAN0,
 //     >,

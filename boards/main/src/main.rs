@@ -1,18 +1,19 @@
 #![no_std]
 #![no_main]
 mod communication;
-mod types;
 mod statemachine;
-use common_arm::sfsm::StateMachine;
+use communication::RadioDevice;
+mod types;
 use atsamd_hal as hal;
+use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::sercom::uart;
 use common_arm::mcan;
+use common_arm::sfsm::StateMachine;
 use common_arm::*;
 use defmt::info;
 use embedded_sdmmc::File;
 use hal::dmac;
 use hal::gpio::Pins;
-use atsamd_hal::clock::v2::pclk::Pclk;
 use hal::gpio::PA14;
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
@@ -24,15 +25,17 @@ use messages::sensor::{Sbg, SbgShort, Sensor};
 use messages::*;
 use panic_halt as _;
 use sbg_rs::sbg;
+use sfsm::*;
 use systick_monotonic::*;
 use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
-    use crate::communication::RadioDevice;
-
     use super::*;
 
+    /// check where locks already occur and depend on what first
+    /// check what can be moved to local (buf_select, opt_xfer)
+    /// check what can stay in shared (sbg_data)
     #[shared]
     struct Shared {
         em: ErrorManager,
@@ -47,9 +50,9 @@ mod app {
     #[local]
     struct Local {
         led: Pin<PA14, PushPullOutput>,
-        radio: communication::RadioDevice,
-        // sd: SdInterface,
-        // sbg_file: File,
+        radio: RadioDevice,
+        sd: SdInterface,
+        sbg_file: File,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -79,8 +82,8 @@ mod app {
         let led = pins.pa14.into_push_pull_output();
         /* CAN config */
         // ! This is needs to be ran before calling the constructor.
-        // ! This is because gclk0 does not play nice and cannot 
-        // ! be incremented twice in a single function since we 
+        // ! This is because gclk0 does not play nice and cannot
+        // ! be incremented twice in a single function since we
         // ! then no longer can return the gclk0.
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
         let (can0, gclk0) = communication::CanDevice0::new(
@@ -93,20 +96,27 @@ mod app {
             cx.local.can_memory,
         );
         /* SD config */
-        // let (pclk_sd, gclk0) =
-        //     atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, gclk0);
-        // let mut sd = SdInterface::new(
-        //     &mclk,
-        //     peripherals.SERCOM1,
-        //     pclk_sd.freq(),
-        //     pins.pa18.into_push_pull_output(),
-        //     pins.pa17.into_push_pull_output(),
-        //     pins.pa19.into_push_pull_output(),
-        //     pins.pa16.into_push_pull_output(),
-        // );
-        // let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
+        let (pclk_sd, gclk0) =
+            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, gclk0);
+        let mut sd = SdInterface::new(
+            &mclk,
+            peripherals.SERCOM1,
+            pclk_sd.freq(),
+            pins.pa18.into_push_pull_output(),
+            pins.pa17.into_push_pull_output(),
+            pins.pa19.into_push_pull_output(),
+            pins.pa16.into_push_pull_output(),
+        );
+        let sbg_file = sd.open_file("raw.txt").expect("Could not open file");
         /* Radio config */
-        let (radio, gclk0) = RadioDevice::new(tokens.pclks.sercom5, &mclk, peripherals.SERCOM5, pins.pb17, pins.pb16, gclk0);
+        let (radio, gclk0) = RadioDevice::new(
+            tokens.pclks.sercom5,
+            &mclk,
+            peripherals.SERCOM5,
+            pins.pb17,
+            pins.pb16,
+            gclk0,
+        );
 
         /* SBG config */
         let (pclk_sbg, _gclk0) =
@@ -151,9 +161,12 @@ mod app {
         let wait_for_launch = statemachine::WaitForLaunch {
             tries: 0,
             malfunction: false,
+            launch_status: false,
             countdown: 3,
+            accel_y: 0.0,
         };
         rocket.start(wait_for_launch);
+        /* Spawn tasks */
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
@@ -200,8 +213,8 @@ mod app {
             Local {
                 led,
                 radio,
-                // sd,
-                // sbg_file,
+                sd,
+                sbg_file,
             },
             init::Monotonics(mono),
         )
@@ -214,10 +227,28 @@ mod app {
         }
     }
 
+    #[task(priority = 3, shared = [state_machine, &em])]
+    fn handle_state(mut cx: handle_state::Context) {
+        cx.shared.state_machine.lock(|rocket| {
+            rocket.step();
+        });
+        spawn_after!(handle_state, 5.secs()).ok();
+    }
+
     #[task(priority = 3, binds = CAN0, shared = [can0])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
             can.process_data();
+        });
+    }
+
+    // UNSAFE: This is a race condition between the SBG buffer and the sd card. 
+    // This will be revisited in the future.
+    #[task(capacity = 10, local = [sd, sbg_file], shared = [&em])]
+    fn send_sd(mut cx: send_sd::Context, buf: &'static [u8]) {
+        cx.shared.em.run(|| {
+            cx.local.sd.write(&mut cx.local.sbg_file, buf)?;
+            Ok(())
         });
     }
 
@@ -228,33 +259,27 @@ mod app {
      */
     #[task(binds = DMAC_0, shared = [sbg_data, opt_xfer, buf_select, sbg, &em])]
     fn dmac0(mut cx: dmac0::Context) {
-        // info!("DMA interrupt");
         cx.shared.opt_xfer.lock(|xfer| {
             if xfer.complete() {
                 cx.shared.buf_select.lock(|buf_select| {
                     cx.shared.em.run(|| {
-                        match buf_select {
+                        let buf = match *buf_select {
                             false => {
                                 *buf_select = true;
-                                let buf = xfer.recycle_source(unsafe { &mut *BUF_DST })?;
-                                cx.shared.sbg.lock(|sbg| {
-                                    cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
-                                        (*sbg_long_data, *sbg_short_data) = sbg.read_data(buf);
-                                    });
-                                    // cx.local.sd.write(&mut cx.local.sbg_file, buf)
-                                });
+                                xfer.recycle_source(unsafe { &mut *BUF_DST })?               
                             }
                             true => {
                                 *buf_select = false;
-                                let buf = xfer.recycle_source(unsafe { &mut *BUF_DST2 })?;
-                                cx.shared.sbg.lock(|sbg| {
-                                    cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
-                                        (*sbg_long_data, *sbg_short_data) = sbg.read_data(buf);
-                                    });
-                                    // cx.local.sd.write(&mut cx.local.sbg_file, buf)
-                                });
+                                xfer.recycle_source(unsafe { &mut *BUF_DST2 })?
                             }
-                        }
+                        };
+
+                        cx.shared.sbg.lock(|sbg| {
+                            cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
+                                (*sbg_long_data, *sbg_short_data) = sbg.read_data(buf);
+                            });
+                            // spawn_after!(send_sd, 1.secs(), buf);
+                        });
                         Ok(())
                     });
                 });
@@ -268,9 +293,7 @@ mod app {
     #[task(capacity = 10, local = [counter: u16 = 0], shared = [can0, &em])]
     fn send_can(mut cx: send_can::Context, m: Message) {
         cx.shared.em.run(|| {
-            cx.shared.can0.lock(|can| {
-                can.send_message(m)
-            })?;
+            cx.shared.can0.lock(|can| can.send_message(m))?;
             Ok(())
         });
     }
@@ -292,10 +315,11 @@ mod app {
     #[task(shared = [state_machine, &em])]
     fn state_send(mut cx: state_send::Context) {
         let em = cx.shared.em;
-        let state = cx.shared.state_machine.lock(|rocket| {
-            rocket.peek_state().into()
-        });
-        let state = State {
+        let state = cx
+            .shared
+            .state_machine
+            .lock(|rocket| rocket.peek_state().into());
+        let state = messages::State {
             status: state,
             has_error: em.has_error(),
             voltage: 12.1,
@@ -309,13 +333,13 @@ mod app {
             Ok(())
         });
 
-        spawn_after!(state_send, 10.secs()).ok();
+        spawn_after!(state_send, 5.secs()).ok();
     }
 
     /**
      * Sends information about the sensors.
      */
-    #[task(shared = [sbg_data, &em])]
+    #[task(shared = [sbg_data, state_machine, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
         let (data_long_sbg, data_short_sbg) =
             cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
@@ -331,6 +355,7 @@ mod app {
             LogicBoard,
             Sensor::new(9, data_short_sbg),
         );
+
         cx.shared.em.run(|| {
             spawn!(send_message, message_radio)?;
 
@@ -338,8 +363,21 @@ mod app {
 
             Ok(())
         });
-
-        spawn_after!(sensor_send, 250.millis()).ok();
+        // There is probably a better implementation of this.
+        // I don't want to spawn tasks outside of the app.
+        cx.shared.state_machine.lock(|rocket| {
+            match rocket.peek_state() {
+                statemachine::LogicBoardStates::WaitForLaunchState(Some(_)) => {
+                    spawn_after!(sensor_send, 2.secs()).ok();
+                }
+                statemachine::LogicBoardStates::StandbyState(Some(_)) => {
+                    spawn_after!(sensor_send, 2.secs()).ok();
+                }
+                _ => {
+                    spawn_after!(sensor_send, 250.millis()).ok();
+                }
+            }
+        });
     }
 
     /**
@@ -350,9 +388,7 @@ mod app {
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
             cx.local.led.toggle()?;
-
             let time = monotonics::now().duration_since_epoch().to_secs();
-            info!("Seconds since epoch: {}", time);
             if cx.shared.em.has_error() {
                 spawn_after!(blink, 200.millis())?;
             } else {
@@ -363,6 +399,7 @@ mod app {
     }
 }
 
+/// This is a hack to get the linker to not complain about missing symbols.
 #[no_mangle]
 pub extern "C" fn _sbrk() {}
 

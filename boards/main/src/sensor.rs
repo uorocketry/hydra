@@ -1,1 +1,0 @@
-/// Encapsulates all sensor logic.
