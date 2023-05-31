@@ -23,32 +23,23 @@ mod tests {
     fn init() -> State {
         let mut peripherals = Peripherals::take().unwrap();
         let pins = Pins::new(peripherals.PORT);
-
-        let mut clock = hal::clock::GenericClockController::with_external_32kosc(
+        let (_, clocks, tokens) = atsamd_hal::clock::v2::clock_system_at_reset(
+            peripherals.OSCCTRL,
+            peripherals.OSC32KCTRL,
             peripherals.GCLK,
-            &mut peripherals.MCLK,
-            &mut peripherals.OSC32KCTRL,
-            &mut peripherals.OSCCTRL,
+            peripherals.MCLK,
             &mut peripherals.NVMCTRL,
         );
 
-        clock.configure_gclk_divider_and_source(
-            pac::gclk::pchctrl::GEN_A::GCLK3,
-            3,
-            pac::gclk::genctrl::SRC_A::DFLL,
-            false,
-        ); // 16MHz clock
-        let gclk3 = clock
-            .get_gclk(pac::gclk::pchctrl::GEN_A::GCLK3)
-            .expect("Cannot get gclk 3.");
-        let spi_clk = clock
-            .sercom1_core(&gclk3)
-            .expect("Cannot configure sercom 1 clock.");
-
-        let micro_sd = common_arm::SdInterface::new(
-            &peripherals.MCLK,
+        // SAFETY: Misusing the PAC API can break the system.
+        // This is safe because we only steal the MCLK.
+        let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
+        let (pclk_sd, gclk0) =
+            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, gclk0);
+        let mut sd = SdInterface::new(
+            &mclk,
             peripherals.SERCOM1,
-            spi_clk,
+            pclk_sd.freq(),
             pins.pa18.into_push_pull_output(),
             pins.pa17.into_push_pull_output(),
             pins.pa19.into_push_pull_output(),
