@@ -27,7 +27,6 @@ use panic_halt as _;
 use sbg_rs::sbg;
 use sfsm::*;
 use systick_monotonic::*;
-use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
