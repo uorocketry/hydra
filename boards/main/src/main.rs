@@ -85,6 +85,7 @@ mod app {
             peripherals.CAN0,
             gclk0,
             cx.local.can_memory,
+            false,
         );
         /* SD config */
         let (pclk_sd, gclk0) =
@@ -151,6 +152,7 @@ mod app {
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
+        
         let mono = Systick::new(core.SYST, 48000000);
         (
             Shared {

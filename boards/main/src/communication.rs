@@ -29,7 +29,7 @@ use mcan::message::tx;
 use mcan::messageram::SharedMemory;
 use mcan::{
     config::{BitTiming, Mode},
-    filter::{Action, ExtFilter, Filter},
+    filter::{Action, Filter},
 };
 use messages::Message;
 use messages::mav_message;
@@ -53,6 +53,7 @@ impl CanDevice0 {
         peripheral: CAN0,
         gclk0: S,
         can_memory: &'static mut SharedMemory<Capacities>,
+        loopback: bool,
     ) -> (Self, S::Inc)
     where
         S: Source<Id = Gclk0Id> + Increment,
@@ -67,8 +68,9 @@ impl CanDevice0 {
             data_phase_timing: BitTiming::new(500.kHz()),
         };
 
-        // Only for testing purposes
-        can.config().loopback = true;
+        if loopback {
+            can.config().loopback = true;
+        }
 
         let interrupts_to_be_enabled = can
             .interrupts()
@@ -94,18 +96,18 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
-                filter: ecan::StandardId::ZERO,
+                filter: ecan::StandardId::new(messages::sender::Sender::RecoveryBoard.into()).unwrap(),
                 mask: ecan::StandardId::MAX,
             })
-            .unwrap_or_else(|_| panic!("Standard filter"));
+            .unwrap_or_else(|_| panic!("Recovery filter"));
 
-        can.filters_extended()
-            .push(ExtFilter::Classic {
+        can.filters_standard()
+            .push(Filter::Classic {
                 action: Action::StoreFifo1,
-                filter: ecan::ExtendedId::ZERO,
-                mask: ecan::ExtendedId::MAX,
+                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into()).unwrap(),
+                mask: ecan::StandardId::MAX,
             })
-            .unwrap_or_else(|_| panic!("Extended filter"));
+            .unwrap_or_else(|_| panic!("Ground Station filter"));
 
         let can = can.finalize().unwrap();
         (
@@ -123,9 +125,7 @@ impl CanDevice0 {
         let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
         // let test: [u8; 64] = [0_u8;64];
         self.can.tx.transmit_queued(tx::MessageBuilder {
-            // send a zero id for now, need to change filter 
-            // Change to m.sender.into().
-            id: ecan::Id::Standard(ecan::StandardId::new(0).unwrap()),
+            id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
             frame_type: tx::FrameType::FlexibleDatarate {
                 payload: &payload[..],
                 bit_rate_switching: false,
@@ -142,14 +142,26 @@ impl CanDevice0 {
             match interrupt {
                 Interrupt::RxFifo0NewMessage => {
                     for message in &mut self.can.rx_fifo_0 {
-                        let data: Message = from_bytes(message.data()).unwrap(); // handle the error properly
-                        info!("Message: {:?}", data)
+                        match from_bytes::<Message>(message.data()) {
+                            Ok(data) => {
+                                info!("Message: {:?}", data)
+                            }
+                            Err(e) => {
+                                info!("Error: {:?}", e)
+                            }
+                        } 
                     }
                 }
                 Interrupt::RxFifo1NewMessage => {
                     for message in &mut self.can.rx_fifo_1 {
-                        let data: Message = from_bytes(message.data()).unwrap(); // handle the error properly
-                        info!("Message: {:?}", data)
+                        match from_bytes::<Message>(message.data()) {
+                            Ok(data) => {
+                                info!("Message: {:?}", data)
+                            }
+                            Err(e) => {
+                                info!("Error: {:?}", e)
+                            }
+                        }
                     }
                 }
                 _ => (),
