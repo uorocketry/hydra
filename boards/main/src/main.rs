@@ -250,7 +250,6 @@ mod app {
                             cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
                                 (*sbg_long_data, *sbg_short_data) = sbg.read_data(buf);
                             });
-                            // spawn_after!(send_sd, 1.secs(), buf);
                         });
                         Ok(())
                     });
