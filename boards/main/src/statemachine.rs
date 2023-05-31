@@ -2,23 +2,31 @@ use common_arm::sfsm::*;
 use defmt::info;
 
 pub struct WaitForLaunch {
-    pub malfunction: bool,
-    pub launch_status: bool,
-    pub countdown: u32,
-    pub tries: u32,
-    pub accel_y: f32, 
+    pub accel_y: f32, // When we pull an insane amount of Gs, it's pretty obvious that we're launching
+    pub velocity_y: f32,
+    pub altitude: f32,
+    pub pressure: f32,
+    pub previous_pressure: f32,
 }
-pub struct Standby {}
-pub struct Ascent {}
+pub struct WaitForRecovery {
+    pub velocity_y: f32,
+}
+pub struct Ascent {
+    pub previous_pressure: f32,
+    pub pressure: f32, // When pressure and or altitude do not increase, we're at apogee
+    pub altitude: f32,
+    pub velocity_y: f32,
+}
+pub struct Descent {
+    pub velocity_y: f32, // When we are at a certain altitude, we need to deploy the main parachute
+    pub altitude: f32,
+}
 
-pub struct Descent {}
-
-pub struct Landing {}
-
-pub struct Launch {}
+pub struct Landing {
+    pub velocity_y: f32, 
+}
 
 pub struct Abort {
-    tries: u32,
 }
 
 struct Status {
@@ -31,20 +39,19 @@ struct Status {
 add_messages!(
     LogicBoard,
     [
-        Status -> Launch, // send message into the launch state
+        Status -> WaitForLaunch, // send message into the wait for launch state
     ]
 );
 
 add_state_machine!(
     pub LogicBoard, // Name of the state machine
     WaitForLaunch, // Initial state
-    [WaitForLaunch, Launch, Ascent, Descent, Landing, Standby,  Abort], // States
+    [WaitForLaunch, Ascent, Descent, Landing, WaitForRecovery, Abort], // States
     [ // Transitions
-        WaitForLaunch => Launch,
-        Launch => Ascent,
+        WaitForLaunch => Ascent,
         Ascent => Descent,
         Descent => Landing,
-        Landing => Standby,
+        Landing => WaitForRecovery,
         WaitForLaunch => Abort, // We can only abort before the launch
     ]
 );
@@ -55,7 +62,7 @@ impl From<&LogicBoardStates> for messages::Status {
     fn from(state: &LogicBoardStates) -> Self {
         match state {
             LogicBoardStates::WaitForLaunchState(Some(_)) => messages::Status::Initializing,
-            LogicBoardStates::LaunchState(Some(_)) => messages::Status::Running,
+            LogicBoardStates::AscentState(Some(_)) => messages::Status::Running,
             LogicBoardStates::AbortState(Some(_)) => messages::Status::Uninitialized,
             _ => messages::Status::Uninitialized,
         }
@@ -68,15 +75,6 @@ impl State for WaitForLaunch {
     }
     fn execute(&mut self) {
         todo!();
-    }
-}
-
-impl State for Launch {
-    fn entry(&mut self) {
-        info!("Entering Launch");
-    }
-    fn execute(&mut self) {
-        info!("Executing Launch");
     }
 }
 
@@ -107,7 +105,7 @@ impl State for Landing {
     }
 }
 
-impl State for Standby {
+impl State for WaitForRecovery {
     fn entry(&mut self) {
         info!("Entering Standby");
     }
@@ -119,79 +117,106 @@ impl State for Standby {
 impl State for Abort {
     fn entry(&mut self) {
         info!("Entering Abort");
-        self.tries += 1;
     }
     fn execute(&mut self) {
-        info!("Aborting... try {}", self.tries);
+        info!("Executing Abort");
+    }
+}
+
+impl Into<Ascent> for WaitForLaunch {
+    fn into(self) -> Ascent {
+        Ascent {
+            previous_pressure: self.previous_pressure,
+            pressure: self.pressure,
+            altitude: self.altitude,
+            velocity_y: self.velocity_y,
+        }
+    }
+}
+
+impl Transition<Ascent> for WaitForLaunch {
+    fn guard(&self) -> TransitGuard {
+        // Ideally 10 m/s^2 should be enough to detect a launch
+        if self.accel_y > 10.0 {
+            return TransitGuard::Transit;
+        }
+        TransitGuard::Remain
     }
 }
 
 impl Into<Abort> for WaitForLaunch {
     fn into(self) -> Abort {
-        Abort { tries: self.tries }
+        Abort {}
     }
 }
 
 impl Transition<Abort> for WaitForLaunch {
     fn guard(&self) -> TransitGuard {
-        return self.malfunction.into();
-    }
-}
-
-derive_transition_into!(Descent, Landing);
-impl Transition<Landing> for Descent {
-    fn guard(&self) -> TransitGuard {
         todo!();
     }
 }
 
-derive_transition_into!(Ascent, Descent);
+impl Into<Descent> for Ascent {
+    fn into(self) -> Descent {
+        Descent {
+            velocity_y: self.velocity_y,
+            altitude: self.altitude,
+        }
+    }
+}
+
 impl Transition<Descent> for Ascent {
     fn guard(&self) -> TransitGuard {
-        todo!();
-    }
-}
-
-derive_transition_into!(Launch, Ascent);
-impl Transition<Ascent> for Launch {
-    fn guard(&self) -> TransitGuard {
-        todo!();
-    }
-}
-
-derive_transition_into!(Landing, Standby);
-impl Transition<Standby> for Landing {
-    fn guard(&self) -> TransitGuard {
-        todo!();
-    }
-}
-
-derive_transition_into!(WaitForLaunch, Launch);
-impl Transition<Launch> for WaitForLaunch {
-    fn guard(&self) -> TransitGuard {
-        if self.countdown == 0 {
+        // Questionable implementation
+        if self.pressure - self.previous_pressure < -1.0 {
             return TransitGuard::Transit;
         }
-        return TransitGuard::Remain;
+        TransitGuard::Remain
     }
 }
 
-impl Into<WaitForLaunch> for Abort {
-    fn into(self) -> WaitForLaunch {
-        WaitForLaunch {
-            countdown: 0,
-            malfunction: false,
-            launch_status: false,
-            tries: self.tries,
-            accel_y: 0.0,
+impl Into<Landing> for Descent {
+    fn into(self) -> Landing {
+        Landing {
+            velocity_y: self.velocity_y,
         }
     }
 }
-derive_transition!(Abort, WaitForLaunch, TransitGuard::Transit);
 
-impl ReceiveMessage<Status> for Launch {
+impl Transition<Landing> for Descent {
+    fn guard(&self) -> TransitGuard {
+        // Will this be 450m Above Ground Level? 
+        if self.altitude < 450.0 {
+            return TransitGuard::Transit;
+        }
+        TransitGuard::Remain
+    }
+}
+
+impl Into<WaitForRecovery> for Landing {
+    fn into(self) -> WaitForRecovery {
+        WaitForRecovery {
+            velocity_y: self.velocity_y,
+        }
+    }
+}
+
+impl Transition<WaitForRecovery> for Landing {
+    fn guard(&self) -> TransitGuard {
+        if self.velocity_y < 1.0 {
+            return TransitGuard::Transit;
+        }
+        TransitGuard::Remain
+    }
+}
+
+impl ReceiveMessage<Status> for WaitForLaunch {
     fn receive_message(&mut self, message: Status) {
-        todo!();
+        self.previous_pressure = self.pressure;
+        self.accel_y = message.accel_y;
+        self.altitude = message.altitude;
+        self.pressure = message.pressure;
+        self.velocity_y = message.velocity_y;
     }
 }
 

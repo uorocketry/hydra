@@ -159,11 +159,11 @@ mod app {
         /* State Machine Setup */
         let mut rocket = statemachine::LogicBoard::new();
         let wait_for_launch = statemachine::WaitForLaunch {
-            tries: 0,
-            malfunction: false,
-            launch_status: false,
-            countdown: 3,
+            previous_pressure: 0.0,
             accel_y: 0.0,
+            velocity_y: 0.0,
+            altitude: 0.0,
+            pressure: 0.0,
         };
         rocket.start(wait_for_launch);
         /* Spawn tasks */
@@ -370,7 +370,7 @@ mod app {
                 statemachine::LogicBoardStates::WaitForLaunchState(Some(_)) => {
                     spawn_after!(sensor_send, 2.secs()).ok();
                 }
-                statemachine::LogicBoardStates::StandbyState(Some(_)) => {
+                statemachine::LogicBoardStates::WaitForRecoveryState(Some(_)) => {
                     spawn_after!(sensor_send, 2.secs()).ok();
                 }
                 _ => {
