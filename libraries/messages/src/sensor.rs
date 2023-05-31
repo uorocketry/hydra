@@ -82,7 +82,7 @@ impl Sensor {
 
 #[cfg(test)]
 mod test {
-    use crate::sender::Sender::MainBoard;
+    use crate::sender::Sender::LogicBoard;
     use crate::sensor::{Sbg, Sensor};
     use crate::Message;
     use crate::MAX_SIZE;
