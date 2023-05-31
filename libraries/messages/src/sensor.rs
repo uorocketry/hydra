@@ -118,7 +118,7 @@ mod test {
     fn sbg_size(component_id: u8, sbg: Sbg) -> postcard::Result<()> {
         let msg = Message::new(
             &Instant::<u64, 1, 1000>::from_ticks(0),
-            MainBoard,
+            LogicBoard,
             Sensor::new(component_id, sbg),
         );
         let bytes = postcard::to_allocvec(&msg)?;
