@@ -34,6 +34,7 @@ mod tests {
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
         let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
+        let gclk0 = clocks.gclk0;
         let (pclk_sd, gclk0) =
             atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, gclk0);
         let mut sd = SdInterface::new(
@@ -47,7 +48,7 @@ mod tests {
         );
 
         State {
-            sd_interface: micro_sd,
+            sd_interface: sd,
         }
     }
 
