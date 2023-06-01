@@ -50,31 +50,6 @@ if (MSVC)
 endif()
 
 #
-# Examples
-#
-if (BUILD_EXAMPLES)
-	add_executable(airDataInput ${PROJECT_SOURCE_DIR}/examples/airDataInput/src/airDataInput.c)
-	target_link_libraries(airDataInput ${PROJECT_NAME})
-	install(TARGETS airDataInput DESTINATION bin/examples COMPONENT executables)
-
-	add_executable(ellipseMinimal ${PROJECT_SOURCE_DIR}/examples/ellipseMinimal/src/ellipseMinimal.c)
-	target_link_libraries(ellipseMinimal ${PROJECT_NAME})
-	install(TARGETS ellipseMinimal DESTINATION bin/examples COMPONENT executables)
-
-	add_executable(ellipseOnboardMagCalib ${PROJECT_SOURCE_DIR}/examples/ellipseOnboardMagCalib/src/ellipseOnboardMagCalib.c)
-	target_link_libraries(ellipseOnboardMagCalib ${PROJECT_NAME})
-	install(TARGETS ellipseOnboardMagCalib DESTINATION bin/examples COMPONENT executables)
-
-	add_executable(hpInsMinimal ${PROJECT_SOURCE_DIR}/examples/hpInsMinimal/src/hpInsMinimal.c)
-	target_link_libraries(hpInsMinimal ${PROJECT_NAME})
-	install(TARGETS hpInsMinimal DESTINATION bin/examples COMPONENT executables)
-
-	add_executable(pulseMinimal ${PROJECT_SOURCE_DIR}/examples/pulseMinimal/src/pulseMinimal.c)
-	target_link_libraries(pulseMinimal ${PROJECT_NAME})
-	install(TARGETS pulseMinimal DESTINATION bin/examples COMPONENT executables)
-endif(BUILD_EXAMPLES)
-
-#
 # Tools
 #
 if (BUILD_TOOLS)

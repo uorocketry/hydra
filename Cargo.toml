@@ -14,8 +14,8 @@ default-members = [
 ]
 
 [workspace.dependencies.atsamd-hal]
-version = "0.15.1"
-features = ["same51j", "same51j-rt", "dma"]
+git = "https://github.com/atsamd-rs/atsamd"
+features = ["same51j", "same51j-rt", "dma", "can"]
 
 [workspace.dependencies.serde]
 version = "1.0.150"
@@ -27,15 +27,31 @@ version = "0.7.6"
 features = ["critical-section-single-core"]
 
 [profile.dev]
-# Using LTO causes issues with GDB
+# Using LTO causes issues with GDB.
 lto = false
 
 # Only optimize dependencies for size in debug, keeping the top crate debug friendly
 [profile.dev.package."*"]
 opt-level = "s"
 
+[profile.dev.package.sbg-rs]
+opt-level = 0
+debug = true
+
+[profile.dev.build-override]
+opt-level = 0
+debug = true
+
 [profile.release]
 # symbols are nice and they don't increase the size on Flash
 debug = true
 lto = true
-opt-level = "s"
+opt-level = 2
+
+[profile.release.package.sbg-rs]
+debug = true
+opt-level = 0
+
+[profile.release.build-override]
+opt-level = 0
+debug = true
