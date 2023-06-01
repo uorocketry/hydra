@@ -1,13 +1,16 @@
 #![no_std]
 #![no_main]
 mod communication;
+mod statemachine;
 use communication::RadioDevice;
 mod types;
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::sercom::uart;
 use common_arm::mcan;
+use common_arm::sfsm::StateMachine;
 use common_arm::*;
+use defmt::info;
 use embedded_sdmmc::File;
 use hal::dmac;
 use hal::gpio::Pins;
@@ -22,12 +25,17 @@ use messages::sensor::{Sbg, SbgShort, Sensor};
 use messages::*;
 use panic_halt as _;
 use sbg_rs::sbg;
+use sfsm::*;
 use systick_monotonic::*;
 use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
     use super::*;
+
+    /// check where locks already occur and depend on what first
+    /// check what can be moved to local (buf_select, opt_xfer)
+    /// check what can stay in shared (sbg_data)
     #[shared]
     struct Shared {
         em: ErrorManager,
@@ -36,6 +44,7 @@ mod app {
         sbg: sbg::SBG,
         sbg_data: (Sbg, SbgShort),
         can0: communication::CanDevice0,
+        state_machine: statemachine::LogicBoard,
     }
 
     #[local]
@@ -148,11 +157,20 @@ mod app {
 
         let sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc);
 
+        /* State Machine Setup */
+        let mut rocket = statemachine::LogicBoard::new();
+        let wait_for_launch = statemachine::WaitForLaunch {
+            previous_pressure: 0.0,
+            accel_y: 0.0,
+            velocity_y: 0.0,
+            altitude: 0.0,
+            pressure: 0.0,
+        };
+        rocket.start(wait_for_launch);
         /* Spawn tasks */
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
-        
         let mono = Systick::new(core.SYST, 48000000);
         (
             Shared {
@@ -191,6 +209,7 @@ mod app {
                     },
                 ),
                 can0,
+                state_machine: rocket,
             },
             Local {
                 led,
@@ -207,6 +226,14 @@ mod app {
         loop {
             rtic::export::wfi();
         }
+    }
+
+    #[task(priority = 3, shared = [state_machine, &em])]
+    fn handle_state(mut cx: handle_state::Context) {
+        cx.shared.state_machine.lock(|rocket| {
+            rocket.step();
+        });
+        spawn_after!(handle_state, 5.secs()).ok();
     }
 
     #[task(priority = 3, binds = CAN0, shared = [can0])]
@@ -285,11 +312,15 @@ mod app {
     /**
      * Sends the state of the system.
      */
-    #[task(shared = [&em])]
-    fn state_send(cx: state_send::Context) {
+    #[task(shared = [state_machine, &em])]
+    fn state_send(mut cx: state_send::Context) {
         let em = cx.shared.em;
+        let state = cx
+            .shared
+            .state_machine
+            .lock(|rocket| rocket.peek_state().into());
         let state = messages::State {
-            status: messages::Status::Running,
+            status: state,
             has_error: em.has_error(),
             voltage: 12.1,
         };
@@ -308,7 +339,7 @@ mod app {
     /**
      * Sends information about the sensors.
      */
-    #[task(shared = [sbg_data, &em])]
+    #[task(shared = [sbg_data, state_machine, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
         let (data_long_sbg, data_short_sbg) =
             cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
@@ -332,7 +363,21 @@ mod app {
 
             Ok(())
         });
-        spawn_after!(sensor_send, 2.secs()).ok();
+        // There is probably a better implementation of this.
+        // I don't want to spawn tasks outside of the app.
+        cx.shared.state_machine.lock(|rocket| {
+            match rocket.peek_state() {
+                statemachine::LogicBoardStates::WaitForLaunchState(Some(_)) => {
+                    spawn_after!(sensor_send, 2.secs()).ok();
+                }
+                statemachine::LogicBoardStates::WaitForRecoveryState(Some(_)) => {
+                    spawn_after!(sensor_send, 2.secs()).ok();
+                }
+                _ => {
+                    spawn_after!(sensor_send, 250.millis()).ok();
+                }
+            }
+        });
     }
 
     /**
@@ -343,6 +388,7 @@ mod app {
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
             cx.local.led.toggle()?;
+            let time = monotonics::now().duration_since_epoch().to_secs();
             if cx.shared.em.has_error() {
                 spawn_after!(blink, 200.millis())?;
             } else {
