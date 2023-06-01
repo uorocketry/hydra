@@ -884,6 +884,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "recovery"
+version = "0.1.0"
+dependencies = [
+ "atsamd-hal",
+ "common-arm",
+ "cortex-m",
+ "cortex-m-rt",
+ "cortex-m-rtic",
+ "defmt",
+ "fugit",
+ "heapless",
+ "messages",
+ "panic-halt",
+ "postcard",
+ "systick-monotonic",
+ "typenum",
+]
+
+[[package]]
 name = "regex"
 version = "1.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

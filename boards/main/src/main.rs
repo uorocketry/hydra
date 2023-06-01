@@ -4,6 +4,7 @@ mod communication;
 mod statemachine;
 use communication::RadioDevice;
 mod types;
+use types::*;
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::sercom::uart;

@@ -1,5 +1,7 @@
 use common_arm::sfsm::*;
 use defmt::info;
+use crate::app::{fire_drogue, fire_main};
+use common_arm::spawn;
 
 pub struct WaitForLaunch {
     pub accel_y: f32,
@@ -112,6 +114,7 @@ impl Into<WaitForMain> for WaitForDrogue {
 impl Transition<WaitForMain> for WaitForDrogue {
     fn guard(&self) -> TransitGuard {
         if self.pressure - self.previous_pressure < -1.0 {
+            spawn!(fire_drogue).ok();
             return TransitGuard::Transit;
         }
         TransitGuard::Remain
@@ -127,6 +130,7 @@ impl Into<WaitForRecovery> for WaitForMain {
 impl Transition<WaitForRecovery> for WaitForMain {
     fn guard(&self) -> TransitGuard {
         if self.altitude > 450.0 {
+            spawn!(fire_main).ok();
             return TransitGuard::Transit;
         }
         TransitGuard::Remain

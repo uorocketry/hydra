@@ -6,23 +6,15 @@ mod types;
 use types::Capacities;
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
-
 use common_arm::mcan;
 use common_arm::sfsm::StateMachine;
 use common_arm::*;
-
-
 use hal::gpio::Pins;
-use hal::gpio::PA14;
+use hal::gpio::{PA18, PA14, PA19};
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
-
 use mcan::messageram::SharedMemory;
-
-
-
 use panic_halt as _;
-
 use systick_monotonic::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
@@ -42,6 +34,8 @@ mod app {
     #[local]
     struct Local {
         led: Pin<PA14, PushPullOutput>,
+        drogue_ematch: Pin<PA18, PushPullOutput>,
+        main_ematch: Pin<PA19, PushPullOutput>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -69,6 +63,8 @@ mod app {
         let gclk0 = clocks.gclk0;
         let pins = Pins::new(peripherals.PORT);
         let led = pins.pa14.into_push_pull_output();
+        let drogue_ematch = pins.pa18.into_push_pull_output();
+        let main_ematch = pins.pa19.into_push_pull_output();
         /* CAN config */
         // ! This is needs to be ran before calling the constructor.
         // ! This is because gclk0 does not play nice and cannot
@@ -103,6 +99,8 @@ mod app {
             },
             Local {
                 led,
+                drogue_ematch,
+                main_ematch,
             },
             init::Monotonics(mono),
         )
@@ -123,6 +121,16 @@ mod app {
             });
             Ok(())
         });
+    }
+
+    #[task(priority = 3, local = [drogue_ematch])]
+    fn fire_drogue(mut cx: fire_drogue::Context) {
+        cx.local.drogue_ematch.set_high().ok();
+    }
+
+    #[task(priority = 3, local = [main_ematch])]
+    fn fire_main(mut cx: fire_main::Context) {
+        cx.local.main_ematch.set_high().ok();
     }
 
     /**
