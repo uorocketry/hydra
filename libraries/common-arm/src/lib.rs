@@ -9,7 +9,6 @@ mod error;
 mod sd;
 
 pub use mcan;
-pub use sfsm;
 
 pub use crate::error::hydra_error::HydraError;
 pub use crate::error::error_manager::ErrorManager;

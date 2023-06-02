@@ -213,7 +213,6 @@ dependencies = [
  "messages",
  "nb 1.1.0",
  "postcard",
- "sfsm",
 ]
 
 [[package]]
@@ -1097,35 +1096,6 @@ checksum = "15c6d3b776267a75d31bbdfd5d36c0ca051251caafc285827052bc53bcdc8162"
 dependencies = [
  "libc",
  "serial-core",
-]
-
-[[package]]
-name = "sfsm"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a289ce9b0eba12af4255644fb14c0bffeeaf5bf5330fd9263934fcec08b6d8d"
-dependencies = [
- "sfsm-base",
- "sfsm-proc",
-]
-
-[[package]]
-name = "sfsm-base"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cd9e118b1836f9a7ace413b1b6d43f966d17a91511b391cd71d7f17cad6bfce"
-
-[[package]]
-name = "sfsm-proc"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bb0715248b6926a29181937bc0bddf6c35e521d2896924a7934877caeea474b"
-dependencies = [
- "convert_case",
- "proc-macro2",
- "quote",
- "sfsm-base",
- "syn 1.0.109",
 ]
 
 [[package]]

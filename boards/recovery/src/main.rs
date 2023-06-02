@@ -1,13 +1,11 @@
 #![no_std]
 #![no_main]
 mod communication;
-mod statemachine;
 mod types;
 use types::Capacities;
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use common_arm::mcan;
-use common_arm::sfsm::StateMachine;
 use common_arm::*;
 use hal::gpio::Pins;
 use hal::gpio::{PA18, PA14, PA19};
@@ -28,7 +26,6 @@ mod app {
     struct Shared {
         em: ErrorManager,
         can0: communication::CanDevice0,
-        state_machine: statemachine::RecoveryBoard,
     }
 
     #[local]
@@ -81,14 +78,6 @@ mod app {
             cx.local.can_memory,
             false,
         );
-        /* State Machine Setup */
-        let mut rocket = statemachine::RecoveryBoard::new();
-        let wait_for_launch = statemachine::WaitForLaunch {
-            accel_y: 0.0,
-            pressure: 0.0,
-            altitude: 0.0,
-        };
-        rocket.start(wait_for_launch);
         /* Spawn tasks */
         blink::spawn().ok();
         let mono = Systick::new(core.SYST, 48000000);
@@ -96,7 +85,6 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 can0,
-                state_machine: rocket,
             },
             Local {
                 led,
@@ -112,16 +100,6 @@ mod app {
         loop {
             rtic::export::wfi();
         }
-    }
-
-    #[task(shared = [&em, state_machine])]
-    fn step_state(mut cx: step_state::Context) {
-        cx.shared.em.run(|| {
-            let mut state_machine = cx.shared.state_machine.lock(|state_machine| {
-                state_machine.step();
-            });
-            Ok(())
-        });
     }
 
     #[task(priority = 3, local = [drogue_ematch])]
