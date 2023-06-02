@@ -2,18 +2,30 @@
 #![no_main]
 mod communication;
 mod types;
-use types::Capacities;
+use crate::state_machine::{StateMachine, StateMachineContext};
+mod state_machine;
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use common_arm::mcan;
 use common_arm::*;
 use hal::gpio::Pins;
-use hal::gpio::{PA18, PA14, PA19};
 use hal::gpio::{Pin, PushPullOutput};
+use hal::gpio::{PA14, PA18, PA19};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
+use messages::Message;
 use panic_halt as _;
 use systick_monotonic::*;
+use types::Capacities;
+
+struct GPIOController {}
+impl GPIOController {
+    pub fn set_high(&self, pin: u8) {}
+}
+
+struct RocketData {
+    accel: f32,
+}
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -26,6 +38,7 @@ mod app {
     struct Shared {
         em: ErrorManager,
         can0: communication::CanDevice0,
+        state_machine: StateMachine,
     }
 
     #[local]
@@ -78,6 +91,11 @@ mod app {
             cx.local.can_memory,
             false,
         );
+        /* State Machine */
+        let mut state_machine = StateMachine::new();
+        let mut data = RocketData { accel: 0.0 };
+        let gpio = GPIOController {};
+
         /* Spawn tasks */
         blink::spawn().ok();
         let mono = Systick::new(core.SYST, 48000000);
@@ -85,6 +103,7 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 can0,
+                state_machine,
             },
             Local {
                 led,
@@ -100,6 +119,31 @@ mod app {
         loop {
             rtic::export::wfi();
         }
+    }
+
+    #[task(priority = 3, shared = [can0, state_machine, &em])]
+    fn run_sm(mut cx: run_sm::Context) {
+        cx.shared.state_machine.lock(|sm| {
+            // sm.run();
+        })
+    }
+
+    #[task(priority = 3, binds = CAN0, shared = [can0])]
+    fn can0(mut cx: can0::Context) {
+        cx.shared.can0.lock(|can| {
+            can.process_data();
+        });
+    }
+
+    /**
+     * Sends a message over CAN.
+     */
+    #[task(capacity = 10, local = [counter: u16 = 0], shared = [can0, &em])]
+    fn send_can(mut cx: send_can::Context, m: Message) {
+        cx.shared.em.run(|| {
+            cx.shared.can0.lock(|can| can.send_message(m))?;
+            Ok(())
+        });
     }
 
     #[task(priority = 3, local = [drogue_ematch])]
