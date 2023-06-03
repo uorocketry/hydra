@@ -15,20 +15,22 @@ use mcan::message::rx;
 use mcan::message::tx;
 
 use panic_halt as _;
-
-const SBG_BUFFER_SIZE: usize = 4096;
-pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+use sbg_rs::sbg::SBG_BUFFER_SIZE;
 
 pub type Pads = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
-pub type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 pub type Config = uart::Config<Pads, EightBit>;
+
+// -------
+// SBG
+// -------
+pub type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 pub type ConfigSBG = uart::Config<PadsSBG, EightBit>;
 pub type SBGTransfer = dmac::Transfer<
     dmac::Channel<dmac::Ch0, dmac::Busy>,
     BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>,
 >;
 pub type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
+
 pub struct Capacities;
 
 impl mcan::messageram::Capacities for Capacities {
