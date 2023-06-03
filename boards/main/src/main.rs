@@ -2,6 +2,7 @@
 #![no_main]
 
 mod communication;
+mod data_manager;
 mod sbg_manager;
 mod sd_manager;
 mod types;
@@ -14,6 +15,7 @@ use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
 use communication::RadioDevice;
+use data_manager::DataManager;
 use hal::dmac;
 use hal::gpio::Pins;
 use hal::gpio::PA14;
@@ -21,7 +23,7 @@ use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use messages::sender::Sender::LogicBoard;
-use messages::sensor::{Sbg, SbgShort, Sensor};
+use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
 use sbg_manager::sbg_dma;
@@ -36,7 +38,7 @@ mod app {
     #[shared]
     struct Shared {
         em: ErrorManager,
-        sbg_data: (Sbg, SbgShort),
+        data_manager: DataManager,
         can0: communication::CanDevice0,
     }
 
@@ -139,36 +141,7 @@ mod app {
         (
             Shared {
                 em: ErrorManager::new(),
-                sbg_data: (
-                    Sbg {
-                        accel_x: 0.0,
-                        accel_y: 0.0,
-                        accel_z: 0.0,
-                        velocity_n: 0.0,
-                        velocity_e: 0.0,
-                        velocity_d: 0.0,
-                        quant_w: 0.0,
-                        quant_x: 0.0,
-                        quant_y: 0.0,
-                        quant_z: 0.0,
-                        pressure: 0.0,
-                        height: 0.0,
-                        roll: 0.0,
-                        yaw: 0.0,
-                        pitch: 0.0,
-                        latitude: 0.0,
-                        longitude: 0.0,
-                    },
-                    SbgShort {
-                        accel_y: 0.0,
-                        pressure: 0.0,
-                        height: 0.0,
-                        quant_w: 0.0,
-                        quant_x: 0.0,
-                        quant_y: 0.0,
-                        quant_z: 0.0,
-                    },
-                ),
+                data_manager: DataManager::new(),
                 can0,
             },
             Local {
@@ -243,27 +216,27 @@ mod app {
     /**
      * Sends information about the sensors.
      */
-    #[task(shared = [sbg_data, &em])]
+    #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (data_long_sbg, data_short_sbg) =
-            cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
-                (sbg_long_data.clone(), sbg_short_data.clone())
-            });
-        let message_radio = Message::new(
-            &monotonics::now(),
-            LogicBoard,
-            Sensor::new(9, data_long_sbg),
-        );
-        let message_can = Message::new(
-            &monotonics::now(),
-            LogicBoard,
-            Sensor::new(9, data_short_sbg),
-        );
+        let (data_long_sbg, data_short_sbg) = cx
+            .shared
+            .data_manager
+            .lock(|data_manager| (data_manager.sbg.clone(), data_manager.sbg_short.clone()));
+
+        let message_radio =
+            data_long_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
+
+        let message_can =
+            data_short_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
 
         cx.shared.em.run(|| {
-            spawn!(send_gs, message_radio)?;
+            if let Some(msg) = message_radio {
+                spawn!(send_gs, msg)?;
+            }
 
-            spawn!(send_internal, message_can)?;
+            if let Some(msg) = message_can {
+                spawn!(send_internal, msg)?;
+            }
 
             Ok(())
         });
@@ -288,7 +261,7 @@ mod app {
     }
 
     extern "Rust" {
-        #[task(binds = DMAC_0, shared = [sbg_data, &em], local = [sbg_manager])]
+        #[task(binds = DMAC_0, shared = [data_manager, &em], local = [sbg_manager])]
         fn sbg_dma(context: sbg_dma::Context);
     }
 }

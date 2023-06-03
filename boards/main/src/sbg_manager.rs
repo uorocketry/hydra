@@ -2,7 +2,7 @@ use crate::types::{ConfigSBG, SBGBuffer, SBGTransfer};
 use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::dmac;
-use atsamd_hal::dmac::{Transfer};
+use atsamd_hal::dmac::Transfer;
 use atsamd_hal::gpio::{Pin, Reset, PA08, PA09};
 use atsamd_hal::pac::{MCLK, RTC};
 use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
@@ -88,8 +88,11 @@ pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
                 }
             };
 
-            cx.shared.sbg_data.lock(|(sbg_long_data, sbg_short_data)| {
-                (*sbg_long_data, *sbg_short_data) = sbg.sbg_device.read_data(buf);
+            cx.shared.data_manager.lock(|data_manager| {
+                let (sbg_long_data, sbg_short_data) = sbg.sbg_device.read_data(buf);
+
+                data_manager.sbg = Some(sbg_long_data);
+                data_manager.sbg_short = Some(sbg_short_data);
             });
             Ok(())
         });
