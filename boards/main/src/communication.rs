@@ -6,12 +6,10 @@ use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::Can0;
-use atsamd_hal::gpio::{Alternate, AlternateI, I, Disabled, Floating, PA22, PA23, PB16, PB17, Pin};
 use atsamd_hal::clock::v2::Source;
+use atsamd_hal::gpio::{Alternate, AlternateI, Disabled, Floating, Pin, I, PA22, PA23, PB16, PB17};
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
-
-use mcan::bus::Can;
 use atsamd_hal::pac::SERCOM5;
 use atsamd_hal::sercom;
 use atsamd_hal::sercom::uart;
@@ -19,9 +17,12 @@ use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::time::U32Ext;
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
+use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
 use common_arm::HydraError;
+use defmt::info;
 use heapless::Vec;
+use mcan::bus::Can;
 use mcan::embedded_can as ecan;
 use mcan::interrupt::state::EnabledLine0;
 use mcan::interrupt::{Interrupt, OwnedInterruptSet};
@@ -31,20 +32,41 @@ use mcan::{
     config::{BitTiming, Mode},
     filter::{Action, Filter},
 };
-use messages::Message;
 use messages::mav_message;
+use messages::mavlink;
+use messages::Message;
 use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
-use defmt::info;
-use common_arm::mcan::message::Raw;
-use messages::mavlink;
+use typenum::{U0, U128, U32, U64};
+
+pub struct Capacities;
+
+impl mcan::messageram::Capacities for Capacities {
+    type StandardFilters = U128;
+    type ExtendedFilters = U64;
+    type RxBufferMessage = rx::Message<64>;
+    type DedicatedRxBuffers = U64;
+    type RxFifo0Message = rx::Message<64>;
+    type RxFifo0 = U64;
+    type RxFifo1Message = rx::Message<64>;
+    type RxFifo1 = U64;
+    type TxMessage = tx::Message<64>;
+    type TxBuffers = U32;
+    type DedicatedTxBuffers = U0;
+    type TxEventFifo = U32;
+}
+
 pub struct CanDevice0 {
-    pub can: Can<'static, Can0, Dependencies<Can0, Gclk0Id, Pin<PA23, Alternate<I>>, Pin<PA22, Alternate<I>>, CAN0>, Capacities>,
+    pub can: Can<
+        'static,
+        Can0,
+        Dependencies<Can0, Gclk0Id, Pin<PA23, Alternate<I>>, Pin<PA22, Alternate<I>>, CAN0>,
+        Capacities,
+    >,
     line_interrupts: OwnedInterruptSet<Can0, EnabledLine0>,
 }
 
 impl CanDevice0 {
-    // we need to give back gclk0
     pub fn new<S>(
         can_rx: Pin<PA23, AlternateI>,
         can_tx: Pin<PA22, AlternateI>,
@@ -96,7 +118,8 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::RecoveryBoard.into()).unwrap(),
+                filter: ecan::StandardId::new(messages::sender::Sender::RecoveryBoard.into())
+                    .unwrap(),
                 mask: ecan::StandardId::MAX,
             })
             .unwrap_or_else(|_| panic!("Recovery filter"));
@@ -104,7 +127,8 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo1,
-                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into()).unwrap(),
+                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into())
+                    .unwrap(),
                 mask: ecan::StandardId::MAX,
             })
             .unwrap_or_else(|_| panic!("Ground Station filter"));
@@ -118,22 +142,20 @@ impl CanDevice0 {
             gclk0,
         )
     }
-    pub fn send_message(
-        &mut self,
-        m: Message,
-    ) -> Result<(), HydraError> {
+    pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
         let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
-        // let test: [u8; 64] = [0_u8;64];
-        self.can.tx.transmit_queued(tx::MessageBuilder {
-            id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
-            frame_type: tx::FrameType::FlexibleDatarate {
-                payload: &payload[..],
-                bit_rate_switching: false,
-                force_error_state_indicator: false,
-            },
-            store_tx_event: None,
-        }
-        .build()?)?;
+        self.can.tx.transmit_queued(
+            tx::MessageBuilder {
+                id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
+                frame_type: tx::FrameType::FlexibleDatarate {
+                    payload: &payload[..],
+                    bit_rate_switching: false,
+                    force_error_state_indicator: false,
+                },
+                store_tx_event: None,
+            }
+            .build()?,
+        )?;
         Ok(())
     }
     pub fn process_data(&mut self) {
@@ -149,7 +171,7 @@ impl CanDevice0 {
                             Err(e) => {
                                 info!("Error: {:?}", e)
                             }
-                        } 
+                        }
                     }
                 }
                 Interrupt::RxFifo1NewMessage => {
@@ -171,7 +193,7 @@ impl CanDevice0 {
 }
 
 pub struct RadioDevice {
-    pub uart: Uart<Config, Duplex>,
+    pub uart: Uart<GroundStationUartConfig, Duplex>,
 }
 
 impl RadioDevice {
@@ -190,7 +212,7 @@ impl RadioDevice {
         let pads = uart::Pads::<sercom::Sercom5, _>::default()
             .rx(rx_pin)
             .tx(tx_pin);
-        let uart = Config::new(&mclk, sercom, pads, pclk_radio.freq())
+        let uart = GroundStationUartConfig::new(mclk, sercom, pads, pclk_radio.freq())
             .baud(
                 57600.hz(),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),

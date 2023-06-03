@@ -1,23 +1,23 @@
 #![no_std]
 #![no_main]
+
 mod communication;
-use communication::RadioDevice;
 mod sbg_manager;
 mod types;
 
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
+use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac::DmaController;
 use common_arm::mcan;
 use common_arm::*;
-use embedded_sdmmc::File;
+use communication::Capacities;
+use communication::RadioDevice;
 use hal::dmac;
 use hal::gpio::Pins;
 use hal::gpio::PA14;
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
-use hal::sercom::Sercom0;
-use hal::{dmac::Transfer, sercom::Sercom};
 use mcan::messageram::SharedMemory;
 use messages::sender::Sender::LogicBoard;
 use messages::sensor::{Sbg, SbgShort, Sensor};
@@ -25,9 +25,7 @@ use messages::*;
 use panic_halt as _;
 use sbg_manager::sbg_dma;
 use sbg_manager::SBGManager;
-use sbg_rs::sbg;
 use systick_monotonic::*;
-use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -58,10 +56,12 @@ mod app {
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut peripherals = cx.device;
         let core = cx.core;
+        let pins = Pins::new(peripherals.PORT);
 
         let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
         let dmaChannels = dmac.split();
 
+        /* Clock setup */
         let (_, clocks, tokens) = atsamd_hal::clock::v2::clock_system_at_reset(
             peripherals.OSCCTRL,
             peripherals.OSC32KCTRL,
@@ -69,18 +69,13 @@ mod app {
             peripherals.MCLK,
             &mut peripherals.NVMCTRL,
         );
+        let gclk0 = clocks.gclk0;
 
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
         let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
-        let gclk0 = clocks.gclk0;
-        let pins = Pins::new(peripherals.PORT);
-        let led = pins.pa14.into_push_pull_output();
+
         /* CAN config */
-        // ! This is needs to be ran before calling the constructor.
-        // ! This is because gclk0 does not play nice and cannot
-        // ! be incremented twice in a single function since we
-        // ! then no longer can return the gclk0.
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
         let (can0, gclk0) = communication::CanDevice0::new(
             pins.pa23.into_mode(),
@@ -92,6 +87,7 @@ mod app {
             cx.local.can_memory,
             false,
         );
+
         /* SD config */
         let (pclk_sd, gclk0) =
             atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, gclk0);
@@ -116,7 +112,7 @@ mod app {
         );
 
         /* SBG config */
-        let (pclk_sbg, _gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
+        let (pclk_sbg, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
         let dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
         let sbg_manager = SBGManager::new(
             pins.pa09,
@@ -128,12 +124,17 @@ mod app {
             dmaCh0,
         );
 
+        /* Status LED */
+        let led = pins.pa14.into_push_pull_output();
+
         /* Spawn tasks */
         state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
 
-        let mono = Systick::new(core.SYST, 48000000);
+        /* Monotonic clock */
+        let mono = Systick::new(core.SYST, gclk0.freq().0);
+
         (
             Shared {
                 em: ErrorManager::new(),

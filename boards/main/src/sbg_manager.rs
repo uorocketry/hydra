@@ -1,13 +1,13 @@
-use crate::types::ConfigSBG;
+use crate::types::{ConfigSBG, SBGBuffer, SBGTransfer};
 use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::dmac;
-use atsamd_hal::dmac::{BufferPair, Transfer};
+use atsamd_hal::dmac::{Transfer};
 use atsamd_hal::gpio::{Pin, Reset, PA08, PA09};
 use atsamd_hal::pac::{MCLK, RTC};
 use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;
-use atsamd_hal::sercom::uart::Uart;
+
 use atsamd_hal::sercom::{uart, Sercom, Sercom0};
 use rtic::Mutex;
 use sbg_rs::sbg;
@@ -33,7 +33,7 @@ impl SBGManager {
         mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
     ) -> Self {
         let pads_sbg = uart::Pads::<Sercom0, _>::default().rx(rx).tx(tx);
-        let uart_sbg = ConfigSBG::new(&mclk, sercom0, pads_sbg, pclk_sercom0.freq())
+        let uart_sbg = ConfigSBG::new(mclk, sercom0, pads_sbg, pclk_sercom0.freq())
             .baud(
                 115200.hz(),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits8),
