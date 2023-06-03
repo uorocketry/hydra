@@ -3,6 +3,7 @@
 
 mod communication;
 mod sbg_manager;
+mod sd_manager;
 mod types;
 
 use atsamd_hal as hal;
@@ -25,6 +26,7 @@ use messages::*;
 use panic_halt as _;
 use sbg_manager::sbg_dma;
 use sbg_manager::SBGManager;
+use sd_manager::SdManager;
 use systick_monotonic::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
@@ -42,7 +44,7 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         radio: RadioDevice,
-        sd: SdInterface,
+        sd_manager: SdManager,
         sbg_manager: SBGManager,
     }
 
@@ -89,9 +91,8 @@ mod app {
         );
 
         /* SD config */
-        let (pclk_sd, gclk0) =
-            atsamd_hal::clock::v2::pclk::Pclk::enable(tokens.pclks.sercom1, gclk0);
-        let mut sd = SdInterface::new(
+        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom1, gclk0);
+        let sd_manager = SdManager::new(
             &mclk,
             peripherals.SERCOM1,
             pclk_sd.freq(),
@@ -173,7 +174,7 @@ mod app {
             Local {
                 led,
                 radio,
-                sd,
+                sd_manager,
                 sbg_manager,
             },
             init::Monotonics(mono),

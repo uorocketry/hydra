@@ -1,30 +1,12 @@
 use core::marker::PhantomData;
 
-use atsamd_hal::gpio::{Alternate, Output, Pin, PushPull, C, PA16, PA17, PA18, PA19};
+use crate::types::SdController;
+use atsamd_hal::gpio::{Output, Pin, PushPull, C, PA16, PA17, PA18, PA19};
 use atsamd_hal::pac;
 use atsamd_hal::sercom::{spi, IoSet1, Sercom1};
 use atsamd_hal::time::Hertz;
 use defmt::{info, warn};
 use embedded_sdmmc as sd;
-
-type SdController = sd::Controller<
-    sd::SdMmcSpi<
-        spi::Spi<
-            spi::Config<
-                spi::Pads<
-                    Sercom1,
-                    IoSet1,
-                    Pin<PA19, Alternate<C>>,
-                    Pin<PA16, Alternate<C>>,
-                    Pin<PA17, Alternate<C>>,
-                >,
-            >,
-            spi::Duplex,
-        >,
-        Pin<PA18, Output<PushPull>>,
-    >,
-    TimeSink,
->;
 
 /// Time source for `[SdInterface]`. It doesn't return any useful information for now, and will
 /// always return an arbitrary time.
@@ -54,14 +36,14 @@ impl sd::TimeSource for TimeSink {
 }
 
 /// Wrapper for the SD Card. For now, the pins are hard-coded.
-pub struct SdInterface {
+pub struct SdManager {
     pub sd_controller: SdController,
     pub volume: sd::Volume,
     pub root_directory: sd::Directory,
     pub file: sd::File,
 }
 
-impl SdInterface {
+impl SdManager {
     pub fn new(
         mclk: &pac::MCLK,
         sercom: pac::SERCOM1,
@@ -122,7 +104,7 @@ impl SdInterface {
             }
         };
 
-        SdInterface {
+        SdManager {
             sd_controller: sd_cont,
             volume,
             root_directory,
@@ -161,4 +143,4 @@ impl SdInterface {
     }
 }
 
-unsafe impl Send for SdInterface {}
+unsafe impl Send for SdManager {}
