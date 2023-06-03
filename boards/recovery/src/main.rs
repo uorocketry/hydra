@@ -13,14 +13,23 @@ use hal::gpio::{Pin, PushPullOutput};
 use hal::gpio::{PA14, PA18, PA19};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
+use messages::sensor::SbgShort;
 use messages::Message;
 use panic_halt as _;
 use systick_monotonic::*;
 use types::Capacities;
 
-struct GPIOController {}
+pub struct GPIOController {
+    drogue_ematch: Pin<PA18, PushPullOutput>,
+    main_ematch: Pin<PA19, PushPullOutput>,
+}
 impl GPIOController {
-    pub fn set_high(&self, pin: u8) {}
+    pub fn fire_drogue(&mut self) {
+        self.drogue_ematch.set_high().ok();
+    }
+    pub fn fire_main(&mut self) {
+        self.main_ematch.set_high().ok();
+    }
 }
 
 struct RocketData {
@@ -29,6 +38,8 @@ struct RocketData {
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+    use crate::state_machine::RocketEvents;
+
     use super::*;
 
     /// check where locks already occur and depend on what first
@@ -38,14 +49,14 @@ mod app {
     struct Shared {
         em: ErrorManager,
         can0: communication::CanDevice0,
-        state_machine: StateMachine,
+        sbg_data: SbgShort,
+        gpio: GPIOController,
     }
 
     #[local]
     struct Local {
         led: Pin<PA14, PushPullOutput>,
-        drogue_ematch: Pin<PA18, PushPullOutput>,
-        main_ematch: Pin<PA19, PushPullOutput>,
+        sm: StateMachine,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -73,8 +84,10 @@ mod app {
         let gclk0 = clocks.gclk0;
         let pins = Pins::new(peripherals.PORT);
         let led = pins.pa14.into_push_pull_output();
-        let drogue_ematch = pins.pa18.into_push_pull_output();
-        let main_ematch = pins.pa19.into_push_pull_output();
+        let gpio = GPIOController {
+            drogue_ematch: pins.pa18.into_push_pull_output(),
+            main_ematch: pins.pa19.into_push_pull_output(),
+        };
         /* CAN config */
         // ! This is needs to be ran before calling the constructor.
         // ! This is because gclk0 does not play nice and cannot
@@ -92,23 +105,31 @@ mod app {
             false,
         );
         /* State Machine */
-        let mut state_machine = StateMachine::new();
+        let mut sm = StateMachine::new();
         let mut data = RocketData { accel: 0.0 };
-        let gpio = GPIOController {};
 
         /* Spawn tasks */
         blink::spawn().ok();
+        run_sm::spawn().ok();
         let mono = Systick::new(core.SYST, 48000000);
         (
             Shared {
                 em: ErrorManager::new(),
                 can0,
-                state_machine,
+                sbg_data: SbgShort {
+                    accel_y: 0.0,
+                    pressure: 0.0,
+                    height: 0.0,
+                    quant_w: 0.0,
+                    quant_x: 0.0,
+                    quant_y: 0.0,
+                    quant_z: 0.0,
+                },
+                gpio,
             },
             Local {
                 led,
-                drogue_ematch,
-                main_ematch,
+                sm,
             },
             init::Monotonics(mono),
         )
@@ -121,15 +142,18 @@ mod app {
         }
     }
 
-    #[task(priority = 3, shared = [can0, state_machine, &em])]
+    #[task(priority = 3, local = [sm], shared = [can0, sbg_data, gpio, &em])]
     fn run_sm(mut cx: run_sm::Context) {
-        cx.shared.state_machine.lock(|sm| {
-            // sm.run();
-        })
+        cx.local.sm.run(&mut StateMachineContext {
+            shared_resources: &mut cx.shared,
+        });
+
+        spawn!(run_sm).ok();
     }
 
-    #[task(priority = 3, binds = CAN0, shared = [can0])]
+    #[task(priority = 3, binds = CAN0, shared = [can0, sbg_data])]
     fn can0(mut cx: can0::Context) {
+        // fill the sbg_data struct with the data from the CAN message
         cx.shared.can0.lock(|can| {
             can.process_data();
         });
@@ -146,14 +170,14 @@ mod app {
         });
     }
 
-    #[task(priority = 3, local = [drogue_ematch])]
+    #[task(priority = 3, shared = [gpio])]
     fn fire_drogue(mut cx: fire_drogue::Context) {
-        cx.local.drogue_ematch.set_high().ok();
+        cx.shared.gpio.lock(|gpio| gpio.fire_drogue());
     }
 
-    #[task(priority = 3, local = [main_ematch])]
+    #[task(priority = 3, shared = [gpio])]
     fn fire_main(mut cx: fire_main::Context) {
-        cx.local.main_ematch.set_high().ok();
+        cx.shared.gpio.lock(|gpio| gpio.fire_main());
     }
 
     /**
