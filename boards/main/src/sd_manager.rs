@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 use crate::types::SdController;
-use atsamd_hal::gpio::{Output, Pin, PushPull, C, PA16, PA17, PA18, PA19};
+use atsamd_hal::gpio::{Output, Pin, PushPull, PA16, PA17, PA18, PA19};
 use atsamd_hal::pac;
 use atsamd_hal::sercom::{spi, IoSet1, Sercom1};
 use atsamd_hal::time::Hertz;

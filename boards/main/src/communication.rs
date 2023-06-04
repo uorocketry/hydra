@@ -32,7 +32,6 @@ use mcan::{
     config::{BitTiming, Mode},
     filter::{Action, Filter},
 };
-use messages::mav_message;
 use messages::mavlink;
 use messages::Message;
 use postcard::from_bytes;
@@ -193,7 +192,8 @@ impl CanDevice0 {
 }
 
 pub struct RadioDevice {
-    pub uart: Uart<GroundStationUartConfig, Duplex>,
+    uart: Uart<GroundStationUartConfig, Duplex>,
+    mav_sequence: u8,
 }
 
 impl RadioDevice {
@@ -218,15 +218,31 @@ impl RadioDevice {
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
             )
             .enable();
-        (RadioDevice { uart }, gclk0)
+        (
+            RadioDevice {
+                uart,
+                mav_sequence: 0,
+            },
+            gclk0,
+        )
     }
     pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
         let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
-        let mav_message = mav_message::mavlink_postcard_message(payload);
+
+        let mav_header = mavlink::MavHeader {
+            system_id: 1,
+            component_id: 1,
+            sequence: self.mav_sequence.wrapping_add(1),
+        };
+
+        let mav_message = mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(
+            mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: payload },
+        );
+
         mavlink::write_versioned_msg(
             &mut self.uart,
             mavlink::MavlinkVersion::V2,
-            mav_message::get_mav_header(),
+            mav_header,
             &mav_message,
         )?;
         Ok(())
