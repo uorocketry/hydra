@@ -1,47 +1,44 @@
+use crate::sd_manager::TimeSink;
 use atsamd_hal as hal;
 use atsamd_hal::gpio::*;
-
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::Uart;
-use atsamd_hal::sercom::{uart, IoSet1};
-use common_arm::mcan;
+use atsamd_hal::sercom::{spi, uart, IoSet1, Sercom1};
+use embedded_sdmmc as sd;
 use hal::dmac;
 use hal::dmac::BufferPair;
-
 use hal::sercom::Sercom0;
 use hal::sercom::Sercom5;
-use mcan::generic_array::typenum::consts::*;
-use mcan::message::rx;
-use mcan::message::tx;
+use sbg_rs::sbg::SBG_BUFFER_SIZE;
 
-use panic_halt as _;
+// -------
+// Ground Station
+// -------
+pub type GroundStationPads = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
+pub type GroundStationUartConfig = uart::Config<GroundStationPads, EightBit>;
 
-const SBG_BUFFER_SIZE: usize = 4096;
-pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-
-pub type Pads = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
+// -------
+// SBG
+// -------
 pub type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
-pub type Config = uart::Config<Pads, EightBit>;
 pub type ConfigSBG = uart::Config<PadsSBG, EightBit>;
 pub type SBGTransfer = dmac::Transfer<
     dmac::Channel<dmac::Ch0, dmac::Busy>,
     BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>,
 >;
 pub type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
-pub struct Capacities;
 
-impl mcan::messageram::Capacities for Capacities {
-    type StandardFilters = U128;
-    type ExtendedFilters = U64;
-    type RxBufferMessage = rx::Message<64>;
-    type DedicatedRxBuffers = U64;
-    type RxFifo0Message = rx::Message<64>;
-    type RxFifo0 = U64;
-    type RxFifo1Message = rx::Message<64>;
-    type RxFifo1 = U64;
-    type TxMessage = tx::Message<64>;
-    type TxBuffers = U32;
-    type DedicatedTxBuffers = U0;
-    type TxEventFifo = U32;
-}
+// -------
+// SD Card
+// -------
+pub type SdPads = spi::Pads<
+    Sercom1,
+    IoSet1,
+    Pin<PA19, Alternate<C>>,
+    Pin<PA16, Alternate<C>>,
+    Pin<PA17, Alternate<C>>,
+>;
+pub type SdController = sd::Controller<
+    sd::SdMmcSpi<spi::Spi<spi::Config<SdPads>, spi::Duplex>, Pin<PA18, Output<PushPull>>>,
+    TimeSink,
+>;

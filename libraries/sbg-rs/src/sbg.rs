@@ -28,6 +28,11 @@ type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
 
 /**
+ * Max buffer size for SBG messages.
+ */
+pub const SBG_BUFFER_SIZE: usize = 4096;
+
+/**
  * Represents the index of the buffer that is currently being used.
  */
 static mut BUF_INDEX: AtomicUsize = AtomicUsize::new(0);
@@ -64,10 +69,6 @@ static mut DATA: Sbg = Sbg {
     longitude: 0.0,
 };
 
-/**
- * Max buffer size for SBG messages.
- */
-const SBG_BUFFER_SIZE: usize = 4096;
 struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface,
 }

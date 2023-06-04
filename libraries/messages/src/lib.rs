@@ -18,7 +18,6 @@ pub use mavlink;
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
-pub mod mav_message;
 pub mod sender;
 pub mod sensor;
 
