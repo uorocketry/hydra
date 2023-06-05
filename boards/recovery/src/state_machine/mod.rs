@@ -1,15 +1,15 @@
 mod black_magic;
 mod states;
 
+use crate::communication::CanDevice0;
+use crate::state_machine::states::*;
+use crate::GPIOController;
+pub use black_magic::*;
 use core::fmt::Debug;
 use defmt::Format;
 use enum_dispatch::enum_dispatch;
 use messages::sensor::SbgShort;
-use crate::{GPIOController, RocketData};
-use crate::state_machine::states::*;
-use crate::communication::CanDevice0;
 use rtic::Mutex;
-pub use black_magic::*;
 
 pub trait StateMachineSharedResources {
     fn lock_can(&mut self, f: &dyn Fn(&mut CanDevice0));
@@ -29,8 +29,8 @@ impl<'a> StateMachineSharedResources for crate::app::__rtic_internal_run_smShare
     }
 }
 
-pub struct StateMachineContext<'a> {
-    pub shared_resources: &'a mut dyn StateMachineSharedResources,
+pub struct StateMachineContext<'a, 'b> {
+    pub shared_resources: &'b mut crate::app::__rtic_internal_run_smSharedResources<'a>
 }
 pub struct StateMachine {
     state: RocketStates,
@@ -40,24 +40,19 @@ pub struct StateMachine {
 impl StateMachine {
     pub fn new() -> Self {
         let state = Initializing {};
-        state.enter();
 
         StateMachine {
             state: state.into(),
         }
     }
 
-    pub fn run(&mut self, data: &mut StateMachineContext) {
-        if let Some(new_state) = self.state.step(data) {
+    pub fn run(&mut self, context: &mut StateMachineContext) {
+        if let Some(new_state) = self.state.step(context) {
             self.state.exit();
-            new_state.enter();
+            new_state.enter(context);
             self.state = new_state;
         }
     }
-
-    // pub fn handle_event(&mut self) {
-    //     self.state.event(event);
-    // }
 }
 
 // All events are found here
@@ -76,18 +71,5 @@ pub enum RocketStates {
     Ascent,
     Apogee,
     Landed,
-    Abort
+    Abort,
 }
-
-// impl Format for RocketStates {
-//     fn format(&self, f: Formatter) {
-//         match self {
-//             RocketStates::Initializing(Initializing) => write!(f, "Initializing"),
-//             RocketStates::WaitForTakeoff(WaitForTakeoff) => write!(f, "WaitForTakeoff"),
-//             RocketStates::Ascent(Ascent) => write!("Ascent"),
-//             RocketStates::Apogee(Apogee) => write!(f, "Apogee"),
-//             RocketStates::Landed(Landed) => write!(f, "Landed"),
-//             RocketStates::Abort(Abort) => write!(f, "Abort"),
-//         }
-//     }
-// }

@@ -4,19 +4,14 @@ use atsamd_hal::can::Dependencies;
 use atsamd_hal::clock::v2::ahb::AhbClk;
 use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
-use atsamd_hal::clock::v2::pclk::PclkToken;
+
 use atsamd_hal::clock::v2::types::Can0;
-use atsamd_hal::gpio::{Alternate, AlternateI, I, Disabled, Floating, PA22, PA23, PB16, PB17, Pin};
 use atsamd_hal::clock::v2::Source;
+use atsamd_hal::gpio::{Alternate, AlternateI, Pin, I, PA22, PA23};
 use atsamd_hal::pac::CAN0;
-use atsamd_hal::pac::MCLK;
 
 use mcan::bus::Can;
-use atsamd_hal::pac::SERCOM5;
-use atsamd_hal::sercom;
-use atsamd_hal::sercom::uart;
-use atsamd_hal::sercom::uart::{Duplex, Uart};
-use atsamd_hal::time::U32Ext;
+
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::tx_buffers::DynTx;
@@ -32,14 +27,19 @@ use mcan::{
     filter::{Action, Filter},
 };
 use messages::Message;
-use messages::mav_message;
+
+use common_arm::mcan::message::Raw;
+use defmt::info;
 use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
-use defmt::info;
-use common_arm::mcan::message::Raw;
-use messages::mavlink;
+
 pub struct CanDevice0 {
-    pub can: Can<'static, Can0, Dependencies<Can0, Gclk0Id, Pin<PA23, Alternate<I>>, Pin<PA22, Alternate<I>>, CAN0>, Capacities>,
+    pub can: Can<
+        'static,
+        Can0,
+        Dependencies<Can0, Gclk0Id, Pin<PA23, Alternate<I>>, Pin<PA22, Alternate<I>>, CAN0>,
+        Capacities,
+    >,
     line_interrupts: OwnedInterruptSet<Can0, EnabledLine0>,
 }
 
@@ -104,7 +104,8 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo1,
-                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into()).unwrap(),
+                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into())
+                    .unwrap(),
                 mask: ecan::StandardId::MAX,
             })
             .unwrap_or_else(|_| panic!("Ground Station filter"));
@@ -118,22 +119,21 @@ impl CanDevice0 {
             gclk0,
         )
     }
-    pub fn send_message(
-        &mut self,
-        m: Message,
-    ) -> Result<(), HydraError> {
+    pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
         let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
         // let test: [u8; 64] = [0_u8;64];
-        self.can.tx.transmit_queued(tx::MessageBuilder {
-            id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
-            frame_type: tx::FrameType::FlexibleDatarate {
-                payload: &payload[..],
-                bit_rate_switching: false,
-                force_error_state_indicator: false,
-            },
-            store_tx_event: None,
-        }
-        .build()?)?;
+        self.can.tx.transmit_queued(
+            tx::MessageBuilder {
+                id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
+                frame_type: tx::FrameType::FlexibleDatarate {
+                    payload: &payload[..],
+                    bit_rate_switching: false,
+                    force_error_state_indicator: false,
+                },
+                store_tx_event: None,
+            }
+            .build()?,
+        )?;
         Ok(())
     }
     pub fn process_data(&mut self) {
@@ -149,7 +149,7 @@ impl CanDevice0 {
                             Err(e) => {
                                 info!("Error: {:?}", e)
                             }
-                        } 
+                        }
                     }
                 }
                 Interrupt::RxFifo1NewMessage => {

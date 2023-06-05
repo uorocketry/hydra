@@ -6,7 +6,8 @@ use crate::state_machine::states::ascent::Ascent;
 use crate::state_machine::states::initializing::Initializing;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
-use defmt::{Format, write, Formatter};
+use rtic::mutex::Mutex;
+use defmt::{write, Format, Formatter};
 
 #[derive(Debug)]
 pub struct WaitForTakeoff {}
@@ -17,15 +18,17 @@ impl State for WaitForTakeoff {
     // }
 
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
-        let flag = RefCell::new(false);
+        // let flag = RefCell::new(false);
         context
             .shared_resources
-            .lock_sbg_data(&|data: &mut SbgShort| *flag.borrow_mut() = data.accel_y > 10.0);
-        if *flag.borrow() {
-            transition!(self, Ascent)
-        } else {
-            no_transition!()
-        }
+            .sbg_data
+            .lock(&|data: &mut SbgShort| {
+                if data.accel_y > 10.0 {
+                    transition!(self, Ascent)
+                } else {
+                    no_transition!()
+                }
+            })
     }
 }
 

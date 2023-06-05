@@ -1,12 +1,12 @@
-use crate::state_machine::{StateMachineContext, RocketStates, State, TransitionInto};
 use crate::state_machine::states::initializing::Initializing;
-use defmt::{Format, write, Formatter};
+use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
+use defmt::{write, Format, Formatter};
 
 #[derive(Debug)]
 pub struct Abort {}
 
 impl State for Abort {
-    fn step(&mut self, data: &mut StateMachineContext) -> Option<RocketStates> {
+    fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
         todo!()
     }
 }

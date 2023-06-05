@@ -32,13 +32,8 @@ impl GPIOController {
     }
 }
 
-struct RocketData {
-    accel: f32,
-}
-
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
-    use crate::state_machine::RocketEvents;
 
     use super::*;
 
@@ -105,12 +100,12 @@ mod app {
             false,
         );
         /* State Machine */
-        let mut sm = StateMachine::new();
-        let mut data = RocketData { accel: 0.0 };
+        let sm = StateMachine::new();
 
         /* Spawn tasks */
         blink::spawn().ok();
         run_sm::spawn().ok();
+        simulate_sbg::spawn().ok();
         let mono = Systick::new(core.SYST, 48000000);
         (
             Shared {
@@ -127,10 +122,7 @@ mod app {
                 },
                 gpio,
             },
-            Local {
-                led,
-                sm,
-            },
+            Local { led, sm },
             init::Monotonics(mono),
         )
     }
@@ -142,13 +134,27 @@ mod app {
         }
     }
 
+    #[task(priority = 3, shared = [sbg_data])]
+    fn simulate_sbg(mut cx: simulate_sbg::Context) {
+        if monotonics::now().duration_since_epoch().to_secs() < 20 {
+            cx.shared.sbg_data.lock(|data| {
+                data.accel_y += 1.0;
+            });
+        } else {
+            cx.shared.sbg_data.lock(|data| {
+                data.accel_y -= 1.0;
+            });
+        }
+        spawn_after!(simulate_sbg, 1000.millis()).ok();
+    }
+
     #[task(priority = 3, local = [sm], shared = [can0, sbg_data, gpio, &em])]
     fn run_sm(mut cx: run_sm::Context) {
         cx.local.sm.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,
         });
 
-        spawn!(run_sm).ok();
+        spawn_after!(run_sm, 500.millis()).ok();
     }
 
     #[task(priority = 3, binds = CAN0, shared = [can0, sbg_data])]

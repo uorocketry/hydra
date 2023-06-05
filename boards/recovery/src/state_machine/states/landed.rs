@@ -1,13 +1,26 @@
-use defmt::{Format, write, Formatter};
+use defmt::{write, Format, Formatter};
 
-use crate::state_machine::{StateMachineContext, RocketStates, State};
+use crate::no_transition;
+use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
+use rtic::mutex::Mutex;
+use super::Apogee;
 
 #[derive(Debug)]
 pub struct Landed {}
 
 impl State for Landed {
-    fn step(&mut self, data: &mut StateMachineContext) -> Option<RocketStates> {
-        todo!()
+    fn enter(&self,context: &mut StateMachineContext) {
+        context.shared_resources.gpio.lock(|gpio| gpio.fire_main());
+    }
+    fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
+        // Maybe sleep the system here to save power?
+        no_transition!()
+    }
+}
+
+impl TransitionInto<Landed> for Apogee {
+    fn transition(&self) -> Landed {
+        Landed {}
     }
 }
 
