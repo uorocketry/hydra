@@ -1,4 +1,4 @@
-use atsamd_hal::gpio::{PA18, PA19, Pin, PushPullOutput, Pins};
+use atsamd_hal::gpio::{PA18, PA19, Pin, PushPullOutput};
 use atsamd_hal::prelude::*;
 pub struct GPIOController {
     drogue_ematch: Pin<PA18, PushPullOutput>,
