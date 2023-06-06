@@ -19,6 +19,16 @@ pub struct Sensor {
 pub enum SensorData {
     Sbg(Sbg),
     SbgShort(SbgShort),
+    Power(Power),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct Power {
+    pub voltage: f32,
+    pub current: f32,
+    pub temperature: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]

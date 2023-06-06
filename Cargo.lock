@@ -792,6 +792,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "power"
+version = "0.1.0"
+dependencies = [
+ "atsamd-hal",
+ "common-arm",
+ "cortex-m",
+ "cortex-m-rt",
+ "cortex-m-rtic",
+ "defmt",
+ "fugit",
+ "heapless",
+ "messages",
+ "panic-halt",
+ "postcard",
+ "systick-monotonic",
+ "typenum",
+]
+
+[[package]]
 name = "proc-macro-error"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

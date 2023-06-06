@@ -11,6 +11,7 @@ pub enum Sender {
     GroundStation,
     LogicBoard,
     RecoveryBoard,
+    PowerBoard,
 }
 
 impl From<Sender> for u16 {
@@ -19,6 +20,7 @@ impl From<Sender> for u16 {
             Sender::GroundStation => 0,
             Sender::LogicBoard => 1,
             Sender::RecoveryBoard => 2,
+            Sender::PowerBoard => 3,
         }
     }
 }
