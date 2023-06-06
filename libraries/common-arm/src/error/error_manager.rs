@@ -1,4 +1,5 @@
 use crate::error::hydra_error::HydraError;
+use crate::herror;
 use core::cell::RefCell;
 use core::sync::atomic::AtomicBool;
 use core::sync::atomic::Ordering::Relaxed;
@@ -42,6 +43,11 @@ impl ErrorManager {
             self.has_error.store(true, Relaxed);
 
             error!("{}", e);
+
+            if let Some(c) = e.get_context() {
+                error!("{}", e);
+                herror!(Error, c);
+            }
 
             interrupt::free(|cs| {
                 self.error_history.borrow(cs).borrow_mut().write(e);

@@ -22,7 +22,6 @@ use hal::gpio::PA14;
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
-use messages::sender::Sender::LogicBoard;
 use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
@@ -30,6 +29,7 @@ use sbg_manager::sbg_dma;
 use sbg_manager::SBGManager;
 use sd_manager::SdManager;
 use systick_monotonic::*;
+use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -64,6 +64,9 @@ mod app {
 
         let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
         let dmaChannels = dmac.split();
+
+        /* Logging Setup */
+        HydraLogging::set_ground_station_callback(queue_gs_message);
 
         /* Clock setup */
         let (_, clocks, tokens) = atsamd_hal::clock::v2::clock_system_at_reset(
@@ -179,6 +182,12 @@ mod app {
         });
     }
 
+    pub fn queue_gs_message(d: impl Into<Data>) {
+        let message = Message::new(&monotonics::now(), COM_ID, d.into());
+
+        send_gs::spawn(message).ok();
+    }
+
     /**
      * Sends a message to the radio over UART.
      */
@@ -202,7 +211,7 @@ mod app {
             voltage: 12.1,
         };
 
-        let message = Message::new(&monotonics::now(), LogicBoard, state);
+        let message = Message::new(&monotonics::now(), COM_ID, state);
 
         cx.shared.em.run(|| {
             spawn!(send_gs, message.clone())?;
@@ -224,10 +233,10 @@ mod app {
             .lock(|data_manager| (data_manager.sbg.clone(), data_manager.sbg_short.clone()));
 
         let message_radio =
-            data_long_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
+            data_long_sbg.map(|x| Message::new(&monotonics::now(), COM_ID, Sensor::new(9, x)));
 
         let message_can =
-            data_short_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
+            data_short_sbg.map(|x| Message::new(&monotonics::now(), COM_ID, Sensor::new(9, x)));
 
         cx.shared.em.run(|| {
             if let Some(msg) = message_radio {
