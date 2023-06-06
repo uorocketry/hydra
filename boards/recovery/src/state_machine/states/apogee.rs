@@ -18,7 +18,7 @@ impl State for Apogee {
         // types.rs to make it easier to change.
         context.shared_resources.data_manager.lock(|data| {
             // Handle the case where we don't have any data yet
-            if data.sbg_short.as_mut().unwrap().height < 450.0 {
+            if data.is_below_main() {
                 transition!(self, Landed)
             } else {
                 no_transition!()

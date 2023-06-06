@@ -3,17 +3,10 @@ use atsamd_hal::can::Dependencies;
 use atsamd_hal::clock::v2::ahb::AhbClk;
 use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
-
 use atsamd_hal::clock::v2::types::Can0;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::gpio::{Alternate, AlternateI, Pin, I, PA22, PA23};
 use atsamd_hal::pac::CAN0;
-
-
-
-
-
-
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
@@ -36,6 +29,7 @@ use messages::Message;
 use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
 use typenum::{U0, U128, U32, U64};
+use crate::data_manager::DataManager;
 
 pub struct Capacities;
 
@@ -156,7 +150,7 @@ impl CanDevice0 {
         )?;
         Ok(())
     }
-    pub fn process_data(&mut self) {
+    pub fn process_data(&mut self, data_manager: &mut DataManager) {
         let line_interrupts = &self.line_interrupts;
         for interrupt in line_interrupts.iter_flagged() {
             match interrupt {
@@ -164,7 +158,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("Message: {:?}", data)
+                                data_manager.handle_data(data);
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
@@ -176,7 +170,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("Message: {:?}", data)
+                                data_manager.handle_data(data);
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)

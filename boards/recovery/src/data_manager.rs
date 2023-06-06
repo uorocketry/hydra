@@ -1,5 +1,9 @@
 use messages::sensor::{SbgShort};
+use messages::Message;
 use heapless::Vec;
+
+const main_height: f64 = 450.0;
+const accel_min: f64 = 20.0;
 
 pub struct DataManager {
     pub sbg_short: Option<SbgShort>,
@@ -27,7 +31,25 @@ impl DataManager {
         true
     }
     pub fn is_launched(&self) -> bool {
-        self.sbg_short.as_ref().unwrap().height > 10.0
+        self.sbg_short.as_ref().unwrap().height > accel_min
+    }
+    pub fn is_below_main(&self) -> bool {
+        self.sbg_short.as_ref().unwrap().height < main_height
+    }
+    pub fn handle_data(&mut self, data: Message) {
+        match data.data {
+            messages::Data::Sensor(sensor) => {
+                match sensor.data {
+                    messages::sensor::SensorData::SbgShort(sbg_short) => {
+                        self.sbg_short = Some(sbg_short);
+                    }
+                    _ => {}
+                }
+            }
+            messages::Data::State(state) => {
+                // handle state logic
+            }
+        }
     }
 }
 

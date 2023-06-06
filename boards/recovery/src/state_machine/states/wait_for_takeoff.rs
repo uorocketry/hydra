@@ -1,7 +1,3 @@
-
-
-
-
 use crate::state_machine::states::ascent::Ascent;
 use crate::state_machine::states::initializing::Initializing;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
@@ -13,12 +9,7 @@ use defmt::{write, Format, Formatter};
 pub struct WaitForTakeoff {}
 
 impl State for WaitForTakeoff {
-    // fn event(&mut self,_event:crate::state_machine::RocketEvents) -> Option<RocketStates> {
-
-    // }
-
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
-        // let flag = RefCell::new(false);
         context
             .shared_resources
             .data_manager

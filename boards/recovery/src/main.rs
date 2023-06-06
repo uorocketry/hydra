@@ -4,6 +4,7 @@
 mod communication;
 mod data_manager;
 mod state_machine;
+mod types;
 
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
@@ -13,33 +14,16 @@ use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
+use types::GPIOController;
 use state_machine::{StateMachine, StateMachineContext};
-
 use hal::gpio::Pins;
 use hal::gpio::{PA14, PA18, PA19};
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
-
-
 use messages::*;
 use panic_halt as _;
 use systick_monotonic::*;
-
-// This can move to types.rs
-pub struct GPIOController {
-    drogue_ematch: Pin<PA18, PushPullOutput>,
-    main_ematch: Pin<PA19, PushPullOutput>,
-}
-
-impl GPIOController {
-    pub fn fire_drogue(&mut self) {
-        self.drogue_ematch.set_high().ok();
-    }
-    pub fn fire_main(&mut self) {
-        self.main_ematch.set_high().ok();
-    }
-}
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -103,11 +87,7 @@ mod app {
 
         /* GPIO config */
         let led = pins.pa14.into_push_pull_output();
-        let gpio = GPIOController {
-            drogue_ematch: pins.pa18.into_push_pull_output(),
-            main_ematch: pins.pa19.into_push_pull_output(),
-        };
-
+        let gpio = GPIOController::new(pins.pa18.into_push_pull_output(), pins.pa19.into_push_pull_output());
         /* State Machine config */
         let state_machine = StateMachine::new();
 
@@ -147,10 +127,10 @@ mod app {
         })
     }
 
-    #[task(priority = 3, binds = CAN0, shared = [can0])]
+    #[task(priority = 3, binds = CAN0, shared = [can0, data_manager])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
-            can.process_data();
+            cx.shared.data_manager.lock(|data_manager| can.process_data(data_manager));
         });
     }
 
