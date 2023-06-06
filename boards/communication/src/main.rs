@@ -20,7 +20,7 @@ use hal::gpio::PA14;
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
-use messages::sender::Sender::LogicBoard;
+use messages::sender::Sender::CommunicationBoard;
 use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
