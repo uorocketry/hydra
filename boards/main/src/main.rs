@@ -25,8 +25,8 @@ use mcan::messageram::SharedMemory;
 use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
-use sbg_manager::sbg_dma;
-use sbg_manager::SBGManager;
+use sbg_manager::{sbg_dma, sbg_handle_data, SBGManager};
+use sbg_rs::sbg::CallbackData;
 use sd_manager::SdManager;
 use systick_monotonic::*;
 use types::*;
@@ -227,23 +227,20 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (data_long_sbg, data_short_sbg) = cx
+        let sensor_data = cx
             .shared
             .data_manager
-            .lock(|data_manager| (data_manager.sbg.clone(), data_manager.sbg_short.clone()));
+            .lock(|data_manager| data_manager.clone_sensors());
 
-        let message_radio =
-            data_long_sbg.map(|x| Message::new(&monotonics::now(), COM_ID, Sensor::new(9, x)));
-
-        let message_can =
-            data_short_sbg.map(|x| Message::new(&monotonics::now(), COM_ID, Sensor::new(9, x)));
+        let messages = sensor_data
+            .into_iter()
+            .flatten()
+            .map(|x| Message::new(&monotonics::now(), COM_ID, Sensor::new(x)));
 
         cx.shared.em.run(|| {
-            if let Some(msg) = message_radio {
-                spawn!(send_gs, msg)?;
-            }
+            for msg in messages {
+                spawn!(send_gs, msg.clone())?;
 
-            if let Some(msg) = message_can {
                 spawn!(send_internal, msg)?;
             }
 
@@ -270,7 +267,10 @@ mod app {
     }
 
     extern "Rust" {
-        #[task(binds = DMAC_0, shared = [data_manager, &em], local = [sbg_manager])]
+        #[task(binds = DMAC_0, shared = [&em], local = [sbg_manager])]
         fn sbg_dma(context: sbg_dma::Context);
+
+        #[task(capacity = 20, shared = [data_manager])]
+        fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
     }
 }

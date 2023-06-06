@@ -8,10 +8,11 @@ use atsamd_hal::pac::{MCLK, RTC};
 use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;
 
+use crate::app::sbg_handle_data;
 use atsamd_hal::sercom::{uart, Sercom, Sercom0};
 use rtic::Mutex;
 use sbg_rs::sbg;
-use sbg_rs::sbg::{SBG, SBG_BUFFER_SIZE};
+use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
 
 pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
@@ -57,7 +58,9 @@ impl SBGManager {
         let mut rtc = rtc_temp.into_count32_mode();
         rtc.set_count32(0);
 
-        let sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc);
+        let sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc, |data| {
+            sbg_handle_data::spawn(data).ok();
+        });
 
         SBGManager {
             sbg_device: sbg,
@@ -67,12 +70,23 @@ impl SBGManager {
     }
 }
 
+pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
+    cx.shared.data_manager.lock(|manager| match data {
+        CallbackData::UtcTime(x) => manager.utc_time = Some(x),
+        CallbackData::Air(x) => manager.air = Some(x),
+        CallbackData::EkfQuat(x) => manager.ekf_quat = Some(x),
+        CallbackData::EkfNav(x) => manager.ekf_nav = Some(x),
+        CallbackData::Imu(x) => manager.imu = Some(x),
+        CallbackData::GpsVel(x) => manager.gps_vel = Some(x),
+    });
+}
+
 /**
  * Handles the DMA interrupt.
  * Handles the SBG data.
  * Logs data to the SD card.
  */
-pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
+pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
     let sbg = cx.local.sbg_manager;
 
     if sbg.xfer.complete() {
@@ -88,12 +102,8 @@ pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
                 }
             };
 
-            cx.shared.data_manager.lock(|data_manager| {
-                let (sbg_long_data, sbg_short_data) = sbg.sbg_device.read_data(buf);
+            sbg.sbg_device.read_data(buf);
 
-                data_manager.sbg = Some(sbg_long_data);
-                data_manager.sbg_short = Some(sbg_short_data);
-            });
             Ok(())
         });
     }
