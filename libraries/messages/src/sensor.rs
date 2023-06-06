@@ -17,6 +17,7 @@ pub struct Sensor {
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub enum SensorData {
+    Sbg(Sbg),
     SbgEkf(SbgEkf),
     SbgNav(SbgNav),
 }
