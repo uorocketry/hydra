@@ -21,7 +21,7 @@ use ts_rs::TS;
 pub mod sender;
 pub mod sensor;
 
-pub const MAX_SIZE: usize = 64;
+pub const MAX_SIZE: usize = 85;
 
 /// Topmost message. Encloses all the other possible messages, and is the only thing that should
 /// be sent over the wire.
