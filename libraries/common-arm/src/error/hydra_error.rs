@@ -84,7 +84,6 @@ impl<T, E> SpawnError for Result<T, E> {
     fn spawn_error(self, task: &'static str) -> Result<(), HydraError> {
         match self {
             Ok(_) => Ok(()),
-            // Err(_) => Err(HydraError::SpawnError(task)),
             Err(_) => Err(HydraError {
                 error: HydraErrorType::SpawnError(task),
                 context: None,
@@ -108,14 +107,14 @@ where
 
 /// Trait to allow converting some errors to a HydraError, while also adding a ErrorContext to it.
 pub trait ErrorContextTrait<T> {
-    fn context(self, context: ErrorContext) -> Result<T, HydraError>;
+    fn error_context(self, context: ErrorContext) -> Result<T, HydraError>;
 }
 
 impl<T, E> ErrorContextTrait<T> for Result<T, E>
 where
     E: Into<HydraErrorType>,
 {
-    fn context(self, context: ErrorContext) -> Result<T, HydraError> {
+    fn error_context(self, context: ErrorContext) -> Result<T, HydraError> {
         self.map_err(|e| HydraError {
             error: e.into(),
             context: Some(context),

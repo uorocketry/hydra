@@ -53,9 +53,8 @@ impl HydraLogging {
         // SAFETY:
         // Since the static mut should only be written once during init and never after, reading
         // this variable is fine.
-        match unsafe { GROUND_STATION_CALLBACK } {
-            Some(x) => x(Log::new(level, event)),
-            None => {}
+        if let Some(x) = unsafe { GROUND_STATION_CALLBACK } {
+            x(Log::new(level, event))
         }
     }
 }
