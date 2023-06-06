@@ -1,3 +1,5 @@
+/// All events need to implement both the [`core::fmt::Display`] trait and the [`defmt::Format`]
+/// trait. Since they are both similar to implement, this macro helps with this task.
 macro_rules! display_event {
     ($( [$e:ident, $s:literal$(,)? $( $p:ident ),* ] ),*) => {
         impl core::fmt::Display for Event {
@@ -22,6 +24,8 @@ macro_rules! display_event {
     };
 }
 
+/// All errors need to implement both the [`core::fmt::Display`] trait and the [`defmt::Format`]
+/// trait. Since they are both similar to implement, this macro helps with this task.
 macro_rules! display_context {
     ($( [$e:ident, $s:literal] ),*) => {
         impl core::fmt::Display for ErrorContext {
