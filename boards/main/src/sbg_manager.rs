@@ -115,29 +115,37 @@ pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
     }
 }
 
+/// Stored right before an allocation. Stores information that is needed to deallocate memory.
 #[derive(Copy, Clone)]
 struct AllocInfo {
     layout: Layout,
     ptr: *mut u8,
 }
 
+/// Custom malloc for the SBG library. This uses the HEAP object initialized at the start of the
+/// [`SBGManager`]. The [`Layout`] of the allocation is stored right before the returned pointed,
+/// which makes it possible to implement [`free`] without any other data structures.
 #[no_mangle]
 pub extern "C" fn malloc(size: usize) -> *mut c_void {
     if size == 0 {
         return ptr::null_mut();
     }
 
+    // Get a layout for both the requested size
     let header_layout = Layout::new::<AllocInfo>();
     let requested_layout = Layout::from_size_align(size, 8).unwrap();
     let (layout, offset) = header_layout.extend(requested_layout).unwrap();
 
+    // Ask the allocator for memory
     let orig_ptr = unsafe { HEAP.alloc(layout) };
     if orig_ptr.is_null() {
         return orig_ptr as *mut c_void;
     }
 
+    // Compute the pointer that we will return
     let result_ptr = unsafe { orig_ptr.add(offset) };
 
+    // Store the allocation information right before the returned pointer
     let info_ptr = unsafe { result_ptr.sub(size_of::<AllocInfo>()) as *mut AllocInfo };
     unsafe {
         info_ptr.write_unaligned(AllocInfo {
@@ -149,6 +157,10 @@ pub extern "C" fn malloc(size: usize) -> *mut c_void {
     result_ptr as *mut c_void
 }
 
+/// Custom free implementation for the SBG library. This uses the stored allocation information
+/// right before the pointer to free up the resources.
+///
+/// SAFETY: The value passed to ptr must have been obtained from a previous call to [`malloc`].
 #[no_mangle]
 pub unsafe extern "C" fn free(ptr: *mut c_void) {
     assert!(!ptr.is_null());
