@@ -89,10 +89,11 @@ pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
             };
 
             cx.shared.data_manager.lock(|data_manager| {
-                let (sbg_long_data, sbg_short_data) = sbg.sbg_device.read_data(buf);
+                let (sbg_long_data, sbg_nav_data, sbg_ekf_data) = sbg.sbg_device.read_data(buf);
 
                 data_manager.sbg = Some(sbg_long_data);
-                data_manager.sbg_short = Some(sbg_short_data);
+                data_manager.sbg_nav = Some(sbg_nav_data);
+                data_manager.sbg_ekf = Some(sbg_ekf_data);
             });
             Ok(())
         });

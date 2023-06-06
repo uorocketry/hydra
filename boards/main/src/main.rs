@@ -218,23 +218,37 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (data_long_sbg, data_short_sbg) = cx
+        let (data_nav_sbg, data_ekf_sbg) = cx
             .shared
             .data_manager
-            .lock(|data_manager| (data_manager.sbg.clone(), data_manager.sbg_short.clone()));
+            .lock(|data_manager| (data_manager.sbg_nav.clone(), data_manager.sbg_ekf.clone()));
 
-        let message_radio =
-            data_long_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
+        let message_radio_nav =
+            data_nav_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
 
-        let message_can =
-            data_short_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
+        let message_radio_ekf =
+            data_ekf_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
+
+        let message_can_nav =
+            data_nav_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
+
+        let message_can_ekf =
+            data_ekf_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
 
         cx.shared.em.run(|| {
-            if let Some(msg) = message_radio {
+            if let Some(msg) = message_radio_nav {
                 spawn!(send_gs, msg)?;
             }
 
-            if let Some(msg) = message_can {
+            if let Some(msg) = message_radio_ekf {
+                spawn!(send_gs, msg)?;
+            }
+
+            if let Some(msg) = message_can_nav {
+                spawn!(send_internal, msg)?;
+            }
+
+            if let Some(msg) = message_can_ekf {
                 spawn!(send_internal, msg)?;
             }
 

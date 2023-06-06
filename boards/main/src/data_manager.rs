@@ -1,15 +1,17 @@
-use messages::sensor::{Sbg, SbgShort};
+use messages::sensor::{Sbg, SbgEkf, SbgNav};
 
 pub struct DataManager {
     pub sbg: Option<Sbg>,
-    pub sbg_short: Option<SbgShort>,
+    pub sbg_nav: Option<SbgNav>,
+    pub sbg_ekf: Option<SbgEkf>,
 }
 
 impl DataManager {
     pub fn new() -> Self {
         Self {
             sbg: None,
-            sbg_short: None,
+            sbg_nav: None,
+            sbg_ekf: None,
         }
     }
 }
