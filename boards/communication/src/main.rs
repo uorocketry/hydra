@@ -3,8 +3,6 @@
 
 mod communication;
 mod data_manager;
-mod sbg_manager;
-mod sd_manager;
 mod types;
 
 use atsamd_hal as hal;
@@ -14,6 +12,7 @@ use atsamd_hal::dmac::DmaController;
 use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
+use communication::RadioDevice;
 use data_manager::DataManager;
 use hal::dmac;
 use hal::gpio::Pins;
@@ -25,9 +24,6 @@ use messages::sender::Sender::LogicBoard;
 use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
-use sbg_manager::sbg_dma;
-use sbg_manager::SBGManager;
-use sd_manager::SdManager;
 use systick_monotonic::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
@@ -44,8 +40,7 @@ mod app {
     #[local]
     struct Local {
         led: Pin<PA14, PushPullOutput>,
-        sd_manager: SdManager,
-        sbg_manager: SBGManager,
+        radio: RadioDevice,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -59,9 +54,6 @@ mod app {
         let mut peripherals = cx.device;
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
-
-        let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
-        let dmaChannels = dmac.split();
 
         /* Clock setup */
         let (_, clocks, tokens) = atsamd_hal::clock::v2::clock_system_at_reset(
@@ -90,37 +82,20 @@ mod app {
             false,
         );
 
-        /* SD config */
-        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom1, gclk0);
-        let sd_manager = SdManager::new(
+        /* Radio config */
+        let (radio, gclk0) = RadioDevice::new(
+            tokens.pclks.sercom5,
             &mclk,
-            peripherals.SERCOM1,
-            pclk_sd.freq(),
-            pins.pa18.into_push_pull_output(),
-            pins.pa17.into_push_pull_output(),
-            pins.pa19.into_push_pull_output(),
-            pins.pa16.into_push_pull_output(),
-        );
-
-        /* SBG config */
-        let (pclk_sbg, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
-        let dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
-        let sbg_manager = SBGManager::new(
-            pins.pa09,
-            pins.pa08,
-            pclk_sbg,
-            &mut mclk,
-            peripherals.SERCOM0,
-            peripherals.RTC,
-            dmaCh0,
+            peripherals.SERCOM5,
+            pins.pb17,
+            pins.pb16,
+            gclk0,
         );
 
         /* Status LED */
         let led = pins.pa14.into_push_pull_output();
 
         /* Spawn tasks */
-        state_send::spawn().ok();
-        sensor_send::spawn().ok();
         blink::spawn().ok();
 
         /* Monotonic clock */
@@ -134,8 +109,7 @@ mod app {
             },
             Local {
                 led,
-                sd_manager,
-                sbg_manager,
+                radio,
             },
             init::Monotonics(mono),
         )
@@ -151,7 +125,8 @@ mod app {
     #[task(priority = 3, binds = CAN0, shared = [can0])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
-            can.process_data();
+            // can.process_data();
+            // send data to the send_gs task
         });
     }
 
@@ -165,54 +140,16 @@ mod app {
             Ok(())
         });
     }
-    
-    /**
-     * Sends the state of the system.
-     */
-    #[task(shared = [&em])]
-    fn state_send(cx: state_send::Context) {
-        let em = cx.shared.em;
-        let state = messages::State {
-            status: messages::Status::Running,
-            has_error: em.has_error(),
-            voltage: 12.1,
-        };
-
-        let message = Message::new(&monotonics::now(), LogicBoard, state);
-
-        cx.shared.em.run(|| {
-            spawn!(send_internal, message)?;
-            Ok(())
-        });
-
-        spawn_after!(state_send, 5.secs()).ok();
-    }
 
     /**
-     * Sends information about the sensors.
+     * Sends a message to the radio over UART.
      */
-    #[task(shared = [data_manager, &em])]
-    fn sensor_send(mut cx: sensor_send::Context) {
-        let (data_long_sbg, data_short_sbg) = cx
-            .shared
-            .data_manager
-            .lock(|data_manager| (data_manager.sbg.clone(), data_manager.sbg_short.clone()));
-
-        let message_radio =
-            data_long_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
-
-        let message_can =
-            data_short_sbg.map(|x| Message::new(&monotonics::now(), LogicBoard, Sensor::new(9, x)));
-
+    #[task(capacity = 10, local = [radio], shared = [&em])]
+    fn send_gs(cx: send_gs::Context, m: Message) {
         cx.shared.em.run(|| {
-
-            if let Some(msg) = message_can {
-                spawn!(send_internal, msg)?;
-            }
-
+            cx.local.radio.send_message(m)?;
             Ok(())
         });
-        spawn_after!(sensor_send, 2.secs()).ok();
     }
 
     /**
@@ -230,10 +167,5 @@ mod app {
             }
             Ok(())
         });
-    }
-
-    extern "Rust" {
-        #[task(binds = DMAC_0, shared = [data_manager, &em], local = [sbg_manager])]
-        fn sbg_dma(context: sbg_dma::Context);
     }
 }

@@ -190,3 +190,61 @@ impl CanDevice0 {
         }
     }
 }
+
+pub struct RadioDevice {
+    uart: Uart<GroundStationUartConfig, Duplex>,
+    mav_sequence: u8,
+}
+
+impl RadioDevice {
+    pub fn new<S>(
+        radio_token: PclkToken<SERCOM5>,
+        mclk: &MCLK,
+        sercom: SERCOM5,
+        rx_pin: Pin<PB17, Disabled<Floating>>,
+        tx_pin: Pin<PB16, Disabled<Floating>>,
+        gclk0: S,
+    ) -> (Self, S::Inc)
+    where
+        S: Source<Id = Gclk0Id> + Increment,
+    {
+        let (pclk_radio, gclk0) = Pclk::enable(radio_token, gclk0);
+        let pads = uart::Pads::<sercom::Sercom5, _>::default()
+            .rx(rx_pin)
+            .tx(tx_pin);
+        let uart = GroundStationUartConfig::new(mclk, sercom, pads, pclk_radio.freq())
+            .baud(
+                57600.hz(),
+                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+            )
+            .enable();
+        (
+            RadioDevice {
+                uart,
+                mav_sequence: 0,
+            },
+            gclk0,
+        )
+    }
+    pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
+        let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
+
+        let mav_header = mavlink::MavHeader {
+            system_id: 1,
+            component_id: 1,
+            sequence: self.mav_sequence.wrapping_add(1),
+        };
+
+        let mav_message = mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(
+            mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: payload },
+        );
+
+        mavlink::write_versioned_msg(
+            &mut self.uart,
+            mavlink::MavlinkVersion::V2,
+            mav_header,
+            &mav_message,
+        )?;
+        Ok(())
+    }
+}
