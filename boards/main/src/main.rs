@@ -208,7 +208,6 @@ mod app {
         let state = messages::State {
             status: messages::Status::Running,
             has_error: em.has_error(),
-            voltage: 12.1,
         };
 
         let message = Message::new(&monotonics::now(), COM_ID, state);

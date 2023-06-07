@@ -1,6 +1,7 @@
 use heapless::spsc::Queue;
 use messages::sensor::SbgShort;
 use messages::Message;
+use crate::state_machine::RocketStates;
 
 const MAIN_HEIGHT: f64 = 450.0;
 const ACCEL_MIN: f64 = 20.0;
@@ -8,6 +9,7 @@ const ACCEL_MIN: f64 = 20.0;
 pub struct DataManager {
     pub sbg_short: Option<SbgShort>,
     pub historical_pressure: Queue<f32, 8>, // probably want to make this a ring buffer
+    pub current_state: Option<RocketStates>,
 }
 
 impl DataManager {
@@ -16,6 +18,7 @@ impl DataManager {
         Self {
             sbg_short: None,
             historical_pressure,
+            current_state: None,
         }
     }
     pub fn get_accel_y(&self) -> f32 {

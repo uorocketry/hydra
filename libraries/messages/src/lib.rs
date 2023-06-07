@@ -64,6 +64,18 @@ pub enum Status {
     Running,
 }
 
+#[derive(Serialize, Deserialize, Debug, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub enum States {
+    Initializing,
+    WaitForTakeoff,
+    Ascent,
+    Apogee,
+    Landed,
+    Abort,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
@@ -71,7 +83,6 @@ pub enum Status {
 pub struct State {
     pub status: Status,
     pub has_error: bool,
-    pub voltage: f32,
 }
 
 impl Message {

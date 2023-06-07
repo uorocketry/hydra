@@ -14,14 +14,15 @@ use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
-use types::GPIOController;
-use state_machine::{StateMachine, StateMachineContext};
-use hal::gpio::{PA14, Pins, Pin, PushPullOutput};
+use hal::gpio::{Pin, Pins, PushPullOutput, PA14};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
+use messages::sender::Sender::RecoveryBoard;
 use messages::*;
 use panic_halt as _;
+use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
+use types::GPIOController;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -85,7 +86,10 @@ mod app {
 
         /* GPIO config */
         let led = pins.pa14.into_push_pull_output();
-        let gpio = GPIOController::new(pins.pa18.into_push_pull_output(), pins.pa19.into_push_pull_output());
+        let gpio = GPIOController::new(
+            pins.pa18.into_push_pull_output(),
+            pins.pa19.into_push_pull_output(),
+        );
         /* State Machine config */
         let state_machine = StateMachine::new();
 
@@ -103,10 +107,7 @@ mod app {
                 can0,
                 gpio,
             },
-            Local {
-                led,
-                state_machine,
-            },
+            Local { led, state_machine },
             init::Monotonics(mono),
         )
     }
@@ -128,7 +129,9 @@ mod app {
     #[task(priority = 3, binds = CAN0, shared = [can0, data_manager])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
-            cx.shared.data_manager.lock(|data_manager| can.process_data(data_manager));
+            cx.shared
+                .data_manager
+                .lock(|data_manager| can.process_data(data_manager));
         });
     }
 
@@ -146,22 +149,22 @@ mod app {
     /**
      * Sends the state of the system.
      */
-    #[task(shared = [&em])]
-    fn state_send(_cx: state_send::Context) {
+    #[task(shared = [data_manager, &em])]
+    fn state_send(mut cx: state_send::Context) {
         // let em = cx.shared.em;
-        // let state = messages::State {
-        //     status: messages::Status::Running,
-        //     has_error: em.has_error(),
-        //     voltage: 12.1,
-        // };
-
-        // let message = Message::new(&monotonics::now(), LogicBoard, state);
-
-        // cx.shared.em.run(|| {
-        //     spawn!(send_gs, message.clone())?;
+        // if let Some(status) = cx
+        //     .shared
+        //     .data_manager
+        //     .lock(|data_manager| data_manager.current_state)
+        // {
+        //     // TODO: uncomment this when we have states defined in the messages crate. 
+        //     let state = messages::State {
+        //         status.into(),
+        //         has_error: em.has_error(),
+        //     };
+        //     let message = Message::new(&monotonics::now(), RecoveryBoard, state);
         //     spawn!(send_internal, message)?;
-        //     Ok(())
-        // });
+        // }
 
         spawn_after!(state_send, 5.secs()).ok();
     }

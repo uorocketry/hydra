@@ -1,6 +1,7 @@
 mod black_magic;
 mod states;
 
+use messages::States;
 use crate::communication::CanDevice0;
 use crate::data_manager::DataManager;
 use crate::state_machine::states::*;
@@ -72,4 +73,19 @@ pub enum RocketStates {
     Apogee,
     Landed,
     Abort,
+}
+
+// Not ideal, but it works for now.
+// Should be able to put this is a shared library, but as of now, I can't figure out how to do that.
+impl From<States> for RocketStates {
+    fn from(state: messages::States) -> Self {
+        match state {
+            States::Initializing => RocketStates::Initializing(Initializing {}),
+            States::WaitForTakeoff => RocketStates::WaitForTakeoff(WaitForTakeoff {}),
+            States::Ascent => RocketStates::Ascent(Ascent {}),
+            States::Apogee => RocketStates::Apogee(Apogee {}),
+            States::Landed => RocketStates::Landed(Landed {}),
+            States::Abort => RocketStates::Abort(Abort {}),
+        }
+    }
 }
