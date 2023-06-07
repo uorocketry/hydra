@@ -29,6 +29,7 @@ mod logging;
 pub mod sender;
 pub mod sensor;
 pub mod state;
+pub mod sensor_status;
 
 pub const MAX_SIZE: usize = 64;
 

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(test)]
 use proptest_derive::Arbitrary;
 
+use crate::sensor_status::EkfStatus;
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
@@ -174,7 +175,7 @@ pub struct EkfQuat {
     #[doc = "< Roll, Pitch and Yaw angles 1 sigma standard deviation in rad."]
     pub euler_std_dev: [f32; 3usize],
     #[doc = "< EKF solution status bitmask and enum."]
-    pub status: u32,
+    pub status: EkfStatus,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
@@ -202,7 +203,7 @@ pub struct EkfNav2 {
     #[doc = "< Latitude, longitude and altitude 1 sigma standard deviation in meters."]
     pub position_std_dev: [f32; 3usize],
     #[doc = "< EKF solution status bitmask and enum."]
-    pub status: u32,
+    pub status: EkfStatus,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]

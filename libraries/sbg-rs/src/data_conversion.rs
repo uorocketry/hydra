@@ -2,33 +2,8 @@ use crate::bindings::{
     SbgLogAirData, SbgLogEkfNavData, SbgLogEkfQuatData, SbgLogGpsPos, SbgLogGpsVel, SbgLogImuData,
     SbgLogUtcData,
 };
-use messages::sensor::{
-    Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, UtcTime,
-};
-
-impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2) {
-    fn from(value: SbgLogGpsPos) -> Self {
-        (
-            GpsPos1 {
-                time_stamp: value.timeStamp,
-                status: value.status,
-                time_of_week: value.timeOfWeek,
-                latitude: value.latitude,
-                longitude: value.longitude,
-                altitude: value.altitude,
-                undulation: value.undulation,
-            },
-            GpsPos2 {
-                latitude_accuracy: value.latitudeAccuracy,
-                longitude_accuracy: value.longitudeAccuracy,
-                altitude_accuracy: value.altitudeAccuracy,
-                num_sv_used: value.numSvUsed,
-                base_station_id: value.baseStationId,
-                differential_age: value.differentialAge,
-            },
-        )
-    }
-}
+use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
+use messages::sensor_status::EkfStatus;
 
 impl From<SbgLogUtcData> for UtcTime {
     fn from(value: SbgLogUtcData) -> Self {
@@ -67,7 +42,7 @@ impl From<SbgLogEkfQuatData> for EkfQuat {
             time_stamp: value.timeStamp,
             quaternion: value.quaternion,
             euler_std_dev: value.eulerStdDev,
-            status: value.status,
+            status: EkfStatus::new(value.status),
         }
     }
 }
@@ -84,7 +59,7 @@ impl From<SbgLogEkfNavData> for (EkfNav1, EkfNav2) {
                 position: value.position,
                 undulation: value.undulation,
                 position_std_dev: value.positionStdDev,
-                status: value.status,
+                status: EkfStatus::new(value.status),
             },
         )
     }
