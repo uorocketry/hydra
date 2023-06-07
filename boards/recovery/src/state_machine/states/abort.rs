@@ -2,7 +2,7 @@ use crate::state_machine::states::initializing::Initializing;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use defmt::{write, Format, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Abort {}
 
 impl State for Abort {

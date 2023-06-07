@@ -1,5 +1,14 @@
 use atsamd_hal::gpio::{PA18, PA19, Pin, PushPullOutput};
 use atsamd_hal::prelude::*;
+use messages::sender::Sender;
+use messages::sender::Sender::RecoveryBoard;
+
+// -------
+// Sender ID
+// -------
+pub static COM_ID: Sender = RecoveryBoard;
+
+
 pub struct GPIOController {
     drogue_ematch: Pin<PA18, PushPullOutput>,
     main_ematch: Pin<PA19, PushPullOutput>,

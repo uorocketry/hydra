@@ -54,20 +54,21 @@ pub enum Data {
     Log(Log),
 }
 
+// #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+// #[cfg_attr(test, derive(Arbitrary))]
+// #[cfg_attr(feature = "ts", derive(TS))]
+// #[cfg_attr(feature = "ts", ts(export))]
+// pub enum Status {
+//     Uninitialized,
+//     Initializing,
+//     Running,
+// }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub enum Status {
-    Uninitialized,
-    Initializing,
-    Running,
-}
-
-#[derive(Serialize, Deserialize, Debug, Format)]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
-pub enum States {
     Initializing,
     WaitForTakeoff,
     Ascent,

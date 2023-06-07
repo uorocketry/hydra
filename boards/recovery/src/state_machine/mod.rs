@@ -1,12 +1,13 @@
 mod black_magic;
 mod states;
 
-use messages::States;
+use messages::Status;
 use crate::communication::CanDevice0;
 use crate::data_manager::DataManager;
 use crate::state_machine::states::*;
 use crate::GPIOController;
 pub use black_magic::*;
+pub use states::Initializing;
 use core::fmt::Debug;
 use defmt::Format;
 use enum_dispatch::enum_dispatch;
@@ -65,7 +66,7 @@ pub enum RocketEvents {
 // All states are defined here. Another struct must be defined for the actual state, and that struct
 // must implement the State trait
 #[enum_dispatch(State)]
-#[derive(Debug, Format)]
+#[derive(Debug, Format, Clone)]
 pub enum RocketStates {
     Initializing,
     WaitForTakeoff,
@@ -77,15 +78,28 @@ pub enum RocketStates {
 
 // Not ideal, but it works for now.
 // Should be able to put this is a shared library, but as of now, I can't figure out how to do that.
-impl From<States> for RocketStates {
-    fn from(state: messages::States) -> Self {
+impl From<Status> for RocketStates {
+    fn from(state: messages::Status) -> Self {
         match state {
-            States::Initializing => RocketStates::Initializing(Initializing {}),
-            States::WaitForTakeoff => RocketStates::WaitForTakeoff(WaitForTakeoff {}),
-            States::Ascent => RocketStates::Ascent(Ascent {}),
-            States::Apogee => RocketStates::Apogee(Apogee {}),
-            States::Landed => RocketStates::Landed(Landed {}),
-            States::Abort => RocketStates::Abort(Abort {}),
+            Status::Initializing => RocketStates::Initializing(Initializing {}),
+            Status::WaitForTakeoff => RocketStates::WaitForTakeoff(WaitForTakeoff {}),
+            Status::Ascent => RocketStates::Ascent(Ascent {}),
+            Status::Apogee => RocketStates::Apogee(Apogee {}),
+            Status::Landed => RocketStates::Landed(Landed {}),
+            Status::Abort => RocketStates::Abort(Abort {}),
+        }
+    }
+}
+
+impl Into<Status> for RocketStates {
+    fn into(self) -> Status {
+        match self {
+            RocketStates::Initializing(_) => Status::Initializing,
+            RocketStates::WaitForTakeoff(_) => Status::WaitForTakeoff,
+            RocketStates::Ascent(_) => Status::Ascent,
+            RocketStates::Apogee(_) => Status::Apogee,
+            RocketStates::Landed(_) => Status::Landed,
+            RocketStates::Abort(_) => Status::Abort,
         }
     }
 }

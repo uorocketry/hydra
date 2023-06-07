@@ -1,12 +1,10 @@
 use super::Ascent;
 use crate::state_machine::{Landed, RocketStates, State, StateMachineContext, TransitionInto};
-
 use crate::{no_transition, transition};
-
 use rtic::mutex::Mutex;
 use defmt::{write, Format, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Apogee {}
 
 impl State for Apogee {

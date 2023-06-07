@@ -5,7 +5,7 @@ use crate::{no_transition, transition};
 use rtic::mutex::Mutex;
 use defmt::{write, Format, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WaitForTakeoff {}
 
 impl State for WaitForTakeoff {

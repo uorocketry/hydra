@@ -17,12 +17,13 @@ use data_manager::DataManager;
 use hal::gpio::{Pin, Pins, PushPullOutput, PA14};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
-use messages::sender::Sender::RecoveryBoard;
 use messages::*;
 use panic_halt as _;
 use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
 use types::GPIOController;
+use types::COM_ID;
+use crate::state_machine::RocketStates;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -151,22 +152,23 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
-        // let em = cx.shared.em;
-        // if let Some(status) = cx
-        //     .shared
-        //     .data_manager
-        //     .lock(|data_manager| data_manager.current_state)
-        // {
-        //     // TODO: uncomment this when we have states defined in the messages crate. 
-        //     let state = messages::State {
-        //         status.into(),
-        //         has_error: em.has_error(),
-        //     };
-        //     let message = Message::new(&monotonics::now(), RecoveryBoard, state);
-        //     spawn!(send_internal, message)?;
-        // }
-
-        spawn_after!(state_send, 5.secs()).ok();
+        let em_error = cx.shared.em.has_error();
+        cx.shared.em.run(|| {
+            let rocket_state = cx.shared.data_manager.lock(|data| data.current_state.clone());
+            let state = if let Some(rocket_state) = rocket_state {
+                rocket_state
+            } else {
+                RocketStates::Initializing(state_machine::Initializing {})
+            };
+            let board_state = messages::State {
+                status: state.into(),
+                has_error: em_error,
+            };
+            let message = Message::new(&monotonics::now(), COM_ID, board_state);
+            spawn!(send_internal, message)?;  
+            spawn_after!(state_send, 5.secs())?;
+            Ok(())
+        })
     }
 
     /**

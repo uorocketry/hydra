@@ -5,7 +5,7 @@ use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionI
 use rtic::mutex::Mutex;
 use super::Apogee;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Landed {}
 
 impl State for Landed {

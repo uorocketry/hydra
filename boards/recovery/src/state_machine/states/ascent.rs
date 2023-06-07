@@ -1,14 +1,11 @@
-
-
 use crate::state_machine::states::apogee::Apogee;
 use crate::state_machine::states::wait_for_takeoff::WaitForTakeoff;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
 use defmt::{write, Format, Formatter};
-
 use rtic::mutex::Mutex;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ascent {}
 
 impl State for Ascent {

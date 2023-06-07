@@ -4,7 +4,7 @@ use crate::state_machine::states::wait_for_takeoff::WaitForTakeoff;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::transition;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Initializing {}
 
 impl State for Initializing {

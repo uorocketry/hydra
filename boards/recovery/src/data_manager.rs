@@ -86,11 +86,10 @@ impl DataManager {
                 messages::sensor::SensorData::UtcTime(utc_time_data) => {
                     self.sbg_utc_time = Some(utc_time_data);
                 },
-                _ => {}
             },
-            messages::Data::State(state) => {
-                // handle state logic
-            },
+            // messages::Data::State(state) => {
+            //     // handle state logic
+            // },
             _ => {}
         }
     }
