@@ -1,15 +1,15 @@
 use crate::bindings::{
     self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO,
     _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
-    _SbgEComLog_SBG_ECOM_LOG_EKF_NAV, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+    _SbgEComLog_SBG_ECOM_LOG_EKF_NAV, _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL,
+    _SbgEComLog_SBG_ECOM_LOG_UTC_TIME, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
     _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_READ_ERROR,
     _SbgErrorCode_SBG_WRITE_ERROR, sbgEComCmdOutputSetConf, sbgEComHandle,
 };
 use crate::bindings::{
     _SbgBinaryLogData, _SbgDebugLogType, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComHandle,
-    _SbgEComLog_SBG_ECOM_LOG_EKF_EULER, _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT,
-    _SbgEComLog_SBG_ECOM_LOG_IMU_DATA, _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol,
-    _SbgErrorCode, _SbgInterface,
+    _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA,
+    _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol, _SbgErrorCode, _SbgInterface,
 };
 use atsamd_hal as hal;
 use core::ffi::{c_void, CStr};
@@ -22,7 +22,8 @@ use hal::gpio::{PA08, PA09, PB16, PB17};
 use hal::sercom::uart::Duplex;
 use hal::sercom::uart::{self, EightBit, Uart};
 use hal::sercom::{IoSet1, Sercom0, Sercom5};
-use messages::sensor::{Sbg, SbgShort};
+use messages::sensor::*;
+
 type Pads = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
@@ -39,35 +40,23 @@ static mut BUF_INDEX: AtomicUsize = AtomicUsize::new(0);
 /**
  * Points to the buffer that is currently being used.
  */
-static mut BUF: &'static [u8; SBG_BUFFER_SIZE] = &[0; SBG_BUFFER_SIZE];
+static mut BUF: &[u8; SBG_BUFFER_SIZE] = &[0; SBG_BUFFER_SIZE];
 
 /**
  * Holds the RTC instance. This is used to get the current time.
  */
 static mut RTC: Option<hal::rtc::Rtc<hal::rtc::Count32Mode>> = None;
 
-/**
- * Holds the latest SBG data that was received.
- */
-static mut DATA: Sbg = Sbg {
-    accel_x: 0.0,
-    accel_y: 0.0,
-    accel_z: 0.0,
-    velocity_n: 0.0,
-    velocity_e: 0.0,
-    velocity_d: 0.0,
-    quant_w: 0.0,
-    quant_x: 0.0,
-    quant_y: 0.0,
-    quant_z: 0.0,
-    pressure: 0.0,
-    height: 0.0,
-    roll: 0.0,
-    yaw: 0.0,
-    pitch: 0.0,
-    latitude: 0.0,
-    longitude: 0.0,
-};
+static mut DATA_CALLBACK: Option<fn(CallbackData)> = None;
+
+pub enum CallbackData {
+    UtcTime(UtcTime),
+    Air(Air),
+    EkfQuat(EkfQuat),
+    EkfNav((EkfNav1, EkfNav2)),
+    Imu((Imu1, Imu2)),
+    GpsVel(GpsVel),
+}
 
 struct UARTSBGInterface {
     interface: *mut bindings::SbgInterface,
@@ -88,6 +77,7 @@ impl SBG {
     pub fn new(
         mut serial_device: Uart<Config, uart::TxDuplex>,
         rtc: hal::rtc::Rtc<hal::rtc::Count32Mode>,
+        callback: fn(CallbackData),
     ) -> Self {
         // SAFETY: We are accessing a static variable.
         // This is safe because we are the only ones who have access to it.
@@ -135,7 +125,11 @@ impl SBG {
             numTrials: 3,
             cmdDefaultTimeOut: 500,
         };
+
+        unsafe { DATA_CALLBACK = Some(callback) }
+
         let isInitialized = false;
+
         SBG {
             UARTSBGInterface: interface,
             serial_device,
@@ -152,7 +146,7 @@ impl SBG {
     /**
      * Reads SBG data frames for a buffer and returns the most recent data.
      */
-    pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) -> (Sbg, SbgShort) {
+    pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
         unsafe { BUF = buffer };
@@ -166,10 +160,6 @@ impl SBG {
         unsafe {
             sbgEComHandle(&mut self.handle);
         }
-        // SAFETY: We are cloning a static variable.
-        // This is safe because DATA cannot be modified by other tasks while SBG is locked.
-        let data = unsafe { DATA.clone() }; // Probably inefficient to clone twice, but using into is more portable.
-        (data.clone(), data.into())
     }
 
     /**
@@ -183,7 +173,37 @@ impl SBG {
     pub fn setup(&mut self) -> u32 {
         // SAFETY: We are calling a C function.
         // This is safe because it is assumed the SBG library is safe.
-        let mut errorCode: _SbgErrorCode = unsafe {
+        let errorCode: _SbgErrorCode = unsafe {
+            sbgEComCmdOutputSetConf(
+                &mut self.handle,
+                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+                _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+            )
+        };
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+            warn!("Unable to configure UTC Time logs to 40 cycles");
+        }
+
+        // SAFETY: We are calling a C function.
+        // This is safe because it is assumed the SBG library is safe.
+        let errorCode: _SbgErrorCode = unsafe {
+            sbgEComCmdOutputSetConf(
+                &mut self.handle,
+                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+                _SbgEComLog_SBG_ECOM_LOG_UTC_TIME,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+            )
+        };
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+            warn!("Unable to configure UTC Time logs to 40 cycles");
+        }
+
+        // SAFETY: We are calling a C function.
+        // This is safe because it is assumed the SBG library is safe.
+        let errorCode: _SbgErrorCode = unsafe {
             sbgEComCmdOutputSetConf(
                 &mut self.handle,
                 _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
@@ -195,24 +215,10 @@ impl SBG {
         if errorCode != _SbgErrorCode_SBG_NO_ERROR {
             warn!("Unable to configure Air Data logs to 40 cycles");
         }
-        // SAFETY: We are calling a C function.
-        // This is safe because it is assumed the SBG library is safe.
 
-        errorCode = unsafe {
-            sbgEComCmdOutputSetConf(
-                &mut self.handle,
-                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
-                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
-                _SbgEComLog_SBG_ECOM_LOG_EKF_EULER,
-                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
-            )
-        };
-        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-            warn!("Unable to configure EKF Euler logs to 40 cycles");
-        }
         // SAFETY: We are calling a C function.
         // This is safe because it is assumed the SBG library is safe.
-        errorCode = unsafe {
+        let errorCode = unsafe {
             sbgEComCmdOutputSetConf(
                 &mut self.handle,
                 _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
@@ -222,11 +228,11 @@ impl SBG {
             )
         };
         if errorCode != _SbgErrorCode_SBG_NO_ERROR {
-            warn!("Unable to configure EKF Euler logs to 40 cycles");
+            warn!("Unable to configure EKF Quat logs to 40 cycles");
         }
         // SAFETY: We are calling a C function.
         // This is safe because it is assumed the SBG library is safe.
-        errorCode = unsafe {
+        let errorCode = unsafe {
             sbgEComCmdOutputSetConf(
                 &mut self.handle,
                 _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
@@ -240,7 +246,7 @@ impl SBG {
         }
         // SAFETY: We are calling a C function.
         // This is safe because it is assumed the SBG library is safe.
-        errorCode = unsafe {
+        let errorCode = unsafe {
             sbgEComCmdOutputSetConf(
                 &mut self.handle,
                 _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
@@ -373,58 +379,32 @@ impl SBG {
         if pLogData.is_null() {
             return _SbgErrorCode_SBG_NULL_POINTER;
         }
-        if msgClass == _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0 {
-            match msg {
-                _SbgEComLog_SBG_ECOM_LOG_AIR_DATA =>
-                // SAFETY: We are accessing a static mut variable and dereferencing a raw pointer.
-                // This is safe because DATA is not accessed during the lifetime of this function.
-                // This is safe because we check if pLogData is null.
+
+        // SAFETY: DATA_CALLBACK is set once, before this function is called,
+        // so no race conditions can happen.
+        if let Some(callback) = unsafe { DATA_CALLBACK } {
+            if msgClass == _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0 {
+                // SAFETY: pLogData is not null, and we are checking the union flag before accessing it
                 unsafe {
-                    DATA.pressure = (*pLogData).airData.pressureAbs;
-                },
-                _SbgEComLog_SBG_ECOM_LOG_EKF_EULER =>
-                // SAFETY: We are accessing a static mut variable and dereferencing a raw pointer.
-                // This is safe because DATA is not accessed during the lifetime of this function.
-                // This is safe because we check if pLogData is null.
-                unsafe {
-                    DATA.roll = (*pLogData).ekfEulerData.euler[0];
-                    DATA.pitch = (*pLogData).ekfEulerData.euler[1];
-                    DATA.yaw = (*pLogData).ekfEulerData.euler[2];
-                },
-                _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT =>
-                // SAFETY: We are accessing a static mut variable and dereferencing a raw pointer.
-                // This is safe because DATA is not accessed during the lifetime of this function.
-                // This is safe because we check if pLogData is null.
-                unsafe {
-                    DATA.quant_w = (*pLogData).ekfQuatData.quaternion[0];
-                    DATA.quant_x = (*pLogData).ekfQuatData.quaternion[1];
-                    DATA.quant_y = (*pLogData).ekfQuatData.quaternion[2];
-                    DATA.quant_z = (*pLogData).ekfQuatData.quaternion[3];
-                },
-                _SbgEComLog_SBG_ECOM_LOG_IMU_DATA =>
-                // SAFETY: We are accessing a static mut variable and dereferencing a raw pointer.
-                // This is safe because DATA is not accessed during the lifetime of this function.
-                // This is safe because we check if pLogData is null.
-                unsafe {
-                    DATA.accel_x = (*pLogData).imuData.accelerometers[0];
-                    DATA.accel_y = (*pLogData).imuData.accelerometers[1];
-                    DATA.accel_z = (*pLogData).imuData.accelerometers[2];
-                },
-                _SbgEComLog_SBG_ECOM_LOG_EKF_NAV =>
-                // SAFETY: We are accessing a static mut variable and dereferencing a raw pointer.
-                // This is safe because DATA is not accessed during the lifetime of this function.
-                // This is safe because we check if pLogData is null.
-                unsafe {
-                    DATA.latitude = (*pLogData).ekfNavData.position[0];
-                    DATA.longitude = (*pLogData).ekfNavData.position[1];
-                    DATA.height = (*pLogData).ekfNavData.position[2];
-                    DATA.velocity_n = (*pLogData).ekfNavData.velocity[0];
-                    DATA.velocity_e = (*pLogData).ekfNavData.velocity[1];
-                    DATA.velocity_d = (*pLogData).ekfNavData.velocity[2];
-                },
-                _ => (),
+                    match msg {
+                        _SbgEComLog_SBG_ECOM_LOG_AIR_DATA => {
+                            callback(CallbackData::Air((*pLogData).airData.into()))
+                        }
+                        _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT => {
+                            callback(CallbackData::EkfQuat((*pLogData).ekfQuatData.into()))
+                        }
+                        _SbgEComLog_SBG_ECOM_LOG_IMU_DATA => {
+                            callback(CallbackData::Imu((*pLogData).imuData.into()))
+                        }
+                        _SbgEComLog_SBG_ECOM_LOG_EKF_NAV => {
+                            callback(CallbackData::EkfNav((*pLogData).ekfNavData.into()))
+                        }
+                        _ => (),
+                    }
+                }
             }
         }
+
         _SbgErrorCode_SBG_NO_ERROR
     }
 

@@ -15,8 +15,8 @@ ts-rs = { version = "6.2.1", optional = true }
 mavlink = { git = "https://github.com/uorocketry/rust-mavlink", branch = "hydra_dialect", default-features = false}
 
 [dev-dependencies]
-quickcheck = "1.0.3"
-quickcheck_macros = "1.0.0"
+proptest = "1.2.0"
+proptest-derive = "0.3.0"
 postcard = { version = "1.0.4", features = ["alloc"] }
 
 [features]
