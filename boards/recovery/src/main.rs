@@ -95,6 +95,7 @@ mod app {
         let state_machine = StateMachine::new();
 
         /* Spawn tasks */
+        run_sm::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
 
