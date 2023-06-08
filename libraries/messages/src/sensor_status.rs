@@ -52,7 +52,7 @@ bitflags! {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct EkfStatus {
     status: u32,
@@ -103,7 +103,7 @@ pub enum UtcStatus {
     Valid,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct UtcTimeStatus {
     status: u16,
@@ -150,7 +150,7 @@ bitflags! {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct AirStatus {
     status: u16,
@@ -186,7 +186,7 @@ bitflags! {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct ImuStatus {
     status: u16,
@@ -334,7 +334,7 @@ pub enum GpsVelType {
     Differential,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct GpsVelStatus {
     status: u32,
