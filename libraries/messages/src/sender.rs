@@ -1,10 +1,14 @@
 use defmt::Format;
 use serde::{Deserialize, Serialize};
 
+#[cfg(test)]
+use proptest_derive::Arbitrary;
+
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
+#[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub enum Sender {

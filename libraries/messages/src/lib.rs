@@ -15,19 +15,24 @@ use serde::{Deserialize, Serialize};
 /// This is to help control versions.
 pub use mavlink;
 
+#[cfg(test)]
+use proptest_derive::Arbitrary;
+
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
+mod logging;
 pub mod sender;
 pub mod sensor;
 
-pub const MAX_SIZE: usize = 85;
+pub const MAX_SIZE: usize = 64;
+
+pub use logging::{ErrorContext, Event, Log, LogLevel};
 
 /// Topmost message. Encloses all the other possible messages, and is the only thing that should
 /// be sent over the wire.
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[cfg_attr(test, derive(Arbitrary))]
 pub struct Message {
     /// Time in milliseconds since epoch. Note that the epoch here can be arbitrary and is not the
     /// Unix epoch.
@@ -41,15 +46,16 @@ pub struct Message {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[cfg_attr(test, derive(Arbitrary))]
 #[serde(rename_all = "lowercase")]
 pub enum Data {
     State(State),
     Sensor(Sensor),
+    Log(Log),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub enum Status {
@@ -59,6 +65,7 @@ pub enum Status {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct State {
@@ -77,6 +84,22 @@ impl Message {
             timestamp: timestamp.duration_since_epoch().to_millis(),
             sender,
             data: data.into(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{Message, MAX_SIZE};
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn message_size(msg: Message) {
+            let bytes = postcard::to_allocvec(&msg).unwrap();
+
+            dbg!(msg);
+            assert!(dbg!(bytes.len()) <= MAX_SIZE);
         }
     }
 }

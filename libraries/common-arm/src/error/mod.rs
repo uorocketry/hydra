@@ -85,9 +85,6 @@
 pub mod error_manager;
 pub mod hydra_error;
 
-pub use error_manager::ErrorManager;
-pub use hydra_error::HydraError;
-
 /// Calls `spawn` on a RTIC's task. Transforms the returned `Result` into a `Result<_, HydraError>`.
 #[macro_export]
 macro_rules! spawn {
