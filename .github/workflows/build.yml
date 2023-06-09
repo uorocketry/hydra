@@ -34,7 +34,7 @@ jobs:
         name: "Install cargo-make"
         with:
           command: install
-          args: cargo-make
+          args: --force cargo-make
       - uses: actions-rs/cargo@v1
         name: "Build all binaries"
         with:

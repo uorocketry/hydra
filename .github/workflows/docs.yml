@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install packages
-        run: sudo apt update && sudo apt install -y cmake libnewlib-dev
+        run: sudo apt update && sudo apt install -y cmake
       - name: Install Arm GNU Toolchain (arm-none-eabi-gcc)
         uses: carlosperate/arm-none-eabi-gcc-action@v1
         with:
