@@ -9,9 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Install packages
-        run: sudo apt update && sudo apt install -y cmake libnewlib-dev
-      - name: Use correct cargo config
-        run: mv .cargo/config-ci .cargo/config
+        run: sudo apt update && sudo apt install -y cmake
       - name: Install Arm GNU Toolchain (arm-none-eabi-gcc)
         uses: carlosperate/arm-none-eabi-gcc-action@v1
         with:

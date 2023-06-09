@@ -7,15 +7,23 @@ use atsamd_hal::gpio::{Pin, Reset, PA08, PA09};
 use atsamd_hal::pac::{MCLK, RTC};
 use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;
+use core::alloc::{GlobalAlloc, Layout};
+use core::ffi::c_void;
+use core::mem::size_of;
+use core::ptr;
 
 use crate::app::sbg_handle_data;
 use atsamd_hal::sercom::{uart, Sercom, Sercom0};
+use embedded_alloc::Heap;
 use rtic::Mutex;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
 
 pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+
+// Simple heap required by the SBG library
+static HEAP: Heap = Heap::empty();
 
 pub struct SBGManager {
     sbg_device: SBG,
@@ -33,6 +41,14 @@ impl SBGManager {
         rtc: RTC,
         mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
     ) -> Self {
+        /* Initialize the Heap */
+        {
+            use core::mem::MaybeUninit;
+            const HEAP_SIZE: usize = 1024;
+            static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
+            unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
+        }
+
         let pads_sbg = uart::Pads::<Sercom0, _>::default().rx(rx).tx(tx);
         let uart_sbg = ConfigSBG::new(mclk, sercom0, pads_sbg, pclk_sercom0.freq())
             .baud(
@@ -109,36 +125,59 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
     }
 }
 
-/// This is a hack to get the linker to not complain about missing symbols.
-#[no_mangle]
-pub extern "C" fn _sbrk() {}
+/// Stored right before an allocation. Stores information that is needed to deallocate memory.
+#[derive(Copy, Clone)]
+struct AllocInfo {
+    layout: Layout,
+    ptr: *mut u8,
+}
 
+/// Custom malloc for the SBG library. This uses the HEAP object initialized at the start of the
+/// [`SBGManager`]. The [`Layout`] of the allocation is stored right before the returned pointed,
+/// which makes it possible to implement [`free`] without any other data structures.
 #[no_mangle]
-pub extern "C" fn _write() {}
+pub extern "C" fn malloc(size: usize) -> *mut c_void {
+    if size == 0 {
+        return ptr::null_mut();
+    }
 
-#[no_mangle]
-pub extern "C" fn _close() {}
+    // Get a layout for both the requested size
+    let header_layout = Layout::new::<AllocInfo>();
+    let requested_layout = Layout::from_size_align(size, 8).unwrap();
+    let (layout, offset) = header_layout.extend(requested_layout).unwrap();
 
-#[no_mangle]
-pub extern "C" fn _lseek() {}
+    // Ask the allocator for memory
+    let orig_ptr = unsafe { HEAP.alloc(layout) };
+    if orig_ptr.is_null() {
+        return orig_ptr as *mut c_void;
+    }
 
-#[no_mangle]
-pub extern "C" fn _read() {}
+    // Compute the pointer that we will return
+    let result_ptr = unsafe { orig_ptr.add(offset) };
 
-#[no_mangle]
-pub extern "C" fn _fstat() {}
+    // Store the allocation information right before the returned pointer
+    let info_ptr = unsafe { result_ptr.sub(size_of::<AllocInfo>()) as *mut AllocInfo };
+    unsafe {
+        info_ptr.write_unaligned(AllocInfo {
+            layout,
+            ptr: orig_ptr,
+        });
+    }
 
-#[no_mangle]
-pub extern "C" fn _isatty() {}
+    result_ptr as *mut c_void
+}
 
+/// Custom free implementation for the SBG library. This uses the stored allocation information
+/// right before the pointer to free up the resources.
+///
+/// SAFETY: The value passed to ptr must have been obtained from a previous call to [`malloc`].
 #[no_mangle]
-pub extern "C" fn _exit() {}
+pub unsafe extern "C" fn free(ptr: *mut c_void) {
+    assert!(!ptr.is_null());
 
-#[no_mangle]
-pub extern "C" fn _open() {}
-
-#[no_mangle]
-pub extern "C" fn _kill() {}
-
-#[no_mangle]
-pub extern "C" fn _getpid() {}
+    let info_ptr = unsafe { ptr.sub(size_of::<AllocInfo>()) as *const AllocInfo };
+    let info = unsafe { info_ptr.read_unaligned() };
+    unsafe {
+        HEAP.dealloc(info.ptr, info.layout);
+    }
+}

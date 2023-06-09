@@ -16,6 +16,4 @@ messages = { path = "../../libraries/messages" }
 common-arm = { path = "../../libraries/common-arm" }
 
 [build-dependencies]
-libc = "0.2"
-bindgen = "0.63.0"
 cmake = "0.1"

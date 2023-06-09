@@ -21,3 +21,4 @@ messages = { path = "../../libraries/messages" }
 sbg-rs = {path = "../../libraries/sbg-rs"}
 embedded-sdmmc = "0.3.0"
 typenum = "1.16.0"
+embedded-alloc = "0.5.0"
