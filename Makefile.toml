@@ -22,7 +22,7 @@ dependencies = [
 
 [tasks.test-messages]
 command = "cargo"
-args = ["test", "-p", "messages", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}"]
+args = ["test", "-p", "messages", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}", "--features", "std", "--no-default-features"]
 
 # -----------------------
 # Embedded Testing

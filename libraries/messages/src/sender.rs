@@ -1,7 +1,7 @@
 use defmt::Format;
 use serde::{Deserialize, Serialize};
 
-#[cfg(test)]
+#[cfg(any(feature = "std", test))]
 use proptest_derive::Arbitrary;
 
 #[cfg(feature = "ts")]
@@ -9,7 +9,7 @@ use ts_rs::TS;
 
 // I don't agree with the naming, We can use these as Ids to sent commands to that specific board.
 #[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub enum Sender {

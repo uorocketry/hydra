@@ -1,8 +1,9 @@
+use crate::sensor_status::{AirStatus, EkfStatus, GpsVelStatus, ImuStatus, UtcTimeStatus};
 use defmt::Format;
 use derive_more::From;
 use serde::{Deserialize, Serialize};
 
-#[cfg(test)]
+#[cfg(any(feature = "std", test))]
 use proptest_derive::Arbitrary;
 
 use crate::sensor_status::{AirStatus, EkfStatus, GpsVelStatus, ImuStatus, UtcTimeStatus, GpsPositionStatus};
@@ -10,7 +11,7 @@ use crate::sensor_status::{AirStatus, EkfStatus, GpsVelStatus, ImuStatus, UtcTim
 use ts_rs::TS;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Sensor {
@@ -20,7 +21,7 @@ pub struct Sensor {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub enum SensorData {
@@ -117,7 +118,7 @@ pub struct GpsPos2 {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct UtcTime {
@@ -144,7 +145,7 @@ pub struct UtcTime {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Air {
@@ -165,7 +166,7 @@ pub struct Air {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct EkfQuat {
@@ -180,7 +181,7 @@ pub struct EkfQuat {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct EkfNav1 {
@@ -193,7 +194,7 @@ pub struct EkfNav1 {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct EkfNav2 {
@@ -208,7 +209,7 @@ pub struct EkfNav2 {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Imu1 {
@@ -223,7 +224,7 @@ pub struct Imu1 {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Imu2 {
@@ -236,7 +237,7 @@ pub struct Imu2 {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct GpsVel {

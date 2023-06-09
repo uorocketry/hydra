@@ -17,7 +17,7 @@ use fugit::Instant;
 pub use mavlink;
 use serde::{Deserialize, Serialize};
 
-#[cfg(test)]
+#[cfg(any(feature = "std", test))]
 use proptest_derive::Arbitrary;
 
 #[cfg(feature = "ts")]

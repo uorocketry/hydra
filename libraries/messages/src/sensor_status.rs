@@ -2,8 +2,11 @@ use bitflags::bitflags;
 use defmt::Format;
 use serde::{Deserialize, Serialize};
 
-#[cfg(test)]
+#[cfg(any(feature = "std", std))]
 use proptest_derive::Arbitrary;
+
+#[cfg(feature = "ts")]
+use ts_rs::TS;
 
 // ----------
 // EKF Status
@@ -53,7 +56,9 @@ bitflags! {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct EkfStatus {
     status: u32,
 }
@@ -104,7 +109,9 @@ pub enum UtcStatus {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct UtcTimeStatus {
     status: u16,
 }
@@ -151,7 +158,9 @@ bitflags! {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct AirStatus {
     status: u16,
 }
@@ -187,7 +196,9 @@ bitflags! {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct ImuStatus {
     status: u16,
 }
@@ -335,7 +346,9 @@ pub enum GpsVelType {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct GpsVelStatus {
     status: u32,
 }

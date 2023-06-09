@@ -5,6 +5,10 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
+#[cfg(feature = "ts")]
+use ts_rs::TS;
+
+// #[cfg(any(feature = "std", test))]
 #[cfg(test)]
 use proptest_derive::Arbitrary;
 
