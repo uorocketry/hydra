@@ -16,7 +16,7 @@ use core::ffi::{c_void, CStr};
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
-use defmt::{debug, flush, info, warn};
+use defmt::{debug, flush, info, warn, error};
 use embedded_hal::serial::Write;
 use hal::gpio::{PA08, PA09, PB16, PB17};
 use hal::sercom::uart::Duplex;
@@ -31,7 +31,7 @@ type Config = uart::Config<Pads, EightBit>;
 /**
  * Max buffer size for SBG messages.
  */
-pub const SBG_BUFFER_SIZE: usize = 4096;
+pub const SBG_BUFFER_SIZE: usize = 1024;
 
 /**
  * Represents the index of the buffer that is currently being used.
@@ -493,7 +493,7 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
 
     match logType {
         // silently handle errors
-        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning {} {}", file, function),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),

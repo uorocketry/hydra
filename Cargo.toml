@@ -46,7 +46,7 @@ debug = true
 # symbols are nice and they don't increase the size on Flash
 debug = true
 lto = true
-opt-level = 2
+opt-level = 1
 
 [profile.release.package.sbg-rs]
 debug = true

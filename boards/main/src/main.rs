@@ -46,7 +46,7 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         radio: RadioDevice,
-        sd_manager: SdManager,
+        // sd_manager: SdManager,
         sbg_manager: SBGManager,
     }
 
@@ -96,16 +96,16 @@ mod app {
         );
 
         /* SD config */
-        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom1, gclk0);
-        let sd_manager = SdManager::new(
-            &mclk,
-            peripherals.SERCOM1,
-            pclk_sd.freq(),
-            pins.pa18.into_push_pull_output(),
-            pins.pa17.into_push_pull_output(),
-            pins.pa19.into_push_pull_output(),
-            pins.pa16.into_push_pull_output(),
-        );
+        // let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom1, gclk0);
+        // let sd_manager = SdManager::new(
+        //     &mclk,
+        //     peripherals.SERCOM1,
+        //     pclk_sd.freq(),
+        //     pins.pa18.into_push_pull_output(),
+        //     pins.pa17.into_push_pull_output(),
+        //     pins.pa19.into_push_pull_output(),
+        //     pins.pa16.into_push_pull_output(),
+        // );
 
         /* Radio config */
         let (radio, gclk0) = RadioDevice::new(
@@ -149,19 +149,12 @@ mod app {
             Local {
                 led,
                 radio,
-                sd_manager,
+                // sd_manager,
                 sbg_manager,
             },
             init::Monotonics(mono),
         )
     }
-
-    // #[idle]
-    // fn idle(_: idle::Context) -> ! {
-    //     loop {
-    //         // rtic::export::wfi();
-    //     }
-    // }
 
     #[task(priority = 3, binds = CAN0, shared = [can0])]
     fn can0(mut cx: can0::Context) {
@@ -222,7 +215,7 @@ mod app {
 
             Ok(())
         });
-        spawn_after!(sensor_send, 2.secs()).ok();
+        spawn_after!(sensor_send, 250.millis()).ok();
     }
 
     /**
