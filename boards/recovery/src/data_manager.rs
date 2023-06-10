@@ -41,7 +41,7 @@ impl DataManager {
         let mut point_previous = self.historical_pressure.peek().unwrap();
         let ekf_nav1 = self.sbg_nav1.as_ref();
         if let Some(ekf_nav1) = ekf_nav1 {
-            if ekf_nav1.velocity[2] > 0.0 {
+            if ekf_nav1.velocity[2] > 10.0 {
                 return false;
             }
         } 
