@@ -48,6 +48,8 @@ pub struct Message {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 #[cfg_attr(test, derive(Arbitrary))]
 #[serde(rename_all = "lowercase")]
 pub enum Data {
