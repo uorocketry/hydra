@@ -87,9 +87,6 @@ impl DataManager {
                     self.sbg_utc_time = Some(utc_time_data);
                 },
             },
-            // messages::Data::State(state) => {
-            //     // handle state logic
-            // },
             _ => {}
         }
     }

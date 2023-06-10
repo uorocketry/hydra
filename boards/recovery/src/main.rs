@@ -114,12 +114,12 @@ mod app {
         )
     }
 
-    #[idle]
-    fn idle(_: idle::Context) -> ! {
-        loop {
-            rtic::export::wfi();
-        }
-    }
+    // #[idle]
+    // fn idle(_: idle::Context) -> ! {
+    //     loop {
+    //         rtic::export::wfi();
+    //     }
+    // }
 
     #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager])]
     fn run_sm(mut cx: run_sm::Context) {

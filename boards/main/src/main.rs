@@ -156,12 +156,12 @@ mod app {
         )
     }
 
-    #[idle]
-    fn idle(_: idle::Context) -> ! {
-        loop {
-            rtic::export::wfi();
-        }
-    }
+    // #[idle]
+    // fn idle(_: idle::Context) -> ! {
+    //     loop {
+    //         // rtic::export::wfi();
+    //     }
+    // }
 
     #[task(priority = 3, binds = CAN0, shared = [can0])]
     fn can0(mut cx: can0::Context) {
