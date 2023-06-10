@@ -114,13 +114,8 @@ mod app {
         )
     }
 
-    // #[idle]
-    // fn idle(_: idle::Context) -> ! {
-    //     loop {
-    //         rtic::export::wfi();
-    //     }
-    // }
-
+    /// Runs the state machine.
+    /// This takes control of the shared resources. 
     #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager])]
     fn run_sm(mut cx: run_sm::Context) {
         cx.local.state_machine.run(&mut StateMachineContext {
@@ -128,6 +123,7 @@ mod app {
         })
     }
 
+    /// Handles the CAN0 interrupt.
     #[task(priority = 3, binds = CAN0, shared = [can0, data_manager])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
@@ -137,9 +133,7 @@ mod app {
         });
     }
 
-    /**
-     * Sends a message over CAN.
-     */
+    /// Sends a message over CAN. 
     #[task(capacity = 10, shared = [can0, &em])]
     fn send_internal(mut cx: send_internal::Context, m: Message) {
         cx.shared.em.run(|| {
@@ -148,9 +142,7 @@ mod app {
         });
     }
 
-    /**
-     * Sends the state of the system.
-     */
+    /// Sends info about the current state of the system. 
     #[task(shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
         let em_error = cx.shared.em.has_error();
@@ -172,10 +164,8 @@ mod app {
         })
     }
 
-    /**
-     * Simple blink task to test the system.
-     * Acts as a heartbeat for the system.
-     */
+    /// Simple blink task to test the system.
+    /// Acts as a heartbeat for the system.
     #[task(local = [led], shared = [&em])]
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
