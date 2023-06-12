@@ -10,7 +10,6 @@ pub struct Ascent {}
 
 impl State for Ascent {
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
-        // Gravity has overcome the force of the rocket, so we are now falling.
         context
             .shared_resources
             .data_manager

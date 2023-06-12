@@ -6,6 +6,7 @@ mod data_manager;
 mod state_machine;
 mod types;
 
+use crate::state_machine::RocketStates;
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
@@ -23,7 +24,6 @@ use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
 use types::GPIOController;
 use types::COM_ID;
-use crate::state_machine::RocketStates;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -114,8 +114,14 @@ mod app {
         )
     }
 
+    /// Idle task for when no other tasks are running.
+    #[idle]
+    fn idle(_: idle::Context) -> ! {
+        loop {}
+    }
+
     /// Runs the state machine.
-    /// This takes control of the shared resources. 
+    /// This takes control of the shared resources.
     #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager])]
     fn run_sm(mut cx: run_sm::Context) {
         cx.local.state_machine.run(&mut StateMachineContext {
@@ -133,7 +139,7 @@ mod app {
         });
     }
 
-    /// Sends a message over CAN. 
+    /// Sends a message over CAN.
     #[task(capacity = 10, shared = [can0, &em])]
     fn send_internal(mut cx: send_internal::Context, m: Message) {
         cx.shared.em.run(|| {
@@ -142,12 +148,15 @@ mod app {
         });
     }
 
-    /// Sends info about the current state of the system. 
+    /// Sends info about the current state of the system.
     #[task(shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
         let em_error = cx.shared.em.has_error();
         cx.shared.em.run(|| {
-            let rocket_state = cx.shared.data_manager.lock(|data| data.current_state.clone());
+            let rocket_state = cx
+                .shared
+                .data_manager
+                .lock(|data| data.current_state.clone());
             let state = if let Some(rocket_state) = rocket_state {
                 rocket_state
             } else {
@@ -158,7 +167,7 @@ mod app {
                 has_error: em_error,
             };
             let message = Message::new(&monotonics::now(), COM_ID, board_state);
-            spawn!(send_internal, message)?;  
+            spawn!(send_internal, message)?;
             spawn_after!(state_send, 5.secs())?;
             Ok(())
         })

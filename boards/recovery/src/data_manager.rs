@@ -35,41 +35,63 @@ impl DataManager {
             current_state: None,
         }
     }
-    // Questions, questions, questions!!??? does it work!!!!!
-    // Probably not, but it's a start
+    /// Returns true if the rocket has passed apogee.
+    /// This is determined by looking at the historical pressure data.
+    /// Furthermore, we only start checking pressure data when velocity is less than 20m/s 
+    /// because we want to avoid the complexities of pressure during transonic flight. 
     pub fn is_falling(&self) -> bool {
-        let mut point_previous = self.historical_pressure.peek().unwrap();
         let ekf_nav1 = self.sbg_nav1.as_ref();
         if let Some(ekf_nav1) = ekf_nav1 {
-            if ekf_nav1.velocity[2] > 10.0 {
+            if ekf_nav1.velocity[2] < 20.0 {
                 return false;
             }
         } 
-        for i in self.historical_pressure.iter() {
-            let slope = i - point_previous;
-            if slope > 0.0 {
+        match self.historical_pressure.peek() {
+            Some(mut point_previous) => {
+                for i in self.historical_pressure.iter() {
+                    let slope = i - point_previous;
+                    if slope > 0.0 {
+                        return false;
+                    }
+                    point_previous = i;
+                }
+            },
+            None => {
                 return false;
             }
-            point_previous = i;
         }
         true
     }
     pub fn is_launched(&self) -> bool {
-        self.sbg_imu1.as_ref().unwrap().accelerometers[1] > ACCEL_MIN
+        match self.sbg_imu1.as_ref() {
+            Some(imu1) => {
+                imu1.accelerometers[1] > ACCEL_MIN
+            },
+            None => {
+                false
+            }
+        }
     }
     pub fn is_below_main(&self) -> bool {
-        self.sbg_air.as_ref().unwrap().altitude < MAIN_HEIGHT
+        match self.sbg_air.as_ref() {
+            Some(air) => {
+                air.altitude < MAIN_HEIGHT
+            },
+            None => {
+                false
+            }
+        }
     }
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
             messages::Data::Sensor(sensor) => match sensor.data {
                 messages::sensor::SensorData::Air(air_data) => {
-                    let pressure = air_data.pressure_abs; // satisfy borrow checker
+                    let pressure = air_data.pressure_abs;
                     self.sbg_air = Some(air_data);
                     if self.historical_pressure.is_full() {
-                        self.historical_pressure.dequeue().unwrap();
+                        self.historical_pressure.dequeue();
                     }
-                    self.historical_pressure.enqueue(pressure).unwrap();
+                    self.historical_pressure.enqueue(pressure);
                 },
                 messages::sensor::SensorData::EkfNav1(nav1_data) => {
                     self.sbg_nav1 = Some(nav1_data);

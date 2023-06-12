@@ -13,7 +13,6 @@ impl State for Landed {
         context.shared_resources.gpio.lock(|gpio| gpio.fire_main());
     }
     fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
-        // Maybe sleep the system here to save power?
         no_transition!()
     }
 }

@@ -13,16 +13,18 @@ use ts_rs::TS;
 #[cfg_attr(feature = "ts", ts(export))]
 pub enum Sender {
     GroundStation,
-    LogicBoard,
+    SensorBoard,
     RecoveryBoard,
+    CommunicationBoard,
 }
 
 impl From<Sender> for u16 {
     fn from(sender: Sender) -> Self {
         match sender {
             Sender::GroundStation => 0,
-            Sender::LogicBoard => 1,
+            Sender::SensorBoard => 1,
             Sender::RecoveryBoard => 2,
+            Sender::CommunicationBoard => 3,
         }
     }
 }
