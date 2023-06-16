@@ -32,6 +32,8 @@ pub use logging::{ErrorContext, Event, Log, LogLevel};
 /// Topmost message. Encloses all the other possible messages, and is the only thing that should
 /// be sent over the wire.
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct Message {
     /// Time in milliseconds since epoch. Note that the epoch here can be arbitrary and is not the
@@ -46,6 +48,8 @@ pub struct Message {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 #[cfg_attr(test, derive(Arbitrary))]
 #[serde(rename_all = "lowercase")]
 pub enum Data {
@@ -54,14 +58,27 @@ pub enum Data {
     Log(Log),
 }
 
+// #[derive(Serialize, Deserialize, Clone, Debug, Format)]
+// #[cfg_attr(test, derive(Arbitrary))]
+// #[cfg_attr(feature = "ts", derive(TS))]
+// #[cfg_attr(feature = "ts", ts(export))]
+// pub enum Status {
+//     Uninitialized,
+//     Initializing,
+//     Running,
+// }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub enum Status {
-    Uninitialized,
     Initializing,
-    Running,
+    WaitForTakeoff,
+    Ascent,
+    Apogee,
+    Landed,
+    Abort,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
@@ -71,7 +88,6 @@ pub enum Status {
 pub struct State {
     pub status: Status,
     pub has_error: bool,
-    pub voltage: f32,
 }
 
 impl Message {

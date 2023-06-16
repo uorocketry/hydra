@@ -134,7 +134,6 @@ mod app {
         let led = pins.pa14.into_push_pull_output();
 
         /* Spawn tasks */
-        state_send::spawn().ok();
         sensor_send::spawn().ok();
         blink::spawn().ok();
 
@@ -157,11 +156,10 @@ mod app {
         )
     }
 
+    /// Idle task for when no other tasks are running.
     #[idle]
     fn idle(_: idle::Context) -> ! {
-        loop {
-            rtic::export::wfi();
-        }
+        loop {}
     }
 
     #[task(priority = 3, binds = CAN0, shared = [can0])]
@@ -200,29 +198,6 @@ mod app {
     }
 
     /**
-     * Sends the state of the system.
-     */
-    #[task(shared = [&em])]
-    fn state_send(cx: state_send::Context) {
-        let em = cx.shared.em;
-        let state = messages::State {
-            status: messages::Status::Running,
-            has_error: em.has_error(),
-            voltage: 12.1,
-        };
-
-        let message = Message::new(&monotonics::now(), COM_ID, state);
-
-        cx.shared.em.run(|| {
-            spawn!(send_gs, message.clone())?;
-            spawn!(send_internal, message)?;
-            Ok(())
-        });
-
-        spawn_after!(state_send, 5.secs()).ok();
-    }
-
-    /**
      * Sends information about the sensors.
      */
     #[task(shared = [data_manager, &em])]
@@ -246,7 +221,7 @@ mod app {
 
             Ok(())
         });
-        spawn_after!(sensor_send, 2.secs()).ok();
+        spawn_after!(sensor_send, 250.millis()).ok();
     }
 
     /**
