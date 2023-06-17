@@ -1,3 +1,4 @@
+use crate::data_manager::DataManager;
 /// Encapsulates all communication logic.
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
@@ -125,6 +126,23 @@ impl CanDevice0 {
 
         can.filters_standard()
             .push(Filter::Classic {
+                action: Action::StoreFifo0,
+                filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
+                    .unwrap(),
+                mask: ecan::StandardId::MAX,
+            })
+            .unwrap_or_else(|_| panic!("Sensor filter"));
+
+        can.filters_standard()
+            .push(Filter::Classic {
+                action: Action::StoreFifo1,
+                filter: ecan::StandardId::new(messages::sender::Sender::PowerBoard.into()).unwrap(),
+                mask: ecan::StandardId::MAX,
+            })
+            .unwrap_or_else(|_| panic!("Power filter"));
+
+        can.filters_standard()
+            .push(Filter::Classic {
                 action: Action::StoreFifo1,
                 filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into())
                     .unwrap(),
@@ -157,7 +175,7 @@ impl CanDevice0 {
         )?;
         Ok(())
     }
-    pub fn process_data(&mut self) {
+    pub fn process_data(&mut self, data_manager: &mut DataManager) {
         let line_interrupts = &self.line_interrupts;
         for interrupt in line_interrupts.iter_flagged() {
             match interrupt {
@@ -165,7 +183,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("Message: {:?}", data)
+                                data_manager.handle_data(data);
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
@@ -177,7 +195,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("Message: {:?}", data)
+                                data_manager.handle_data(data);
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
