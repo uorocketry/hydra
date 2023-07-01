@@ -31,9 +31,25 @@ pub type PadsSBG = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
 pub type ConfigSBG = uart::Config<PadsSBG, EightBit>;
 pub type SBGTransfer = dmac::Transfer<
     dmac::Channel<dmac::Ch0, dmac::Busy>,
-    BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBuffer>,
+    BufferPair<Uart<ConfigSBG, uart::RxDuplex>, SBGBufferWrapper>,
 >;
-pub type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
+
+pub type SBGBuffer = [u8; SBG_BUFFER_SIZE];
+pub struct SBGBufferWrapper(pub SBGBuffer);
+/// SAFETY: We are implementing an unsafe trait 
+unsafe impl dmac::Buffer for SBGBufferWrapper {
+    type Beat = u8;
+    fn dma_ptr(&mut self) -> *mut Self::Beat {
+        self.as_mut_ptr()
+    }
+    /// is this really not incrementing? 
+    fn incrementing(&self) -> bool {
+        false
+    }
+    fn buffer_len(&self) -> usize {
+        SBG_BUFFER_SIZE
+    }
+}
 
 // -------
 // SD Card

@@ -1,4 +1,4 @@
-use crate::types::{ConfigSBG, SBGBuffer, SBGTransfer};
+use crate::types::{ConfigSBG, SBGBuffer, SBGTransfer, SBGBufferWrapper};
 use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::dmac;
@@ -18,9 +18,13 @@ use embedded_alloc::Heap;
 use rtic::Mutex;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
+use systick_monotonic::*;
 
-pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+use crate::app::sbg_sd as sbg_sd_task;
+use crate::spawn;
+
+// pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+// pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 
 // Simple heap required by the SBG library
 static HEAP: Heap = Heap::empty();
@@ -29,6 +33,8 @@ pub struct SBGManager {
     sbg_device: SBG,
     xfer: SBGTransfer,
     buf_select: bool,
+    BufDst: SBGBufferWrapper,
+    BufDst2: SBGBufferWrapper,
 }
 
 impl SBGManager {
@@ -59,11 +65,15 @@ impl SBGManager {
 
         let (sbg_rx, sbg_tx) = uart_sbg.split();
 
+        /* Buffer setup */
+        let BufDst = SBGBufferWrapper([0; SBG_BUFFER_SIZE]);
+        let BufDst2 = SBGBufferWrapper([0; SBG_BUFFER_SIZE]);
+
         /* DMAC config */
         dma_channel
             .as_mut()
             .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        let xfer = Transfer::new(dma_channel, sbg_rx, unsafe { &mut *BUF_DST }, false)
+        let xfer = Transfer::new(dma_channel, sbg_rx, &mut BufDst, false)
             .expect("DMA err")
             .begin(Sercom0::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
 
@@ -82,6 +92,8 @@ impl SBGManager {
             sbg_device: sbg,
             buf_select: false,
             xfer,
+            BufDst,
+            BufDst2,
         }
     }
 }
@@ -97,11 +109,8 @@ pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
     });
 }
 
-/**
- * Handles the DMA interrupt.
- * Handles the SBG data.
- * Logs data to the SD card.
- */
+/// Handles the DMA interrupt.
+/// Handles the SBG data.
 pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
     let sbg = cx.local.sbg_manager;
 
@@ -110,11 +119,13 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
             let buf = match sbg.buf_select {
                 false => {
                     sbg.buf_select = true;
-                    sbg.xfer.recycle_source(unsafe { &mut *BUF_DST })?
+                    spawn!(sbg_sd_task, sbg.BufDst.clone()).ok();
+                    sbg.xfer.recycle_source(&mut sbg.BufDst)?
                 }
                 true => {
                     sbg.buf_select = false;
-                    sbg.xfer.recycle_source(unsafe { &mut *BUF_DST2 })?
+                    spawn!(sbg_sd_task, sbg.BufDst2.clone()).ok();
+                    sbg.xfer.recycle_source(&mut sbg.BufDst2)?
                 }
             };
 
@@ -123,6 +134,17 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
             Ok(())
         });
     }
+}
+
+/// Logs SBG data to the SD card.
+pub fn sbg_sd(mut cx: crate::app::sbg_sd::Context, data: [u8; SBG_BUFFER_SIZE]) {
+    let file = cx.shared.sd_manager.lock(|sd| &mut sd.file);
+    cx.shared.sd_manager.lock(|sd| {
+        cx.shared.em.run(|| {
+            sd.write(file, &data)?;
+            Ok(())
+        });
+    });
 }
 
 /// Stored right before an allocation. Stores information that is needed to deallocate memory.
