@@ -1,5 +1,5 @@
-use crate::data_manager::DataManager;
 /// Encapsulates all communication logic.
+use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
 use atsamd_hal::clock::v2::ahb::AhbClk;
