@@ -42,7 +42,7 @@ impl DataManager {
     pub fn is_falling(&self) -> bool {
         let ekf_nav1 = self.sbg_nav1.as_ref();
         if let Some(ekf_nav1) = ekf_nav1 {
-            if ekf_nav1.velocity[2] < 20.0 {
+            if ekf_nav1.velocity[2] > 20.0 {
                 return false;
             }
         } 
