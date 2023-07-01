@@ -36,7 +36,7 @@ impl DataManager {
     /// Furthermore, we only start checking pressure data when velocity is less than 20m/s
     /// because we want to avoid the complexities of pressure during transonic flight.
     pub fn is_falling(&self) -> bool {
-        let ekf_nav1 = self.sbg_nav1.as_ref();
+        let ekf_nav1 = self.ekf_nav.0.as_ref();
         if let Some(ekf_nav1) = ekf_nav1 {
             if ekf_nav1.velocity[2] > 20.0 {
                 return false;
