@@ -9,7 +9,7 @@ pub struct Apogee {}
 
 impl State for Apogee {
     fn enter(&self, context: &mut StateMachineContext) {
-        context.shared_resources.gpio.lock(|gpio| gpio.fire_main());
+        context.shared_resources.gpio.lock(|gpio| gpio.fire_drogue());
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         // is this 450 AGL? I could put these types of values in a top file like

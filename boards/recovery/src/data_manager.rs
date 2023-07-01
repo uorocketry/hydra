@@ -79,7 +79,7 @@ impl DataManager {
                     if self.historical_pressure.is_full() {
                         self.historical_pressure.dequeue();
                     }
-                    self.historical_pressure.enqueue(pressure);
+                    self.historical_pressure.enqueue(pressure).expect("Queue failed")
                 }
                 messages::sensor::SensorData::EkfNav1(nav1_data) => {
                     self.ekf_nav.0 = Some(nav1_data);
