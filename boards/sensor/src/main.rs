@@ -14,7 +14,6 @@ use atsamd_hal::dmac::DmaController;
 use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
-use communication::RadioDevice;
 use data_manager::DataManager;
 use hal::dmac;
 use hal::gpio::Pins;
@@ -45,7 +44,6 @@ mod app {
     #[local]
     struct Local {
         led: Pin<PA14, PushPullOutput>,
-        radio: RadioDevice,
         sd_manager: SdManager,
         sbg_manager: SBGManager,
     }
@@ -64,9 +62,6 @@ mod app {
 
         let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
         let dmaChannels = dmac.split();
-
-        /* Logging Setup */
-        HydraLogging::set_ground_station_callback(queue_gs_message);
 
         /* Clock setup */
         let (_, clocks, tokens) = atsamd_hal::clock::v2::clock_system_at_reset(
@@ -107,16 +102,6 @@ mod app {
             pins.pa16.into_push_pull_output(),
         );
 
-        /* Radio config */
-        let (radio, gclk0) = RadioDevice::new(
-            tokens.pclks.sercom5,
-            &mclk,
-            peripherals.SERCOM5,
-            pins.pb17,
-            pins.pb16,
-            gclk0,
-        );
-
         /* SBG config */
         let (pclk_sbg, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
         let dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
@@ -148,7 +133,6 @@ mod app {
             },
             Local {
                 led,
-                radio,
                 sd_manager,
                 sbg_manager,
             },
@@ -180,23 +164,6 @@ mod app {
         });
     }
 
-    pub fn queue_gs_message(d: impl Into<Data>) {
-        let message = Message::new(&monotonics::now(), COM_ID, d.into());
-
-        send_gs::spawn(message).ok();
-    }
-
-    /**
-     * Sends a message to the radio over UART.
-     */
-    #[task(capacity = 10, local = [radio], shared = [&em])]
-    fn send_gs(cx: send_gs::Context, m: Message) {
-        cx.shared.em.run(|| {
-            cx.local.radio.send_message(m)?;
-            Ok(())
-        });
-    }
-
     /**
      * Sends information about the sensors.
      */
@@ -214,8 +181,6 @@ mod app {
 
         cx.shared.em.run(|| {
             for msg in messages {
-                spawn!(send_gs, msg.clone())?;
-
                 spawn!(send_internal, msg)?;
             }
 

@@ -194,6 +194,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "communication"
+version = "0.1.0"
+dependencies = [
+ "atsamd-hal",
+ "common-arm",
+ "cortex-m",
+ "cortex-m-rt",
+ "cortex-m-rtic",
+ "defmt",
+ "heapless",
+ "messages",
+ "panic-halt",
+ "postcard",
+ "systick-monotonic",
+ "typenum",
+]
+
+[[package]]
 name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -605,27 +623,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "main"
-version = "0.1.0"
-dependencies = [
- "atsamd-hal",
- "common-arm",
- "cortex-m",
- "cortex-m-rt",
- "cortex-m-rtic",
- "defmt",
- "embedded-alloc",
- "embedded-sdmmc",
- "heapless",
- "messages",
- "panic-halt",
- "postcard",
- "sbg-rs",
- "systick-monotonic",
- "typenum",
 ]
 
 [[package]]
@@ -1112,6 +1109,27 @@ name = "semver-parser"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
+
+[[package]]
+name = "sensor"
+version = "0.1.0"
+dependencies = [
+ "atsamd-hal",
+ "common-arm",
+ "cortex-m",
+ "cortex-m-rt",
+ "cortex-m-rtic",
+ "defmt",
+ "embedded-alloc",
+ "embedded-sdmmc",
+ "heapless",
+ "messages",
+ "panic-halt",
+ "postcard",
+ "sbg-rs",
+ "systick-monotonic",
+ "typenum",
+]
 
 [[package]]
 name = "seq-macro"

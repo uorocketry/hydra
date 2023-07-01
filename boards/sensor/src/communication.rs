@@ -1,12 +1,13 @@
-/// Encapsulates all communication logic.
 use atsamd_hal::can::Dependencies;
 use atsamd_hal::clock::v2::ahb::AhbClk;
 use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
+
 use atsamd_hal::clock::v2::types::Can0;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::gpio::{Alternate, AlternateI, Pin, I, PA22, PA23};
 use atsamd_hal::pac::CAN0;
+
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
@@ -25,7 +26,6 @@ use mcan::{
     filter::{Action, Filter},
 };
 
-use crate::data_manager::DataManager;
 use messages::Message;
 use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
@@ -107,21 +107,19 @@ impl CanDevice0 {
             .interrupt_configuration()
             .enable_line_0(interrupts_to_be_enabled);
 
-        // We accept messages from the sensor board as we need data from the sensors.
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
+                filter: ecan::StandardId::new(messages::sender::Sender::RecoveryBoard.into())
                     .unwrap(),
                 mask: ecan::StandardId::MAX,
             })
-            .unwrap_or_else(|_| panic!("Sensor Board filter"));
+            .unwrap_or_else(|_| panic!("Recovery filter"));
 
-        // We accept messages from the communication board as we may need to force the deployment of the parachute.
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo1,
-                filter: ecan::StandardId::new(messages::sender::Sender::CommunicationBoard.into())
+                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into())
                     .unwrap(),
                 mask: ecan::StandardId::MAX,
             })
@@ -152,7 +150,7 @@ impl CanDevice0 {
         )?;
         Ok(())
     }
-    pub fn process_data(&mut self, data_manager: &mut DataManager) {
+    pub fn process_data(&mut self) {
         let line_interrupts = &self.line_interrupts;
         for interrupt in line_interrupts.iter_flagged() {
             match interrupt {
@@ -160,7 +158,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                data_manager.handle_data(data);
+                                info!("Message: {:?}", data)
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
@@ -172,7 +170,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                data_manager.handle_data(data);
+                                info!("Message: {:?}", data)
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
