@@ -1,4 +1,8 @@
-use crate::types::{ConfigSBG, SBGBuffer, SBGTransfer, SBGBufferWrapper};
+use crate::types::{ConfigSBG, SBGTransfer, SBGBufferWrapper};
+use crate::app::sbg_handle_data;
+use crate::app::sbg_sd as sbg_sd_task;
+use crate::spawn;
+
 use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::dmac;
@@ -11,20 +15,11 @@ use core::alloc::{GlobalAlloc, Layout};
 use core::ffi::c_void;
 use core::mem::size_of;
 use core::ptr;
-
-use crate::app::sbg_handle_data;
 use atsamd_hal::sercom::{uart, Sercom, Sercom0};
 use embedded_alloc::Heap;
 use rtic::Mutex;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
-use systick_monotonic::*;
-
-use crate::app::sbg_sd as sbg_sd_task;
-use crate::spawn;
-
-// pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-// pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 
 // Simple heap required by the SBG library
 static HEAP: Heap = Heap::empty();
@@ -33,8 +28,8 @@ pub struct SBGManager {
     sbg_device: SBG,
     xfer: SBGTransfer,
     buf_select: bool,
-    BufDst: Option<SBGBufferWrapper>,
-    BufDst2: Option<SBGBufferWrapper>,
+    buf_dst: Option<SBGBufferWrapper>,
+    buf_dst2: Option<SBGBufferWrapper>,
 }
 
 impl SBGManager {
@@ -66,14 +61,14 @@ impl SBGManager {
         let (sbg_rx, sbg_tx) = uart_sbg.split();
 
         /* Buffer setup */
-        let BufDst = SBGBufferWrapper([0; SBG_BUFFER_SIZE]);
-        let BufDst2 = SBGBufferWrapper([0; SBG_BUFFER_SIZE]);
+        let buf_dst = SBGBufferWrapper([0; SBG_BUFFER_SIZE]);
+        let buf_dst2 = SBGBufferWrapper([0; SBG_BUFFER_SIZE]);
 
         /* DMAC config */
         dma_channel
             .as_mut()
             .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        let xfer = Transfer::new(dma_channel, sbg_rx, BufDst, false)
+        let xfer = Transfer::new(dma_channel, sbg_rx, buf_dst, false)
             .expect("DMA err")
             .begin(Sercom0::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
 
@@ -92,8 +87,8 @@ impl SBGManager {
             sbg_device: sbg,
             buf_select: false,
             xfer,
-            BufDst: None,
-            BufDst2: Some(BufDst2),
+            buf_dst: None,
+            buf_dst2: Some(buf_dst2),
         }
     }
 }
@@ -118,20 +113,20 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
             let buf = match sbg.buf_select {
                 false => {
                     sbg.buf_select = true;
-                    let buf = sbg.xfer.recycle_source(sbg.BufDst.take().expect("DMA buffer"))?;
-                    sbg.BufDst2 = Some(buf);
-                    sbg.BufDst2.as_ref().expect("DMA error").0.clone()
+                    let buf = sbg.xfer.recycle_source(sbg.buf_dst.take().expect("DMA buffer"))?;
+                    sbg.buf_dst2 = Some(buf);
+                    sbg.buf_dst2.as_ref().expect("DMA error").0.clone()
                 }
                 true => {
                     sbg.buf_select = false;
-                    let buf = sbg.xfer.recycle_source(sbg.BufDst2.take().expect("DMA buffer"))?;
-                    sbg.BufDst = Some(buf);
-                    sbg.BufDst.as_ref().expect("DMA error").0.clone()
+                    let buf = sbg.xfer.recycle_source(sbg.buf_dst2.take().expect("DMA buffer"))?;
+                    sbg.buf_dst = Some(buf);
+                    sbg.buf_dst.as_ref().expect("DMA error").0.clone()
 
                 }
             };
             sbg.sbg_device.read_data(&buf);
-            spawn!(sbg_sd_task, buf);
+            spawn!(sbg_sd_task, buf)?;
             Ok(())
         });
     }
@@ -139,13 +134,12 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
 
 /// Logs SBG data to the SD card.
 pub fn sbg_sd(mut cx: crate::app::sbg_sd::Context, data: [u8; SBG_BUFFER_SIZE]) {
-    // let file = cx.shared.sd_manager.lock(|sd| &mut sd.file);
-    // cx.shared.sd_manager.lock(|sd| {
-    //     cx.shared.em.run(|| {
-    //         sd.write(file, &data)?;
-    //         Ok(())
-    //     });
-    // });
+    cx.shared.sd_manager.lock(|sd| {
+        cx.shared.em.run(|| {
+            sd.write(&data)?;
+            Ok(())
+        })  
+    })
 }
 
 /// Stored right before an allocation. Stores information that is needed to deallocate memory.

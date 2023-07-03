@@ -113,10 +113,9 @@ impl SdManager {
     }
     pub fn write(
         &mut self,
-        file: &mut sd::File,
         buffer: &[u8],
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
-        self.sd_controller.write(&mut self.volume, file, buffer)
+        self.sd_controller.write(&mut self.volume, &mut self.file, buffer)
     }
     pub fn write_str(
         &mut self,
