@@ -40,7 +40,7 @@ pub struct SBGBufferWrapper(pub SBGBuffer);
 unsafe impl dmac::Buffer for SBGBufferWrapper {
     type Beat = u8;
     fn dma_ptr(&mut self) -> *mut Self::Beat {
-        self.as_mut_ptr()
+        self.0.as_mut_ptr()
     }
     /// is this really not incrementing? 
     fn incrementing(&self) -> bool {

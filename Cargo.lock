@@ -1120,6 +1120,7 @@ dependencies = [
  "cortex-m-rt",
  "cortex-m-rtic",
  "defmt",
+ "derive_more",
  "embedded-alloc",
  "embedded-sdmmc",
  "heapless",

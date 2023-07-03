@@ -41,7 +41,7 @@ static mut BUF_INDEX: AtomicUsize = AtomicUsize::new(0);
 /**
  * Points to the buffer that is currently being used.
  */
-static mut BUF: &[u8; SBG_BUFFER_SIZE] = &[0; SBG_BUFFER_SIZE];
+static mut BUF: [u8; SBG_BUFFER_SIZE] = [0; SBG_BUFFER_SIZE];
 
 /**
  * Holds the RTC instance. This is used to get the current time.
@@ -147,10 +147,11 @@ impl SBG {
     /**
      * Reads SBG data frames for a buffer and returns the most recent data.
      */
-    pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) {
+    pub fn read_data(&mut self, buffer: &[u8; SBG_BUFFER_SIZE]) {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
-        unsafe { BUF = buffer };
+        // unsafe { BUF = buffer };
+        unsafe{BUF.copy_from_slice(buffer)};
         // SAFETY: We are assigning a static variable.
         // This is safe because are the only thread reading since SBG is locked.
         unsafe {
