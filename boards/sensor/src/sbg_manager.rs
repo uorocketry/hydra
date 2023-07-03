@@ -85,7 +85,7 @@ impl SBGManager {
 
         SBGManager {
             sbg_device: sbg,
-            buf_select: false,
+            buf_select: true,
             xfer,
             buf_dst: None,
             buf_dst2: Some(buf_dst2),
