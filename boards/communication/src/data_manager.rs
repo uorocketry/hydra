@@ -1,4 +1,4 @@
-use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, SensorData, UtcTime};
+use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, SensorData, UtcTime, Power};
 use messages::Message;
 
 #[derive(Clone)]
@@ -9,6 +9,7 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
+    pub power_data: Option<Power> 
 }
 
 impl DataManager {
@@ -20,10 +21,11 @@ impl DataManager {
             imu: (None, None),
             utc_time: None,
             gps_vel: None,
+            power_data: None,
         }
     }
 
-    pub fn clone_sensors(&self) -> [Option<SensorData>; 8] {
+    pub fn clone_sensors(&self) -> [Option<SensorData>; 9] {
         [
             self.air.clone().map(|x| x.into()),
             self.ekf_nav.0.clone().map(|x| x.into()),
@@ -33,6 +35,7 @@ impl DataManager {
             self.imu.1.clone().map(|x| x.into()),
             self.utc_time.clone().map(|x| x.into()),
             self.gps_vel.clone().map(|x| x.into()),
+            self.power_data.clone().map(|x| x.into())
         ]
     }
     pub fn handle_data(&mut self, data: Message) {
@@ -61,6 +64,9 @@ impl DataManager {
                 }
                 messages::sensor::SensorData::UtcTime(utc_time_data) => {
                     self.utc_time = Some(utc_time_data);
+                },
+                messages::sensor::SensorData::Power(power) => {
+                    self.power_data = Some(power);
                 }
             },
             _ => {}

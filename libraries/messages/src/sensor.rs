@@ -31,6 +31,24 @@ pub enum SensorData {
     Imu1(Imu1),
     Imu2(Imu2),
     GpsVel(GpsVel),
+    Power(Power),
+}
+#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct Power {
+    pub voltage: f32,
+    pub current: f32,
+    pub source: PowerSource,
+}
+#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub enum PowerSource {
+    OnBoard,
+    Pad
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
