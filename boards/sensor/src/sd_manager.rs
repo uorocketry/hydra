@@ -1,5 +1,4 @@
 use core::marker::PhantomData;
-
 use crate::types::SdController;
 use atsamd_hal::gpio::{Output, Pin, PushPull, PA16, PA17, PA18, PA19};
 use atsamd_hal::pac;
@@ -113,9 +112,10 @@ impl SdManager {
     }
     pub fn write(
         &mut self,
+        file: &mut sd::File,
         buffer: &[u8],
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
-        self.sd_controller.write(&mut self.volume, &mut self.file, buffer)
+        self.sd_controller.write(&mut self.volume, file, buffer)
     }
     pub fn write_str(
         &mut self,

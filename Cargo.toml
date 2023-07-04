@@ -15,7 +15,7 @@ default-members = [
 
 [workspace.dependencies.atsamd-hal]
 git = "https://github.com/atsamd-rs/atsamd"
-features = ["same51j", "same51j-rt", "dma", "can"]
+features = ["same51j", "same51j-rt", "dma", "can", "sdmmc"]
 
 [workspace.dependencies.serde]
 version = "1.0.150"

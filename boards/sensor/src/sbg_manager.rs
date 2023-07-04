@@ -21,6 +21,8 @@ use rtic::Mutex;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
 
+pub const SBG_FILE: &str = "sbg.txt";
+
 // Simple heap required by the SBG library
 static HEAP: Heap = Heap::empty();
 
@@ -136,7 +138,9 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
 pub fn sbg_sd(mut cx: crate::app::sbg_sd::Context, data: [u8; SBG_BUFFER_SIZE]) {
     cx.shared.sd_manager.lock(|sd| {
         cx.shared.em.run(|| {
-            sd.write(&data)?;
+            let mut file = sd.open_file(SBG_FILE)?;
+            sd.write(&mut file, &data)?;
+            sd.close_file(file)?;
             Ok(())
         })  
     })
