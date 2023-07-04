@@ -1,10 +1,10 @@
 use crate::state_machine::RocketStates;
-use heapless::spsc::Queue;
+use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
 
 const MAIN_HEIGHT: f32 = 450.0;
-const ACCEL_MIN: f32 = 20.0;
+const ACCEL_MIN: f32 = 30.0;
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -13,13 +13,13 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
-    pub historical_pressure: Queue<f32, 8>, // probably want to make this a ring buffer
+    pub historical_pressure: HistoryBuffer<f32, 5>,
     pub current_state: Option<RocketStates>,
 }
 
 impl DataManager {
     pub fn new() -> Self {
-        let historical_pressure = Queue::new();
+        let historical_pressure = HistoryBuffer::new();
         Self {
             air: None,
             ekf_nav: (None, None),
@@ -42,9 +42,9 @@ impl DataManager {
                 return false;
             }
         }
-        match self.historical_pressure.peek() {
+        match self.historical_pressure.recent() {
             Some(mut point_previous) => {
-                for i in self.historical_pressure.iter() {
+                for i in self.historical_pressure.oldest_ordered() {
                     let slope = i - point_previous;
                     if slope > 0.0 {
                         return false;
@@ -76,10 +76,7 @@ impl DataManager {
                 messages::sensor::SensorData::Air(air_data) => {
                     let pressure = air_data.pressure_abs;
                     self.air = Some(air_data);
-                    if self.historical_pressure.is_full() {
-                        self.historical_pressure.dequeue();
-                    }
-                    self.historical_pressure.enqueue(pressure).expect("Queue failed")
+                    self.historical_pressure.write(pressure);
                 }
                 messages::sensor::SensorData::EkfNav1(nav1_data) => {
                     self.ekf_nav.0 = Some(nav1_data);
