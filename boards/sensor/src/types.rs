@@ -29,13 +29,14 @@ pub type SBGTransfer = dmac::Transfer<
 
 pub type SBGBuffer = [u8; SBG_BUFFER_SIZE];
 pub struct SBGBufferWrapper(pub SBGBuffer);
-/// SAFETY: We are implementing an unsafe trait 
+/// SAFETY: We are implementing an unsafe trait.
+/// This is safe because we give a pointer to a valid location in memory.
+/// Also, the buffer is of size u8 and fixed length.  
 unsafe impl dmac::Buffer for SBGBufferWrapper {
     type Beat = u8;
     fn dma_ptr(&mut self) -> *mut Self::Beat {
         self.0.as_mut_ptr()
     }
-    /// is this really not incrementing? 
     fn incrementing(&self) -> bool {
         false
     }
