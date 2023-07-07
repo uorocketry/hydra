@@ -4,7 +4,8 @@ use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTi
 use messages::Message;
 
 const MAIN_HEIGHT: f32 = 450.0;
-const ACCEL_MIN: f32 = 30.0;
+const VELOCITY_MIN: f32 = 20.0;
+const HEIGHT_MIN: f32 = 300.0;
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -38,7 +39,7 @@ impl DataManager {
     pub fn is_falling(&self) -> bool {
         let ekf_nav1 = self.ekf_nav.0.as_ref();
         if let Some(ekf_nav1) = ekf_nav1 {
-            if ekf_nav1.velocity[2] > 20.0 {
+            if ekf_nav1.velocity[2] > VELOCITY_MIN {
                 return false;
             }
         }
@@ -59,8 +60,8 @@ impl DataManager {
         true
     }
     pub fn is_launched(&self) -> bool {
-        match self.imu.0.as_ref() {
-            Some(imu) => imu.accelerometers[1] > ACCEL_MIN,
+        match self.air.as_ref() {
+            Some(air) => air.altitude > HEIGHT_MIN,
             None => false,
         }
     }
