@@ -245,7 +245,7 @@ impl RadioDevice {
         )
     }
     pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
-        let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
+        let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
 
         let mav_header = mavlink::MavHeader {
             system_id: 1,
