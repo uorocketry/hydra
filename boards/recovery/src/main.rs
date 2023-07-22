@@ -15,7 +15,7 @@ use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
-use hal::gpio::{Pin, Pins, PushPullOutput, PA14};
+use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use messages::*;
@@ -24,6 +24,7 @@ use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
 use types::GPIOController;
 use types::COM_ID;
+use defmt::info;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -39,7 +40,8 @@ mod app {
 
     #[local]
     struct Local {
-        led: Pin<PA14, PushPullOutput>,
+        led_green: Pin<PB16, PushPullOutput>,
+        led_red: Pin<PB17, PushPullOutput>,
         state_machine: StateMachine,
     }
 
@@ -86,10 +88,11 @@ mod app {
         );
 
         /* GPIO config */
-        let led = pins.pa14.into_push_pull_output();
+        let led_green = pins.pb16.into_push_pull_output();
+        let led_red = pins.pb17.into_push_pull_output();
         let gpio = GPIOController::new(
-            pins.pa18.into_push_pull_output(),
-            pins.pa19.into_push_pull_output(),
+            pins.pb14.into_push_pull_output(),
+            pins.pb15.into_push_pull_output(),
         );
         /* State Machine config */
         let state_machine = StateMachine::new();
@@ -109,7 +112,7 @@ mod app {
                 can0,
                 gpio,
             },
-            Local { led, state_machine },
+            Local { led_green, led_red, state_machine },
             init::Monotonics(mono),
         )
     }
@@ -122,15 +125,17 @@ mod app {
 
     /// Runs the state machine.
     /// This takes control of the shared resources.
-    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager])]
+    #[task(local = [state_machine], shared = [can0, gpio, data_manager])]
     fn run_sm(mut cx: run_sm::Context) {
+        cx.shared.data_manager.lock(|dm| info!("alt: {}", dm.get_alt()));
         cx.local.state_machine.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,
-        })
+        });
+        spawn_after!(run_sm, 2.secs());
     }
 
     /// Handles the CAN0 interrupt.
-    #[task(priority = 3, binds = CAN0, shared = [can0, data_manager])]
+    #[task(binds = CAN0, shared = [can0, data_manager])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
             cx.shared
@@ -175,13 +180,14 @@ mod app {
 
     /// Simple blink task to test the system.
     /// Acts as a heartbeat for the system.
-    #[task(local = [led], shared = [&em])]
+    #[task(local = [led_green, led_red], shared = [&em])]
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
-            cx.local.led.toggle()?;
             if cx.shared.em.has_error() {
+                cx.local.led_red.toggle()?;
                 spawn_after!(blink, 200.millis())?;
             } else {
+                cx.local.led_green.toggle()?;
                 spawn_after!(blink, 1.secs())?;
             }
             Ok(())

@@ -17,7 +17,7 @@ use communication::Capacities;
 use data_manager::DataManager;
 use hal::dmac;
 use hal::gpio::Pins;
-use hal::gpio::PA14;
+use hal::gpio::{PB16, PB17};
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
@@ -38,13 +38,14 @@ mod app {
     struct Shared {
         em: ErrorManager,
         data_manager: DataManager,
-        can0: communication::CanDevice0,
+        can: communication::CanDevice0,
     }
 
     #[local]
     struct Local {
-        led: Pin<PA14, PushPullOutput>,
-        sd_manager: SdManager,
+        led_green: Pin<PB16, PushPullOutput>,
+        led_red: Pin<PB17, PushPullOutput>,
+        // sd_manager: SdManager,
         sbg_manager: SBGManager,
     }
 
@@ -59,6 +60,9 @@ mod app {
         let mut peripherals = cx.device;
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
+
+        let mut sbg_pin = pins.pb01.into_push_pull_output();
+        sbg_pin.set_high().unwrap(); // turn on sbg
 
         let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
         let dmaChannels = dmac.split();
@@ -79,7 +83,7 @@ mod app {
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
-        let (can0, gclk0) = communication::CanDevice0::new(
+        let (can, gclk0) = communication::CanDevice0::new(
             pins.pa23.into_mode(),
             pins.pa22.into_mode(),
             pclk_can,
@@ -91,32 +95,33 @@ mod app {
         );
 
         /* SD config */
-        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom1, gclk0);
-        let sd_manager = SdManager::new(
-            &mclk,
-            peripherals.SERCOM1,
-            pclk_sd.freq(),
-            pins.pa18.into_push_pull_output(),
-            pins.pa17.into_push_pull_output(),
-            pins.pa19.into_push_pull_output(),
-            pins.pa16.into_push_pull_output(),
-        );
+        // let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom1, gclk0);
+        // let sd_manager = SdManager::new(
+        //     &mclk,
+        //     peripherals.SERCOM1,
+        //     pclk_sd.freq(),
+        //     pins.pa18.into_push_pull_output(),
+        //     pins.pa17.into_push_pull_output(),
+        //     pins.pa19.into_push_pull_output(),
+        //     pins.pa16.into_push_pull_output(),
+        // );
 
         /* SBG config */
-        let (pclk_sbg, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
+        let (pclk_sbg, gclk0) = Pclk::enable(tokens.pclks.sercom5, gclk0);
         let dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
         let sbg_manager = SBGManager::new(
-            pins.pa09,
-            pins.pa08,
+            pins.pb03,
+            pins.pb02,
             pclk_sbg,
             &mut mclk,
-            peripherals.SERCOM0,
+            peripherals.SERCOM5,
             peripherals.RTC,
             dmaCh0,
         );
 
         /* Status LED */
-        let led = pins.pa14.into_push_pull_output();
+        let led_green = pins.pb16.into_push_pull_output();
+        let led_red = pins.pb17.into_push_pull_output();
 
         /* Spawn tasks */
         sensor_send::spawn().ok();
@@ -129,26 +134,27 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
-                can0,
+                can,
             },
             Local {
-                led,
-                sd_manager,
+                led_green,
+                led_red,
+                // sd_manager,
                 sbg_manager,
             },
             init::Monotonics(mono),
         )
     }
 
-    /// Idle task for when no other tasks are running.
-    #[idle]
-    fn idle(_: idle::Context) -> ! {
-        loop {}
-    }
+    // /// Idle task for when no other tasks are running.
+    // #[idle]
+    // fn idle(_: idle::Context) -> ! {
+    //     loop {}
+    // }
 
-    #[task(priority = 3, binds = CAN0, shared = [can0])]
+    #[task(priority = 3, binds = CAN0, shared = [can])]
     fn can0(mut cx: can0::Context) {
-        cx.shared.can0.lock(|can| {
+        cx.shared.can.lock(|can| {
             can.process_data();
         });
     }
@@ -156,10 +162,10 @@ mod app {
     /**
      * Sends a message over CAN.
      */
-    #[task(capacity = 10, local = [counter: u16 = 0], shared = [can0, &em])]
+    #[task(capacity = 10, local = [counter: u16 = 0], shared = [can, &em])]
     fn send_internal(mut cx: send_internal::Context, m: Message) {
         cx.shared.em.run(|| {
-            cx.shared.can0.lock(|can| can.send_message(m))?;
+            cx.shared.can.lock(|can| can.send_message(m))?;
             Ok(())
         });
     }
@@ -193,13 +199,14 @@ mod app {
      * Simple blink task to test the system.
      * Acts as a heartbeat for the system.
      */
-    #[task(local = [led], shared = [&em])]
+    #[task(local = [led_green, led_red], shared = [&em])]
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
-            cx.local.led.toggle()?;
             if cx.shared.em.has_error() {
+                cx.local.led_red.toggle()?;
                 spawn_after!(blink, 200.millis())?;
             } else {
+                cx.local.led_green.toggle()?;
                 spawn_after!(blink, 1.secs())?;
             }
             Ok(())

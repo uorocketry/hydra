@@ -2,7 +2,7 @@ use crate::state_machine::states::apogee::Apogee;
 use crate::state_machine::states::wait_for_takeoff::WaitForTakeoff;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
-use defmt::{write, Format, Formatter};
+use defmt::{write, Format, Formatter, info};
 use rtic::mutex::Mutex;
 
 #[derive(Debug, Clone)]

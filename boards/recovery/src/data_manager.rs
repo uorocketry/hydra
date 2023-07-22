@@ -2,6 +2,7 @@ use crate::state_machine::RocketStates;
 use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
+use defmt::info;
 
 const MAIN_HEIGHT: f32 = 450.0;
 const VELOCITY_MIN: f32 = 20.0;
@@ -14,7 +15,7 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
-    pub historical_pressure: HistoryBuffer<f32, 5>,
+    pub historical_pressure: HistoryBuffer<f32, 20>,
     pub current_state: Option<RocketStates>,
 }
 
@@ -40,23 +41,56 @@ impl DataManager {
         let ekf_nav1 = self.ekf_nav.0.as_ref();
         if let Some(ekf_nav1) = ekf_nav1 {
             if ekf_nav1.velocity[2] > VELOCITY_MIN {
+                info!("fail");
                 return false;
             }
         }
-        match self.historical_pressure.recent() {
-            Some(mut point_previous) => {
+        info!("points {}", self.historical_pressure.len());
+        if self.historical_pressure.len() < 20 {
+            info!("fail");
+            return false;
+        }
+        match self.historical_pressure.last() {
+            Some(last) => {
+                let mut avg = 0.0;
+                let mut prev = last;
                 for i in self.historical_pressure.oldest_ordered() {
-                    let slope = i - point_previous;
-                    if slope > 0.0 {
+                    avg += (i - prev)/0.25;
+                    prev = i;
+                }
+                match avg / 20.0 {
+                    x if x < 10.0 => {
                         return false;
                     }
-                    point_previous = i;
+                    _ => {
+                        info!("avg: {}", avg / 20.0);
+                    }
                 }
+                // if (avg / 20.0 < ) { // 4 is the number of slopes. 
+                //     return false; 
+                // }
             }
             None => {
                 return false;
             }
         }
+        // match self.historical_pressure.recent() {
+        //     Some(pressure) => {
+        //         match self.historical_pressure.last() {
+        //             Some(last) => {
+        //             if (pressure - last) / 1.25 < 100.0 {
+        //                 return false;
+        //             }
+        //         }
+        //             None => {
+        //                 return false;
+        //             }
+        //         }
+        //     }
+        //     None => {
+        //         return false;
+        //     }
+        // }
         true
     }
     pub fn is_launched(&self) -> bool {
@@ -69,6 +103,12 @@ impl DataManager {
         match self.air.as_ref() {
             Some(air) => air.altitude < MAIN_HEIGHT,
             None => false,
+        }
+    }
+    pub fn get_alt(&self) -> f32 {
+        match self.air.as_ref() {
+            Some(air) => air.altitude,
+            None => 0.0,
         }
     }
     pub fn handle_data(&mut self, data: Message) {

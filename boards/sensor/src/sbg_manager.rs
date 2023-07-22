@@ -3,7 +3,8 @@ use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::dmac;
 use atsamd_hal::dmac::Transfer;
-use atsamd_hal::gpio::{Pin, Reset, PA08, PA09};
+use atsamd_hal::sercom::{IoSet1, IoSet6};
+use atsamd_hal::gpio::{Pin, Reset, PA08, PA09, PB03, PB02};
 use atsamd_hal::pac::{MCLK, RTC};
 use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;
@@ -13,7 +14,7 @@ use core::mem::size_of;
 use core::ptr;
 
 use crate::app::sbg_handle_data;
-use atsamd_hal::sercom::{uart, Sercom, Sercom0};
+use atsamd_hal::sercom::{uart, Sercom, Sercom5};
 use embedded_alloc::Heap;
 use rtic::Mutex;
 use sbg_rs::sbg;
@@ -33,11 +34,11 @@ pub struct SBGManager {
 
 impl SBGManager {
     pub fn new(
-        rx: Pin<PA09, Reset>,
-        tx: Pin<PA08, Reset>,
-        pclk_sercom0: Pclk<Sercom0, Gclk0Id>,
+        rx: Pin<PB03, Reset>,
+        tx: Pin<PB02, Reset>,
+        pclk_sercom5: Pclk<Sercom5, Gclk0Id>,
         mclk: &mut MCLK,
-        sercom0: Sercom0,
+        sercom5: Sercom5,
         rtc: RTC,
         mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
     ) -> Self {
@@ -49,8 +50,8 @@ impl SBGManager {
             unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
         }
 
-        let pads_sbg = uart::Pads::<Sercom0, _>::default().rx(rx).tx(tx);
-        let uart_sbg = ConfigSBG::new(mclk, sercom0, pads_sbg, pclk_sercom0.freq())
+        let pads_sbg = uart::Pads::<Sercom5, IoSet6>::default().rx(rx).tx(tx);
+        let uart_sbg = ConfigSBG::new(mclk, sercom5, pads_sbg, pclk_sercom5.freq())
             .baud(
                 115200.hz(),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits8),
@@ -65,7 +66,7 @@ impl SBGManager {
             .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
         let xfer = Transfer::new(dma_channel, sbg_rx, unsafe { &mut *BUF_DST }, false)
             .expect("DMA err")
-            .begin(Sercom0::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+            .begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
 
         // There is a bug within the HAL that improperly configures the RTC
         // in count32 mode. This is circumvented by first using clock mode then

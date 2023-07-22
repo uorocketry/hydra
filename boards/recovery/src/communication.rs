@@ -113,7 +113,7 @@ impl CanDevice0 {
                 action: Action::StoreFifo0,
                 filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
                     .unwrap(),
-                mask: ecan::StandardId::MAX,
+                mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Sensor Board filter"));
 
@@ -123,7 +123,7 @@ impl CanDevice0 {
                 action: Action::StoreFifo1,
                 filter: ecan::StandardId::new(messages::sender::Sender::CommunicationBoard.into())
                     .unwrap(),
-                mask: ecan::StandardId::MAX,
+                mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Ground Station filter"));
 
@@ -160,6 +160,8 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
+                                // info!("Received data: {:?}", data);
+
                                 data_manager.handle_data(data);
                             }
                             Err(e) => {
@@ -172,6 +174,8 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
+                                // info!("Received data: {:?}", data)
+
                                 data_manager.handle_data(data);
                             }
                             Err(e) => {

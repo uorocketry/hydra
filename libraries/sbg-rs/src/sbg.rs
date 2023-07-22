@@ -19,13 +19,13 @@ use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
 use defmt::{debug, error, flush, info, warn};
 use embedded_hal::serial::Write;
-use hal::gpio::{PA08, PA09, PB16, PB17};
+use hal::gpio::{PA08, PA09, PB16, PB17, PB03, PB02};
 use hal::sercom::uart::Duplex;
 use hal::sercom::uart::{self, EightBit, Uart};
-use hal::sercom::{IoSet1, Sercom0, Sercom5};
+use hal::sercom::{IoSet1, IoSet6, Sercom0, Sercom5};
 use messages::sensor::*;
 
-type Pads = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
+type Pads = uart::PadsFromIds<Sercom5, IoSet6, PB03, PB02>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
 
@@ -481,23 +481,23 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     _errorCode: _SbgErrorCode,
     pFormat: *const ::core::ffi::c_char,
 ) {
-    if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
-        return;
-    }
-    // SAFETY: We are converting a raw pointer to a CStr and then to a str.
-    // This is safe because we check if the pointers are null and
-    // the pointers can only be accessed during the lifetime of this function.
-    let file = unsafe { CStr::from_ptr(pFileName).to_str().unwrap() };
-    let function = unsafe { CStr::from_ptr(pFunctionName).to_str().unwrap() };
-    let _category = unsafe { CStr::from_ptr(pCategory).to_str().unwrap() };
-    let _format = unsafe { CStr::from_ptr(pFormat).to_str().unwrap() };
+    // if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
+    //     return;
+    // }
+    // // SAFETY: We are converting a raw pointer to a CStr and then to a str.
+    // // This is safe because we check if the pointers are null and
+    // // the pointers can only be accessed during the lifetime of this function.
+    // let file = unsafe { CStr::from_ptr(pFileName).to_str().unwrap() };
+    // let function = unsafe { CStr::from_ptr(pFunctionName).to_str().unwrap() };
+    // let _category = unsafe { CStr::from_ptr(pCategory).to_str().unwrap() };
+    // let _format = unsafe { CStr::from_ptr(pFormat).to_str().unwrap() };
 
     match logType {
         // silently handle errors
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning {} {}", file, function),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),
         _ => (),
     };
     flush();

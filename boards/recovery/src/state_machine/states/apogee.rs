@@ -2,13 +2,14 @@ use super::Ascent;
 use crate::state_machine::{Landed, RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
 use rtic::mutex::Mutex;
-use defmt::{write, Format, Formatter};
+use defmt::{write, Format, Formatter, info};
 
 #[derive(Debug, Clone)]
 pub struct Apogee {}
 
 impl State for Apogee {
     fn enter(&self, context: &mut StateMachineContext) {
+        info!("Apogee");
         context.shared_resources.gpio.lock(|gpio| gpio.fire_drogue());
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
