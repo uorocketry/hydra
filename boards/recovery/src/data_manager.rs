@@ -41,13 +41,10 @@ impl DataManager {
         let ekf_nav1 = self.ekf_nav.0.as_ref();
         if let Some(ekf_nav1) = ekf_nav1 {
             if ekf_nav1.velocity[2] > VELOCITY_MIN {
-                info!("fail");
                 return false;
             }
         }
-        info!("points {}", self.historical_pressure.len());
         if self.historical_pressure.len() < 20 {
-            info!("fail");
             return false;
         }
         match self.historical_pressure.last() {
@@ -58,39 +55,20 @@ impl DataManager {
                     avg += (i - prev)/0.25;
                     prev = i;
                 }
-                match avg / 20.0 {
+                // info!("avg {}", avg / 20.0);
+                match avg / 19.0 { // 19 because we have 19 slopes. 
                     x if x < 10.0 => {
                         return false;
                     }
                     _ => {
-                        info!("avg: {}", avg / 20.0);
+                        info!("avg: {}", avg / 19.0);
                     }
                 }
-                // if (avg / 20.0 < ) { // 4 is the number of slopes. 
-                //     return false; 
-                // }
             }
             None => {
                 return false;
             }
         }
-        // match self.historical_pressure.recent() {
-        //     Some(pressure) => {
-        //         match self.historical_pressure.last() {
-        //             Some(last) => {
-        //             if (pressure - last) / 1.25 < 100.0 {
-        //                 return false;
-        //             }
-        //         }
-        //             None => {
-        //                 return false;
-        //             }
-        //         }
-        //     }
-        //     None => {
-        //         return false;
-        //     }
-        // }
         true
     }
     pub fn is_launched(&self) -> bool {

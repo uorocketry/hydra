@@ -203,6 +203,7 @@ dependencies = [
  "cortex-m-rt",
  "cortex-m-rtic",
  "defmt",
+ "embedded-sdmmc",
  "heapless",
  "messages",
  "panic-halt",

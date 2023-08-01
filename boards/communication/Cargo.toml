@@ -18,3 +18,4 @@ common-arm = { path = "../../libraries/common-arm" }
 atsamd-hal = { workspace = true }
 messages = { path = "../../libraries/messages" }
 typenum = "1.16.0"
+embedded-sdmmc = "0.3.0"

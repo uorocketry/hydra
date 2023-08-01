@@ -13,12 +13,13 @@ use core::ffi::c_void;
 use core::mem::size_of;
 use core::ptr;
 
-use crate::app::sbg_handle_data;
+use crate::app::{sbg_handle_data};
 use atsamd_hal::sercom::{uart, Sercom, Sercom5};
 use embedded_alloc::Heap;
 use rtic::Mutex;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
+use common_arm::spawn;
 
 pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
@@ -98,10 +99,17 @@ pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
     });
 }
 
+// pub fn sbg_sd_dump(mut cx: sbg_sd_dump::Context, data: [u8; SBG_BUFFER_SIZE]) {
+//     cx.shared.sd_manager.lock(|manager| {
+//         if let Ok(mut file) = manager.open_file("sbg.bin") {
+//             manager.write(&mut file, &data); // I don't really care if this fails, could add some handling though but resources are limited
+//             manager.close_file(file);
+//         }
+//     });
+// }
 /**
  * Handles the DMA interrupt.
  * Handles the SBG data.
- * Logs data to the SD card.
  */
 pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
     let sbg = cx.local.sbg_manager;
@@ -118,9 +126,9 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
                     sbg.xfer.recycle_source(unsafe { &mut *BUF_DST2 })?
                 }
             };
-
+            // let buf_clone = buf.clone();
             sbg.sbg_device.read_data(buf);
-
+            // spawn!(sbg_sd_dump(buf_clone))?;
             Ok(())
         });
     }

@@ -15,7 +15,7 @@ use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
-use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
+use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17, PB14};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use messages::*;
@@ -112,7 +112,7 @@ mod app {
                 can0,
                 gpio,
             },
-            Local { led_green, led_red, state_machine },
+            Local { led_green, led_red, state_machine},
             init::Monotonics(mono),
         )
     }

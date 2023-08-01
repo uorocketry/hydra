@@ -1,4 +1,4 @@
-use atsamd_hal::gpio::{PA18, PA19, PB14, PB15, PB17, Pin, PushPullOutput};
+use atsamd_hal::gpio::{PB14, PB15, Pin, PushPullOutput};
 use atsamd_hal::prelude::*;
 use messages::sender::Sender;
 use messages::sender::Sender::RecoveryBoard;
@@ -26,5 +26,11 @@ impl GPIOController {
     }
     pub fn fire_main(&mut self) {
         self.main_ematch.set_high().ok();
+    }
+    pub fn close_drouge(&mut self) {
+        self.drogue_ematch.set_low().ok();
+    }
+    pub fn close_main(&mut self) {
+        self.main_ematch.set_low().ok();
     }
 }

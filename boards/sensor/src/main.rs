@@ -25,7 +25,7 @@ use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
 use sbg_manager::{sbg_dma, sbg_handle_data, SBGManager};
-use sbg_rs::sbg::CallbackData;
+use sbg_rs::sbg::{CallbackData, SBG_BUFFER_SIZE};
 use sd_manager::SdManager;
 use systick_monotonic::*;
 use types::*;
@@ -39,13 +39,13 @@ mod app {
         em: ErrorManager,
         data_manager: DataManager,
         can: communication::CanDevice0,
+        // sd_manager: SdManager,
     }
 
     #[local]
     struct Local {
         led_green: Pin<PB16, PushPullOutput>,
         led_red: Pin<PB17, PushPullOutput>,
-        // sd_manager: SdManager,
         sbg_manager: SBGManager,
     }
 
@@ -135,11 +135,11 @@ mod app {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
                 can,
+                // sd_manager,
             },
             Local {
                 led_green,
                 led_red,
-                // sd_manager,
                 sbg_manager,
             },
             init::Monotonics(mono),
@@ -214,6 +214,9 @@ mod app {
     }
 
     extern "Rust" {
+        // #[task(capacity = 3, shared = [sd_manager])]
+        // fn sbg_sd_dump(context: sbg_sd_dump::Context, data: [u8; SBG_BUFFER_SIZE]);
+
         #[task(binds = DMAC_0, shared = [&em], local = [sbg_manager])]
         fn sbg_dma(context: sbg_dma::Context);
 

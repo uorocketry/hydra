@@ -4,6 +4,7 @@
 mod communication;
 mod data_manager;
 mod types;
+mod sd_manager;
 
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
@@ -25,6 +26,7 @@ use messages::*;
 use panic_halt as _;
 use systick_monotonic::*;
 use types::*;
+use defmt::info;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
