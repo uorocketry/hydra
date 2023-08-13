@@ -2,11 +2,11 @@ use crate::state_machine::RocketStates;
 use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
-use defmt::info;
+use defmt::{info, flush};
 
-const MAIN_HEIGHT: f32 = 450.0;
+const MAIN_HEIGHT: f32 = 500.0;
 const VELOCITY_MIN: f32 = 20.0;
-const HEIGHT_MIN: f32 = 300.0;
+const HEIGHT_MIN: f32 = 900.0;
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -15,13 +15,13 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
-    pub historical_pressure: HistoryBuffer<f32, 20>,
+    pub historical_barometer_altitude: HistoryBuffer<(f32, u32), 8>,
     pub current_state: Option<RocketStates>,
 }
 
 impl DataManager {
     pub fn new() -> Self {
-        let historical_pressure = HistoryBuffer::new();
+        let historical_barometer_altitude = HistoryBuffer::new();
         Self {
             air: None,
             ekf_nav: (None, None),
@@ -29,7 +29,7 @@ impl DataManager {
             imu: (None, None),
             utc_time: None,
             gps_vel: None,
-            historical_pressure,
+            historical_barometer_altitude,
             current_state: None,
         }
     }
@@ -38,30 +38,36 @@ impl DataManager {
     /// Furthermore, we only start checking pressure data when velocity is less than 20m/s
     /// because we want to avoid the complexities of pressure during transonic flight.
     pub fn is_falling(&self) -> bool {
-        let ekf_nav1 = self.ekf_nav.0.as_ref();
-        if let Some(ekf_nav1) = ekf_nav1 {
-            if ekf_nav1.velocity[2] > VELOCITY_MIN {
-                return false;
-            }
-        }
-        if self.historical_pressure.len() < 20 {
+        // let ekf_nav1 = self.ekf_nav.0.as_ref();
+        // if let Some(ekf_nav1) = ekf_nav1 {
+        //     if ekf_nav1.velocity[2] > VELOCITY_MIN {
+        //         return false;
+        //     }
+        // }
+        if self.historical_barometer_altitude.len() < 8 {
             return false;
         }
-        match self.historical_pressure.last() {
+        let mut buf = self.historical_barometer_altitude.oldest_ordered();
+        match buf.next() {
             Some(last) => {
-                let mut avg = 0.0;
+                let mut avg: f32 = 0.0;
                 let mut prev = last;
-                for i in self.historical_pressure.oldest_ordered() {
-                    avg += (i - prev)/0.25;
+                for i in buf {
+                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1000000.0;
+                    if time_diff == 0.0 {
+                        info!("diff {} {}", i, prev);
+                        continue;
+                    }
+                    avg += (i.0 - prev.0)/time_diff; 
                     prev = i;
                 }
-                // info!("avg {}", avg / 20.0);
-                match avg / 19.0 { // 19 because we have 19 slopes. 
-                    x if x < 10.0 => {
+                match avg / 7.0 { // 7 because we have 8 points.  
+                    x if x > -10.0 || x < -120.0 => { 
+                        info!("avg: {}", avg / 7.0);
                         return false;
                     }
                     _ => {
-                        info!("avg: {}", avg / 19.0);
+                        info!("avg: {}", avg / 7.0);
                     }
                 }
             }
@@ -93,9 +99,17 @@ impl DataManager {
         match data.data {
             messages::Data::Sensor(sensor) => match sensor.data {
                 messages::sensor::SensorData::Air(air_data) => {
-                    let pressure = air_data.pressure_abs;
+                    let tup_data = (air_data.altitude, air_data.time_stamp);
                     self.air = Some(air_data);
-                    self.historical_pressure.write(pressure);
+                    if let Some(recent) = self.historical_barometer_altitude.recent() {
+                        if recent.1 != tup_data.1 {
+                            self.historical_barometer_altitude.write(tup_data);
+                        } else {
+                            info!("duplicate data {}", tup_data.1);
+                        }
+                    } else {
+                        self.historical_barometer_altitude.write(tup_data);
+                    }
                 }
                 messages::sensor::SensorData::EkfNav1(nav1_data) => {
                     self.ekf_nav.0 = Some(nav1_data);

@@ -1,4 +1,4 @@
-use atsamd_hal::gpio::{PB14, PB15, Pin, PushPullOutput};
+use atsamd_hal::gpio::{PB14, PB15, Pin, PushPullOutput, PA09, PA06};
 use atsamd_hal::prelude::*;
 use messages::sender::Sender;
 use messages::sender::Sender::RecoveryBoard;
@@ -10,12 +10,12 @@ pub static COM_ID: Sender = RecoveryBoard;
 
 
 pub struct GPIOController {
-    drogue_ematch: Pin<PB14, PushPullOutput>,
-    main_ematch: Pin<PB15, PushPullOutput>,
+    drogue_ematch: Pin<PA09, PushPullOutput>,
+    main_ematch: Pin<PA06, PushPullOutput>,
 }
 
 impl GPIOController {
-    pub fn new(drogue_ematch: Pin<PB14, PushPullOutput>, main_ematch: Pin<PB15, PushPullOutput>) -> Self {
+    pub fn new(drogue_ematch: Pin<PA09, PushPullOutput>, main_ematch: Pin<PA06, PushPullOutput>) -> Self {
         Self {
             drogue_ematch,
             main_ematch

@@ -1,4 +1,4 @@
-use defmt::{write, Format, Formatter};
+use defmt::{write, Format, Formatter, info};
 
 use crate::no_transition;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
@@ -10,6 +10,7 @@ pub struct Landed {}
 
 impl State for Landed {
     fn enter(&self,context: &mut StateMachineContext) {
+        info!("Landed");
         context.shared_resources.gpio.lock(|gpio| gpio.fire_main());
     }
     fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {

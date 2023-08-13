@@ -15,7 +15,7 @@ use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
-use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17, PB14};
+use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17, PA09, PA06};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use messages::*;
@@ -91,8 +91,8 @@ mod app {
         let led_green = pins.pb16.into_push_pull_output();
         let led_red = pins.pb17.into_push_pull_output();
         let gpio = GPIOController::new(
-            pins.pb14.into_push_pull_output(),
-            pins.pb15.into_push_pull_output(),
+            pins.pa09.into_push_pull_output(),
+            pins.pa06.into_push_pull_output(),
         );
         /* State Machine config */
         let state_machine = StateMachine::new();
@@ -112,7 +112,7 @@ mod app {
                 can0,
                 gpio,
             },
-            Local { led_green, led_red, state_machine},
+            Local {led_green, led_red, state_machine},
             init::Monotonics(mono),
         )
     }
