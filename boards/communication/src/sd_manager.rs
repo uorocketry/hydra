@@ -92,7 +92,7 @@ impl SdManager {
         let file = sd_cont.open_file_in_dir(
             &mut volume,
             &root_directory,
-            "test2.txt",
+            "log.txt",
             sd::Mode::ReadWriteCreateOrTruncate,
         );
         let file = match file {
@@ -112,10 +112,10 @@ impl SdManager {
     }
     pub fn write(
         &mut self,
-        file: &mut sd::File,
+        // file: &mut sd::File,
         buffer: &[u8],
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
-        self.sd_controller.write(&mut self.volume, file, buffer)
+        self.sd_controller.write(&mut self.volume, &mut self.file, buffer)
     }
     pub fn write_str(
         &mut self,

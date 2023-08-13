@@ -18,7 +18,7 @@ use data_manager::DataManager;
 use sd_manager::SdManager;
 
 use hal::gpio::Pins;
-use hal::gpio::PA14;
+use hal::gpio::PA05;
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
@@ -42,7 +42,7 @@ mod app {
 
     #[local]
     struct Local {
-        led: Pin<PA14, PushPullOutput>,
+        led: Pin<PA05, PushPullOutput>,
         radio: RadioDevice,
         sd_manager: SdManager,
     }
@@ -115,7 +115,7 @@ mod app {
         );        
 
         /* Status LED */
-        let led = pins.pa14.into_push_pull_output();
+        let led = pins.pa05.into_push_pull_output();
 
         /* Spawn tasks */
         sensor_send::spawn().ok();
@@ -161,6 +161,9 @@ mod app {
         });
     }
 
+
+    /// Probably should use this ( ﾉ^ω^)ﾉ
+    /// I see no need for this and this loses the sender information
     pub fn queue_gs_message(d: impl Into<Data>) {
         let message = Message::new(&monotonics::now(), COM_ID, d.into());
 
@@ -178,15 +181,18 @@ mod app {
         });
     }
 
-    #[task(capacity = 3, local = [sd_manager], shared = [&em])]
-    fn sd_dump(mut cx: sd_dump::Context) {
+    #[task(capacity = 10, local = [sd_manager], shared = [&em])]
+    fn sd_dump(mut cx: sd_dump::Context, m: Message) {
         let mut manager = cx.local.sd_manager;
         cx.shared.em.run(|| {
-            if let Ok(mut file) = manager.open_file("test.txt") {
-                manager.write(&mut file, "Hello, world!\n".as_bytes());
-                manager.close_file(file);
-                info!("test written to SD card");
-            }
+            let mut buf = [0u8; 256];
+            let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
+            info!("{}", msg_ser);
+            manager.write(msg_ser)?;
+            // if let Ok(mut file) = manager.open_file("log.txt") {
+            //     manager.write(&mut file, msg_ser)?;
+            //     manager.close_file(file);
+            // }
             Ok(())
         });
     }
@@ -209,6 +215,7 @@ mod app {
         cx.shared.em.run(|| {
             for msg in messages {
                 spawn!(send_gs, msg.clone())?;
+                spawn!(sd_dump, msg)?;
             }
             Ok(())
         });
@@ -223,7 +230,6 @@ mod app {
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
             cx.local.led.toggle()?;
-            spawn!(sd_dump)?;
             if cx.shared.em.has_error() {
                 spawn_after!(blink, ExtU64::millis(200))?;
             } else {

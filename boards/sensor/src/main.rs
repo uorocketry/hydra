@@ -24,7 +24,9 @@ use mcan::messageram::SharedMemory;
 use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
-use sbg_manager::{sbg_dma, sbg_handle_data, sbg_sd_task, SBGManager};
+// use sbg_manager::{sbg_dma, sbg_handle_data, sbg_sd_task, SBGManager};
+use sbg_manager::{sbg_dma, sbg_handle_data, SBGManager};
+
 use sbg_rs::sbg::{CallbackData, SBG_BUFFER_SIZE};
 use sd_manager::SdManager;
 use systick_monotonic::*;
@@ -39,7 +41,7 @@ mod app {
         em: ErrorManager,
         data_manager: DataManager,
         can: communication::CanDevice0,
-        sd_manager: SdManager,
+        // sd_manager: SdManager,
     }
 
     #[local]
@@ -94,17 +96,17 @@ mod app {
             false,
         );
 
-        /* SD config */
-        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
-        let sd_manager = SdManager::new(
-            &mclk,
-            peripherals.SERCOM4,
-            pclk_sd.freq(),
-            pins.pb10.into_push_pull_output(),
-            pins.pb09.into_push_pull_output(),
-            pins.pb11.into_push_pull_output(),
-            pins.pb08.into_push_pull_output(),
-        );
+        // /* SD config */
+        // let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
+        // let sd_manager = SdManager::new(
+        //     &mclk,
+        //     peripherals.SERCOM4,
+        //     pclk_sd.freq(),
+        //     pins.pb10.into_push_pull_output(),
+        //     pins.pb09.into_push_pull_output(),
+        //     pins.pb11.into_push_pull_output(),
+        //     pins.pb08.into_push_pull_output(),
+        // );
 
         /* SBG config */
         let (pclk_sbg, gclk0) = Pclk::enable(tokens.pclks.sercom5, gclk0);
@@ -135,7 +137,7 @@ mod app {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
                 can,
-                sd_manager,
+                // sd_manager,
             },
             Local {
                 led_green,
@@ -214,8 +216,8 @@ mod app {
     }
 
     extern "Rust" {
-        #[task(capacity = 3, shared = [&em, sd_manager])]
-        fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
+        // #[task(capacity = 3, shared = [&em, sd_manager])]
+        // fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
 
         #[task(binds = DMAC_0, shared = [&em], local = [sbg_manager])]
         fn sbg_dma(context: sbg_dma::Context);

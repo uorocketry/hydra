@@ -1,5 +1,6 @@
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, SensorData, UtcTime};
 use messages::Message;
+use defmt::info;
 
 #[derive(Clone)]
 pub struct DataManager {

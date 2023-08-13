@@ -103,7 +103,7 @@ mod app {
         blink::spawn().ok();
 
         /* Monotonic clock */
-        let mono = Systick::new(core.SYST, gclk0.freq().0);
+        let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
         (
             Shared {
@@ -131,7 +131,7 @@ mod app {
         cx.local.state_machine.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,
         });
-        spawn_after!(run_sm, 2.secs());
+        spawn_after!(run_sm, ExtU64::secs(2));
     }
 
     /// Handles the CAN0 interrupt.
@@ -173,7 +173,7 @@ mod app {
             };
             let message = Message::new(&monotonics::now(), COM_ID, board_state);
             spawn!(send_internal, message)?;
-            spawn_after!(state_send, 5.secs())?;
+            spawn_after!(state_send, ExtU64::secs(5))?;
             Ok(())
         })
     }
@@ -185,10 +185,10 @@ mod app {
         cx.shared.em.run(|| {
             if cx.shared.em.has_error() {
                 cx.local.led_red.toggle()?;
-                spawn_after!(blink, 200.millis())?;
+                spawn_after!(blink, ExtU64::millis(200))?;
             } else {
                 cx.local.led_green.toggle()?;
-                spawn_after!(blink, 1.secs())?;
+                spawn_after!(blink, ExtU64::secs(1))?;
             }
             Ok(())
         });
