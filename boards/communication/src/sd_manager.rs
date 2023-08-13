@@ -1,8 +1,8 @@
 use crate::types::SdController;
 use core::marker::PhantomData;
-use atsamd_hal::gpio::{Output, Pin, PushPull, PA16, PA17, PA18, PA19};
+use atsamd_hal::gpio::{Output, Pin, PushPull, PA16, PA17, PA18, PA19, PB14, PB13, PB15, PB12};
 use atsamd_hal::pac;
-use atsamd_hal::sercom::{spi, IoSet1, Sercom1};
+use atsamd_hal::sercom::{spi, IoSet1, Sercom1, Sercom4};
 use atsamd_hal::time::Hertz;
 use defmt::{info, warn};
 use embedded_sdmmc as sd;
@@ -45,14 +45,14 @@ pub struct SdManager {
 impl SdManager {
     pub fn new(
         mclk: &pac::MCLK,
-        sercom: pac::SERCOM1,
+        sercom: pac::SERCOM4,
         freq: Hertz,
-        cs: Pin<PA18, Output<PushPull>>,
-        sck: Pin<PA17, Output<PushPull>>,
-        miso: Pin<PA19, Output<PushPull>>,
-        mosi: Pin<PA16, Output<PushPull>>,
+        cs: Pin<PB14, Output<PushPull>>,
+        sck: Pin<PB13, Output<PushPull>>,
+        miso: Pin<PB15, Output<PushPull>>,
+        mosi: Pin<PB12, Output<PushPull>>,
     ) -> Self {
-        let pads_spi = spi::Pads::<Sercom1, IoSet1>::default()
+        let pads_spi = spi::Pads::<Sercom4, IoSet1>::default()
             .sclk(sck)
             .data_in(miso)
             .data_out(mosi);

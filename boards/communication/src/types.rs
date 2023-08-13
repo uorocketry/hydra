@@ -1,7 +1,7 @@
 use crate::sd_manager::TimeSink;
 use atsamd_hal::gpio::*;
 use atsamd_hal::sercom::uart::EightBit;
-use atsamd_hal::sercom::spi;
+use atsamd_hal::sercom::{spi, Sercom4};
 use atsamd_hal::sercom::{Sercom5, Sercom1, uart, IoSet1};
 use messages::sender::Sender;
 use messages::sender::Sender::CommunicationBoard;
@@ -22,13 +22,13 @@ pub type GroundStationUartConfig = uart::Config<GroundStationPads, EightBit>;
 // SD Card
 // -------
 pub type SdPads = spi::Pads<
-    Sercom1,
+    Sercom4,
     IoSet1,
-    Pin<PA19, Alternate<C>>,
-    Pin<PA16, Alternate<C>>,
-    Pin<PA17, Alternate<C>>,
+    Pin<PB15, Alternate<C>>,
+    Pin<PB12, Alternate<C>>,
+    Pin<PB13, Alternate<C>>,
 >;
 pub type SdController = sd::Controller<
-    sd::SdMmcSpi<spi::Spi<spi::Config<SdPads>, spi::Duplex>, Pin<PA18, Output<PushPull>>>,
+    sd::SdMmcSpi<spi::Spi<spi::Config<SdPads>, spi::Duplex>, Pin<PB14, Output<PushPull>>>,
     TimeSink,
 >;

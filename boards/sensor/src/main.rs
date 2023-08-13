@@ -95,15 +95,15 @@ mod app {
         );
 
         /* SD config */
-        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom1, gclk0);
+        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
         let sd_manager = SdManager::new(
             &mclk,
-            peripherals.SERCOM1,
+            peripherals.SERCOM4,
             pclk_sd.freq(),
-            pins.pa18.into_push_pull_output(),
-            pins.pa17.into_push_pull_output(),
-            pins.pa19.into_push_pull_output(),
-            pins.pa16.into_push_pull_output(),
+            pins.pb10.into_push_pull_output(),
+            pins.pb09.into_push_pull_output(),
+            pins.pb11.into_push_pull_output(),
+            pins.pb08.into_push_pull_output(),
         );
 
         /* SBG config */
@@ -128,7 +128,7 @@ mod app {
         blink::spawn().ok();
 
         /* Monotonic clock */
-        let mono = Systick::new(core.SYST, gclk0.freq().0);
+        let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
         (
             Shared {
@@ -192,7 +192,7 @@ mod app {
 
             Ok(())
         });
-        spawn_after!(sensor_send, 250.millis()).ok();
+        spawn_after!(sensor_send, ExtU64::millis(250)).ok();
     }
 
     /**
@@ -204,10 +204,10 @@ mod app {
         cx.shared.em.run(|| {
             if cx.shared.em.has_error() {
                 cx.local.led_red.toggle()?;
-                spawn_after!(blink, 200.millis())?;
+                spawn_after!(blink, ExtU64::millis(200))?;
             } else {
                 cx.local.led_green.toggle()?;
-                spawn_after!(blink, 1.secs())?;
+                spawn_after!(blink, ExtU64::secs(1))?;
             }
             Ok(())
         });

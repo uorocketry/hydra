@@ -15,6 +15,7 @@ use common_arm::*;
 use communication::Capacities;
 use communication::RadioDevice;
 use data_manager::DataManager;
+use sd_manager::SdManager;
 
 use hal::gpio::Pins;
 use hal::gpio::PA14;
@@ -43,6 +44,7 @@ mod app {
     struct Local {
         led: Pin<PA14, PushPullOutput>,
         radio: RadioDevice,
+        sd_manager: SdManager,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -100,6 +102,18 @@ mod app {
             gclk0,
         );
 
+        /* SD config */
+        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
+        let sd_manager = SdManager::new(
+            &mclk,
+            peripherals.SERCOM4,
+            pclk_sd.freq(),
+            pins.pb14.into_push_pull_output(),
+            pins.pb13.into_push_pull_output(),
+            pins.pb15.into_push_pull_output(),
+            pins.pb12.into_push_pull_output(),
+        );        
+
         /* Status LED */
         let led = pins.pa14.into_push_pull_output();
 
@@ -108,7 +122,7 @@ mod app {
         blink::spawn().ok();
 
         /* Monotonic clock */
-        let mono = Systick::new(core.SYST, gclk0.freq().0);
+        let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
         (
             Shared {
@@ -116,7 +130,7 @@ mod app {
                 data_manager: DataManager::new(),
                 can0,
             },
-            Local { led, radio },
+            Local { led, radio, sd_manager },
             init::Monotonics(mono),
         )
     }
@@ -164,6 +178,19 @@ mod app {
         });
     }
 
+    #[task(capacity = 3, local = [sd_manager], shared = [&em])]
+    fn sd_dump(mut cx: sd_dump::Context) {
+        let mut manager = cx.local.sd_manager;
+        cx.shared.em.run(|| {
+            if let Ok(mut file) = manager.open_file("test.txt") {
+                manager.write(&mut file, "Hello, world!\n".as_bytes());
+                manager.close_file(file);
+                info!("test written to SD card");
+            }
+            Ok(())
+        });
+    }
+
     /**
      * Sends information about the sensors.
      */
@@ -185,7 +212,7 @@ mod app {
             }
             Ok(())
         });
-        spawn_after!(sensor_send, 250.millis()).ok();
+        spawn_after!(sensor_send, ExtU64::millis(250)).ok();
     }
 
     /**
@@ -196,10 +223,11 @@ mod app {
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
             cx.local.led.toggle()?;
+            spawn!(sd_dump)?;
             if cx.shared.em.has_error() {
-                spawn_after!(blink, 200.millis())?;
+                spawn_after!(blink, ExtU64::millis(200))?;
             } else {
-                spawn_after!(blink, 1.secs())?;
+                spawn_after!(blink, ExtU64::secs(1))?;
             }
             Ok(())
         });

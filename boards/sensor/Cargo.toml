@@ -18,6 +18,6 @@ common-arm = { path = "../../libraries/common-arm" }
 atsamd-hal = { workspace = true }
 messages = { path = "../../libraries/messages" }
 sbg-rs = {path = "../../libraries/sbg-rs"}
-embedded-sdmmc = "0.3.0"
+embedded-sdmmc = "0.3.0" # port to v5
 typenum = "1.16.0"
 embedded-alloc = "0.5.0"

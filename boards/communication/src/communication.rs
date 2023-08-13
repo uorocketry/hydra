@@ -15,7 +15,7 @@ use atsamd_hal::pac::SERCOM5;
 use atsamd_hal::sercom;
 use atsamd_hal::sercom::uart;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
-use atsamd_hal::time::U32Ext;
+use atsamd_hal::time::*;
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
@@ -232,7 +232,7 @@ impl RadioDevice {
             .tx(tx_pin);
         let uart = GroundStationUartConfig::new(mclk, sercom, pads, pclk_radio.freq())
             .baud(
-                57600.hz(),
+                57600.Hz(),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
             )
             .enable();

@@ -6,13 +6,15 @@ use atsamd_hal::dmac::Transfer;
 use atsamd_hal::sercom::{IoSet1, IoSet6};
 use atsamd_hal::gpio::{Pin, Reset, PA08, PA09, PB03, PB02};
 use atsamd_hal::pac::{MCLK, RTC};
-use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
+// use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;
 use core::alloc::{GlobalAlloc, Layout};
 use core::ffi::c_void;
 use core::mem::size_of;
 use core::ptr;
-
+// use atsamd_hal::time::*;
+use atsamd_hal::prelude::*;
+use defmt::info;
 use crate::app::sbg_sd_task as sbg_sd;
 use crate::app::{sbg_handle_data};
 use atsamd_hal::sercom::{uart, Sercom, Sercom5};
@@ -55,7 +57,7 @@ impl SBGManager {
         let pads_sbg = uart::Pads::<Sercom5, IoSet6>::default().rx(rx).tx(tx);
         let uart_sbg = ConfigSBG::new(mclk, sercom5, pads_sbg, pclk_sercom5.freq())
             .baud(
-                115200.hz(),
+                115200.Hz(),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits8),
             )
             .enable();
@@ -73,7 +75,7 @@ impl SBGManager {
         // There is a bug within the HAL that improperly configures the RTC
         // in count32 mode. This is circumvented by first using clock mode then
         // converting to count32 mode.
-        let rtc_temp = Rtc::clock_mode(rtc, 1024.hz(), mclk);
+        let rtc_temp = Rtc::clock_mode(rtc, 1024.Hz(), mclk);
         let mut rtc = rtc_temp.into_count32_mode();
         rtc.set_count32(0);
 
@@ -105,6 +107,7 @@ pub fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context, data: [u8; SBG_BUFF
         if let Ok(mut file) = manager.open_file("sbg.bin") {
             manager.write(&mut file, &data); 
             manager.close_file(file);
+            info!("SBG data written to SD card");
         }
     });
 }

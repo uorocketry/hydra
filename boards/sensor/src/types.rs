@@ -7,6 +7,9 @@ use atsamd_hal::sercom::{spi, uart, IoSet1, Sercom5, IoSet6, Sercom1};
 use embedded_sdmmc as sd;
 use hal::dmac;
 use hal::dmac::BufferPair;
+use hal::sercom::IoSet2;
+use hal::sercom::IoSet3;
+use hal::sercom::Sercom0;
 use hal::sercom::Sercom4;
 use messages::sender::Sender;
 use messages::sender::Sender::SensorBoard;
@@ -32,13 +35,13 @@ pub type SBGBuffer = &'static mut [u8; SBG_BUFFER_SIZE];
 // SD Card
 // -------
 pub type SdPads = spi::Pads<
-    Sercom1,
-    IoSet1,
-    Pin<PA19, Alternate<C>>,
-    Pin<PA16, Alternate<C>>,
-    Pin<PA17, Alternate<C>>,
+    Sercom4,
+    IoSet2,
+    Pin<PB11, Alternate<D>>,
+    Pin<PB08, Alternate<D>>,
+    Pin<PB09, Alternate<D>>,
 >;
 pub type SdController = sd::Controller<
-    sd::SdMmcSpi<spi::Spi<spi::Config<SdPads>, spi::Duplex>, Pin<PA18, Output<PushPull>>>,
+    sd::SdMmcSpi<spi::Spi<spi::Config<SdPads>, spi::Duplex>, Pin<PB10, Output<PushPull>>>,
     TimeSink,
 >;
