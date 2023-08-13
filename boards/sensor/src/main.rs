@@ -24,7 +24,7 @@ use mcan::messageram::SharedMemory;
 use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
-use sbg_manager::{sbg_dma, sbg_handle_data, SBGManager};
+use sbg_manager::{sbg_dma, sbg_handle_data, sbg_sd_task, SBGManager};
 use sbg_rs::sbg::{CallbackData, SBG_BUFFER_SIZE};
 use sd_manager::SdManager;
 use systick_monotonic::*;
