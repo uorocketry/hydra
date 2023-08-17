@@ -187,12 +187,7 @@ mod app {
         cx.shared.em.run(|| {
             let mut buf = [0u8; 256];
             let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
-            info!("{}", msg_ser);
             manager.write(msg_ser)?;
-            // if let Ok(mut file) = manager.open_file("log.txt") {
-            //     manager.write(&mut file, msg_ser)?;
-            //     manager.close_file(file);
-            // }
             Ok(())
         });
     }

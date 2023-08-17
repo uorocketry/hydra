@@ -5,7 +5,6 @@ use messages::Message;
 use defmt::{info, flush};
 
 const MAIN_HEIGHT: f32 = 500.0;
-const VELOCITY_MIN: f32 = 20.0;
 const HEIGHT_MIN: f32 = 900.0;
 
 pub struct DataManager {
@@ -33,41 +32,31 @@ impl DataManager {
             current_state: None,
         }
     }
-    /// Returns true if the rocket has passed apogee.
-    /// This is determined by looking at the historical pressure data.
-    /// Furthermore, we only start checking pressure data when velocity is less than 20m/s
-    /// because we want to avoid the complexities of pressure during transonic flight.
+    /// Returns true if the rocket is descending 
     pub fn is_falling(&self) -> bool {
-        // let ekf_nav1 = self.ekf_nav.0.as_ref();
-        // if let Some(ekf_nav1) = ekf_nav1 {
-        //     if ekf_nav1.velocity[2] > VELOCITY_MIN {
-        //         return false;
-        //     }
-        // }
         if self.historical_barometer_altitude.len() < 8 {
             return false;
         }
         let mut buf = self.historical_barometer_altitude.oldest_ordered();
         match buf.next() {
             Some(last) => {
-                let mut avg: f32 = 0.0;
+                let mut avg_sum: f32 = 0.0;
                 let mut prev = last;
                 for i in buf {
-                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1000000.0;
+                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
                     if time_diff == 0.0 {
-                        info!("diff {} {}", i, prev);
                         continue;
                     }
-                    avg += (i.0 - prev.0)/time_diff; 
+                    avg_sum += (i.0 - prev.0)/time_diff; 
                     prev = i;
                 }
-                match avg / 7.0 { // 7 because we have 8 points.  
-                    x if x > -10.0 || x < -120.0 => { 
-                        info!("avg: {}", avg / 7.0);
+                match avg_sum / 7.0 { // 7 because we have 8 points.   
+                    x if x > -5.0 || x < -120.0 => { 
+                        info!("avg: {}", avg_sum / 7.0);
                         return false;
                     }
                     _ => {
-                        info!("avg: {}", avg / 7.0);
+                        info!("avg: {}", avg_sum / 7.0);
                     }
                 }
             }
