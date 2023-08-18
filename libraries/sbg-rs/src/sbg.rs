@@ -1,6 +1,5 @@
 use crate::bindings::{
-    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR,
-    _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
+    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
     _SbgEComLog_SBG_ECOM_LOG_AIR_DATA, _SbgEComLog_SBG_ECOM_LOG_EKF_NAV,
     _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL, _SbgEComLog_SBG_ECOM_LOG_UTC_TIME,
     _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgErrorCode_SBG_NO_ERROR,
@@ -13,16 +12,16 @@ use crate::bindings::{
     _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol, _SbgErrorCode, _SbgInterface,
 };
 use atsamd_hal as hal;
-use core::ffi::{c_void, CStr};
+use core::ffi::{c_void};
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
-use defmt::{debug, error, flush, info, warn};
+use defmt::{flush, warn};
 use embedded_hal::serial::Write;
-use hal::gpio::{PA08, PA09, PB16, PB17, PB03, PB02};
+use hal::gpio::{PB16, PB17, PB03, PB02};
 use hal::sercom::uart::Duplex;
 use hal::sercom::uart::{self, EightBit, Uart};
-use hal::sercom::{IoSet1, IoSet6, Sercom0, Sercom5};
+use hal::sercom::{IoSet1, IoSet6, Sercom5};
 use messages::sensor::*;
 
 type Pads = uart::PadsFromIds<Sercom5, IoSet6, PB03, PB02>;
@@ -473,13 +472,13 @@ unsafe impl Send for SBG {}
  */
 #[no_mangle]
 pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
-    pFileName: *const ::core::ffi::c_char,
-    pFunctionName: *const ::core::ffi::c_char,
+    _pFileName: *const ::core::ffi::c_char,
+    _pFunctionName: *const ::core::ffi::c_char,
     _line: u32,
-    pCategory: *const ::core::ffi::c_char,
+    _pCategory: *const ::core::ffi::c_char,
     logType: _SbgDebugLogType,
     _errorCode: _SbgErrorCode,
-    pFormat: *const ::core::ffi::c_char,
+    _pFormat: *const ::core::ffi::c_char,
 ) {
     // if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
     //     return;

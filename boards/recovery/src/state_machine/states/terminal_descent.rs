@@ -3,14 +3,14 @@ use defmt::{write, Format, Formatter, info};
 use crate::no_transition;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use rtic::mutex::Mutex;
-use super::Apogee;
+use super::Descent;
 
 #[derive(Debug, Clone)]
-pub struct Landed {}
+pub struct TerminalDescent {}
 
-impl State for Landed {
+impl State for TerminalDescent {
     fn enter(&self,context: &mut StateMachineContext) {
-        info!("Landed");
+        info!("Terminal Descent");
         context.shared_resources.gpio.lock(|gpio| gpio.fire_main());
     }
     fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
@@ -18,14 +18,14 @@ impl State for Landed {
     }
 }
 
-impl TransitionInto<Landed> for Apogee {
-    fn transition(&self) -> Landed {
-        Landed {}
+impl TransitionInto<TerminalDescent> for Descent {
+    fn transition(&self) -> TerminalDescent {
+        TerminalDescent {}
     }
 }
 
-impl Format for Landed {
+impl Format for TerminalDescent {
     fn format(&self, f: Formatter) {
-        write!(f, "Landed")
+        write!(f, "Terminal Descent")
     }
 }

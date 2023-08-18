@@ -8,12 +8,15 @@ use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::Can0;
 use atsamd_hal::clock::v2::Source;
+use atsamd_hal::dmac;
 use atsamd_hal::gpio::{Alternate, AlternateI, Disabled, Floating, Pin, I, PA22, PA23, PB16, PB17};
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM5;
+use atsamd_hal::sercom::Sercom;
+use atsamd_hal::sercom::{uart, Sercom5};
 use atsamd_hal::sercom;
-use atsamd_hal::sercom::uart;
+use atsamd_hal::sercom::uart::{ TxDuplex, RxDuplex};
 use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::time::*;
 use atsamd_hal::typelevel::Increment;
@@ -22,6 +25,8 @@ use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
 use common_arm::HydraError;
 use defmt::info;
+use crate::app::send_internal;
+use common_arm::spawn;
 use heapless::Vec;
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
@@ -39,6 +44,7 @@ use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
 use typenum::{U0, U128, U32, U64};
 
+use atsamd_hal::dmac::Transfer;
 pub struct Capacities;
 
 impl mcan::messageram::Capacities for Capacities {
@@ -209,8 +215,11 @@ impl CanDevice0 {
     }
 }
 
+pub static mut BUF_DST: RadioBuffer = &mut [0; 255];
+pub static mut BUF_DST2: RadioBuffer = &mut [0; 255];
+
 pub struct RadioDevice {
-    uart: Uart<GroundStationUartConfig, Duplex>,
+    uart: Uart<GroundStationUartConfig, TxDuplex>,
     mav_sequence: u8,
 }
 
@@ -222,7 +231,8 @@ impl RadioDevice {
         rx_pin: Pin<PB17, Disabled<Floating>>,
         tx_pin: Pin<PB16, Disabled<Floating>>,
         gclk0: S,
-    ) -> (Self, S::Inc)
+        mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
+    ) -> (Self, S::Inc, RadioTransfer)
     where
         S: Source<Id = Gclk0Id> + Increment,
     {
@@ -236,12 +246,16 @@ impl RadioDevice {
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
             )
             .enable();
+        let (rx, tx) = uart.split(); // tx sends rx uses dma to receive so we need to setup dma here. 
+        dma_channel.as_mut().enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
+        let xfer = Transfer::new(dma_channel, rx, unsafe {&mut *BUF_DST}, false).expect("DMA Radio RX").begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
         (
             RadioDevice {
-                uart,
+                uart: tx,
                 mav_sequence: 0,
             },
             gclk0,
+            xfer
         )
     }
     pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
@@ -264,5 +278,55 @@ impl RadioDevice {
             &mav_message,
         )?;
         Ok(())
+    }
+}
+
+pub struct RadioManager {
+    xfer: RadioTransfer,
+    buf_select: bool,
+}
+
+impl RadioManager {
+    pub fn new(
+        xfer: RadioTransfer,
+    ) -> Self {
+        RadioManager {
+            xfer,
+            buf_select: false,
+        }
+    }
+    pub fn process_message(&mut self, buf: RadioBuffer) {
+        info!("Received: {:?}", buf);
+        match from_bytes::<Message>(buf) {
+            Ok(msg) => {
+                info!("Radio: {}", msg);
+                spawn!(send_internal, msg); // dump to the Can Bus
+            }
+            Err(_) => {
+                info!("Radio unknown msg");
+                return;
+            }
+        }
+    }
+}
+
+pub fn radio_dma(cx: crate::app::radio_dma::Context) {
+    let manager = cx.local.radio_manager;
+
+    if manager.xfer.complete() {
+        cx.shared.em.run(|| {
+            let buf = match manager.buf_select {
+                false => {
+                    manager.buf_select = true;
+                    manager.xfer.recycle_source(unsafe{&mut *BUF_DST})?
+                }
+                true => {
+                    manager.buf_select = false;
+                    manager.xfer.recycle_source(unsafe{&mut *BUF_DST2})?
+                }
+            };
+            manager.process_message(buf);
+            Ok(())
+        })
     }
 }

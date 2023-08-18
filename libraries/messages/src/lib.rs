@@ -7,6 +7,8 @@
 
 use crate::sender::Sender;
 use crate::sensor::Sensor;
+use crate::state::State;
+use crate::command::Command;
 use defmt::Format;
 use derive_more::From;
 use fugit::Instant;
@@ -23,6 +25,8 @@ use ts_rs::TS;
 mod logging;
 pub mod sender;
 pub mod sensor;
+pub mod command;
+pub mod state;
 
 pub const MAX_SIZE: usize = 64;
 
@@ -55,38 +59,7 @@ pub enum Data {
     State(State),
     Sensor(Sensor),
     Log(Log),
-}
-
-// #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-// #[cfg_attr(test, derive(Arbitrary))]
-// #[cfg_attr(feature = "ts", derive(TS))]
-// #[cfg_attr(feature = "ts", ts(export))]
-// pub enum Status {
-//     Uninitialized,
-//     Initializing,
-//     Running,
-// }
-
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
-pub enum Status {
-    Initializing,
-    WaitForTakeoff,
-    Ascent,
-    Apogee,
-    Landed,
-    Abort,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
-pub struct State {
-    pub status: Status,
-    pub has_error: bool,
+    Command(Command),
 }
 
 impl Message {

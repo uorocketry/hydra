@@ -3,8 +3,8 @@ use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::dmac;
 use atsamd_hal::dmac::Transfer;
-use atsamd_hal::sercom::{IoSet1, IoSet6};
-use atsamd_hal::gpio::{Pin, Reset, PA08, PA09, PB03, PB02};
+use atsamd_hal::sercom::{IoSet6};
+use atsamd_hal::gpio::{Pin, Reset, PB03, PB02};
 use atsamd_hal::pac::{MCLK, RTC};
 // use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;
@@ -14,7 +14,7 @@ use core::mem::size_of;
 use core::ptr;
 // use atsamd_hal::time::*;
 use atsamd_hal::prelude::*;
-use defmt::info;
+
 // use crate::app::sbg_sd_task as sbg_sd;
 use crate::app::{sbg_handle_data};
 use atsamd_hal::sercom::{uart, Sercom, Sercom5};
@@ -22,7 +22,7 @@ use embedded_alloc::Heap;
 use rtic::Mutex;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
-use common_arm::spawn;
+
 
 pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];

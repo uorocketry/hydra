@@ -1,9 +1,9 @@
 use core::marker::PhantomData;
 
 use crate::types::SdController;
-use atsamd_hal::gpio::{Output, Pin, PushPull, PA16, PA17, PA18, PA19,PA06, PA05, PA07, PA04, PB10, PB09, PB11, PB08};
+use atsamd_hal::gpio::{Output, Pin, PushPull, PB10, PB09, PB11, PB08};
 use atsamd_hal::pac;
-use atsamd_hal::sercom::{spi, IoSet1, Sercom1, Sercom0, IoSet3, Sercom4, IoSet2};
+use atsamd_hal::sercom::{spi, Sercom4, IoSet2};
 use atsamd_hal::time::Hertz;
 use defmt::{info, warn};
 use embedded_sdmmc as sd;
@@ -44,7 +44,7 @@ pub struct SdManager {
 }
 
 impl SdManager {
-    pub fn new(
+    pub fn _new(
         mclk: &pac::MCLK,
         sercom: pac::SERCOM4,
         freq: Hertz,
@@ -111,14 +111,14 @@ impl SdManager {
             file,
         }
     }
-    pub fn write(
+    pub fn _write(
         &mut self,
         file: &mut sd::File,
         buffer: &[u8],
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
         self.sd_controller.write(&mut self.volume, file, buffer)
     }
-    pub fn write_str(
+    pub fn _write_str(
         &mut self,
         file: &mut sd::File,
         msg: &str,
@@ -126,7 +126,7 @@ impl SdManager {
         let buffer: &[u8] = msg.as_bytes();
         self.sd_controller.write(&mut self.volume, file, buffer)
     }
-    pub fn open_file(&mut self, file_name: &str) -> Result<sd::File, sd::Error<sd::SdMmcError>> {
+    pub fn _open_file(&mut self, file_name: &str) -> Result<sd::File, sd::Error<sd::SdMmcError>> {
         self.sd_controller.open_file_in_dir(
             &mut self.volume,
             &self.root_directory,
@@ -134,10 +134,10 @@ impl SdManager {
             sd::Mode::ReadWriteCreateOrTruncate,
         )
     }
-    pub fn close_file(&mut self, file: sd::File) -> Result<(), sd::Error<sd::SdMmcError>> {
+    pub fn _close_file(&mut self, file: sd::File) -> Result<(), sd::Error<sd::SdMmcError>> {
         self.sd_controller.close_file(&self.volume, file)
     }
-    pub fn close(mut self) {
+    pub fn _close(mut self) {
         self.sd_controller
             .close_dir(&self.volume, self.root_directory);
     }

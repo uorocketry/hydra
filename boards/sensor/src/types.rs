@@ -3,13 +3,13 @@ use atsamd_hal as hal;
 use atsamd_hal::gpio::*;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::Uart;
-use atsamd_hal::sercom::{spi, uart, IoSet1, Sercom5, IoSet6, Sercom1};
+use atsamd_hal::sercom::{spi, uart, Sercom5, IoSet6};
 use embedded_sdmmc as sd;
 use hal::dmac;
 use hal::dmac::BufferPair;
 use hal::sercom::IoSet2;
-use hal::sercom::IoSet3;
-use hal::sercom::Sercom0;
+
+
 use hal::sercom::Sercom4;
 use messages::sender::Sender;
 use messages::sender::Sender::SensorBoard;

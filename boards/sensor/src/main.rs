@@ -16,6 +16,7 @@ use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
 use hal::dmac;
+
 use hal::gpio::Pins;
 use hal::gpio::{PB16, PB17};
 use hal::gpio::{Pin, PushPullOutput};
@@ -27,8 +28,8 @@ use panic_halt as _;
 // use sbg_manager::{sbg_dma, sbg_handle_data, sbg_sd_task, SBGManager};
 use sbg_manager::{sbg_dma, sbg_handle_data, SBGManager};
 
-use sbg_rs::sbg::{CallbackData, SBG_BUFFER_SIZE};
-use sd_manager::SdManager;
+use sbg_rs::sbg::{CallbackData};
+
 use systick_monotonic::*;
 use types::*;
 
@@ -121,6 +122,8 @@ mod app {
             dmaCh0,
         );
 
+        // Buzzer should go here. There is complexity using the new clock system with the atsamdhal pwm implementation. 
+
         /* Status LED */
         let led_green = pins.pb16.into_push_pull_output();
         let led_red = pins.pb17.into_push_pull_output();
@@ -191,7 +194,6 @@ mod app {
             for msg in messages {
                 spawn!(send_internal, msg)?;
             }
-
             Ok(())
         });
         spawn_after!(sensor_send, ExtU64::millis(250)).ok();

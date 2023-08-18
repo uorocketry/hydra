@@ -1,7 +1,7 @@
 mod black_magic;
 mod states;
 
-use messages::Status;
+use messages::state;
 use crate::communication::CanDevice0;
 use crate::data_manager::DataManager;
 use crate::state_machine::states::*;
@@ -51,6 +51,9 @@ impl StateMachine {
     pub fn run(&mut self, context: &mut StateMachineContext) {
         if let Some(new_state) = self.state.step(context) {
             self.state.exit();
+            context.shared_resources.data_manager.lock(|data| {
+                data.set_state(new_state.clone());
+            });
             new_state.enter(context);
             self.state = new_state;
         }
@@ -71,35 +74,35 @@ pub enum RocketStates {
     Initializing,
     WaitForTakeoff,
     Ascent,
-    Apogee,
-    Landed,
+    Descent,
+    TerminalDescent,
     Abort,
 }
 
 // Not ideal, but it works for now.
-// Should be able to put this is a shared library, but as of now, I can't figure out how to do that.
-impl From<Status> for RocketStates {
-    fn from(state: messages::Status) -> Self {
+// Should be able to put this is a shared library.
+impl From<state::StateData> for RocketStates {
+    fn from(state: state::StateData) -> Self {
         match state {
-            Status::Initializing => RocketStates::Initializing(Initializing {}),
-            Status::WaitForTakeoff => RocketStates::WaitForTakeoff(WaitForTakeoff {}),
-            Status::Ascent => RocketStates::Ascent(Ascent {}),
-            Status::Apogee => RocketStates::Apogee(Apogee {}),
-            Status::Landed => RocketStates::Landed(Landed {}),
-            Status::Abort => RocketStates::Abort(Abort {}),
+            state::StateData::Initializing => RocketStates::Initializing(Initializing {}),
+            state::StateData::WaitForTakeoff => RocketStates::WaitForTakeoff(WaitForTakeoff {}),
+            state::StateData::Ascent => RocketStates::Ascent(Ascent {}),
+            state::StateData::Descent => RocketStates::Descent(Descent {}),
+            state::StateData::TerminalDescent => RocketStates::TerminalDescent(TerminalDescent {  } ),
+            state::StateData::Abort => RocketStates::Abort(Abort {}),
         }
     }
 }
 
-impl Into<Status> for RocketStates {
-    fn into(self) -> Status {
+impl Into<state::StateData> for RocketStates {
+    fn into(self) -> state::StateData {
         match self {
-            RocketStates::Initializing(_) => Status::Initializing,
-            RocketStates::WaitForTakeoff(_) => Status::WaitForTakeoff,
-            RocketStates::Ascent(_) => Status::Ascent,
-            RocketStates::Apogee(_) => Status::Apogee,
-            RocketStates::Landed(_) => Status::Landed,
-            RocketStates::Abort(_) => Status::Abort,
+            RocketStates::Initializing(_) => state::StateData::Initializing,
+            RocketStates::WaitForTakeoff(_) => state::StateData::WaitForTakeoff,
+            RocketStates::Ascent(_) => state::StateData::Ascent,
+            RocketStates::Descent(_) => state::StateData::Descent,
+            RocketStates::TerminalDescent(_) => state::StateData::TerminalDescent,
+            RocketStates::Abort(_) => state::StateData::Abort,
         }
     }
 }

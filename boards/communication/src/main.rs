@@ -10,12 +10,14 @@ use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac::DmaController;
+use atsamd_hal::dmac;
 use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
-use communication::RadioDevice;
+use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
 use sd_manager::SdManager;
+use communication::radio_dma;
 
 use hal::gpio::Pins;
 use hal::gpio::PA05;
@@ -27,7 +29,7 @@ use messages::*;
 use panic_halt as _;
 use systick_monotonic::*;
 use types::*;
-use defmt::info;
+use defmt::{info, flush};
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -45,6 +47,7 @@ mod app {
         led: Pin<PA05, PushPullOutput>,
         radio: RadioDevice,
         sd_manager: SdManager,
+        radio_manager: RadioManager,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -60,7 +63,7 @@ mod app {
         let pins = Pins::new(peripherals.PORT);
 
         let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
-        let _dmaChannels = dmac.split();
+        let dmaChannels = dmac.split();
 
         /* Logging Setup */
         HydraLogging::set_ground_station_callback(queue_gs_message);
@@ -93,14 +96,18 @@ mod app {
         );
 
         /* Radio config */
-        let (radio, gclk0) = RadioDevice::new(
+        let dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
+        let (radio, gclk0, xfer) = RadioDevice::new(
             tokens.pclks.sercom5,
             &mclk,
             peripherals.SERCOM5,
             pins.pb17,
             pins.pb16,
             gclk0,
+            dmaCh0,
         );
+
+        let radio_manager = RadioManager::new(xfer);
 
         /* SD config */
         let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
@@ -130,7 +137,7 @@ mod app {
                 data_manager: DataManager::new(),
                 can0,
             },
-            Local { led, radio, sd_manager },
+            Local { led, radio, sd_manager, radio_manager },
             init::Monotonics(mono),
         )
     }
@@ -232,5 +239,10 @@ mod app {
             }
             Ok(())
         });
+    }
+
+    extern "Rust" {
+        #[task(binds = DMAC_0, shared=[&em], local=[radio_manager])]
+        fn radio_dma(context: radio_dma::Context);
     }
 }

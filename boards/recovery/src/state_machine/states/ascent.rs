@@ -1,8 +1,8 @@
-use crate::state_machine::states::apogee::Apogee;
+use crate::state_machine::states::descent::Descent;
 use crate::state_machine::states::wait_for_takeoff::WaitForTakeoff;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
-use defmt::{write, Format, Formatter, info};
+use defmt::{write, Format, Formatter};
 use rtic::mutex::Mutex;
 
 #[derive(Debug, Clone)]
@@ -15,7 +15,7 @@ impl State for Ascent {
             .data_manager
             .lock(|data| {
                 if data.is_falling() {
-                    transition!(self, Apogee)
+                    transition!(self, Descent)
                 } else {
                     no_transition!()
                 }

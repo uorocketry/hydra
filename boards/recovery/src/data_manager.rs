@@ -1,8 +1,10 @@
 use crate::state_machine::RocketStates;
+use crate::app::{fire_drogue, fire_main};
+use common_arm::spawn;
 use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
-use defmt::{info, flush};
+use defmt::{info};
 
 const MAIN_HEIGHT: f32 = 500.0;
 const HEIGHT_MIN: f32 = 900.0;
@@ -84,6 +86,9 @@ impl DataManager {
             None => 0.0,
         }
     }
+    pub fn set_state(&mut self, state: RocketStates) {
+        self.current_state = Some(state);
+    }
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
             messages::Data::Sensor(sensor) => match sensor.data {
@@ -122,6 +127,14 @@ impl DataManager {
                     self.utc_time = Some(utc_time_data);
                 }
             },
+            messages::Data::Command(command) => match command.data {
+                messages::command::CommandData::DeployDrogue(drogue) => {
+                    spawn!(fire_drogue);
+                },
+                messages::command::CommandData::DeployMain(main) => {
+                    spawn!(fire_main);
+                }
+            }
             _ => {}
         }
     }

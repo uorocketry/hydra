@@ -6,7 +6,7 @@ mod data_manager;
 mod state_machine;
 mod types;
 
-use crate::state_machine::RocketStates;
+
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
@@ -15,7 +15,7 @@ use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
-use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17, PA09, PA06};
+use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use messages::*;
@@ -123,15 +123,34 @@ mod app {
         loop {}
     }
 
+    #[task(shared=[gpio])]
+    fn fire_drogue(mut cx: fire_drogue::Context) {
+        cx.shared.gpio.lock(|gpio| {
+            gpio.fire_drogue();
+        });
+    }
+
+    #[task(shared=[gpio])]
+    fn fire_main(mut cx: fire_main::Context) {
+        cx.shared.gpio.lock(|gpio| {
+            gpio.fire_main();
+        });
+    }
+
     /// Runs the state machine.
     /// This takes control of the shared resources.
-    #[task(local = [state_machine], shared = [can0, gpio, data_manager])]
+    #[task(local = [state_machine], shared = [can0, gpio, data_manager, &em])]
     fn run_sm(mut cx: run_sm::Context) {
         cx.shared.data_manager.lock(|dm| info!("alt: {}", dm.get_alt()));
         cx.local.state_machine.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,
         });
-        spawn_after!(run_sm, ExtU64::secs(2));
+        // !! Question, will this error and then never spawn again? Should I just keep trying to spawn it and not care 
+        // to use the error manager. 
+        cx.shared.em.run(|| {
+            spawn_after!(run_sm, ExtU64::secs(2))?;
+            Ok(())
+        })
     }
 
     /// Handles the CAN0 interrupt.
@@ -165,11 +184,12 @@ mod app {
             let state = if let Some(rocket_state) = rocket_state {
                 rocket_state
             } else {
-                RocketStates::Initializing(state_machine::Initializing {})
+                // This isn't really an error, we just don't have data yet. 
+                spawn_after!(state_send, ExtU64::secs(5))?;
+                return Ok(())
             };
-            let board_state = messages::State {
-                status: state.into(),
-                has_error: em_error,
+            let board_state = messages::state::State {
+                data: state.into(),
             };
             let message = Message::new(&monotonics::now(), COM_ID, board_state);
             spawn!(send_internal, message)?;

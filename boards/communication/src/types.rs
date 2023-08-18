@@ -1,11 +1,13 @@
 use crate::sd_manager::TimeSink;
-use atsamd_hal::gpio::*;
+use atsamd_hal::{gpio::*, dmac};
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::{spi, Sercom4};
 use atsamd_hal::sercom::{Sercom5, Sercom1, uart, IoSet1};
 use messages::sender::Sender;
 use messages::sender::Sender::CommunicationBoard;
 use embedded_sdmmc as sd;
+use atsamd_hal::dmac::BufferPair;
+use atsamd_hal::sercom::uart::Uart;
 
 // -------
 // Sender ID
@@ -32,3 +34,9 @@ pub type SdController = sd::Controller<
     sd::SdMmcSpi<spi::Spi<spi::Config<SdPads>, spi::Duplex>, Pin<PB14, Output<PushPull>>>,
     TimeSink,
 >;
+
+pub type RadioTransfer = dmac::Transfer<
+    dmac::Channel<dmac::Ch0, dmac::Busy>,
+    BufferPair<Uart<GroundStationUartConfig, uart::RxDuplex>, RadioBuffer>,
+>;
+pub type RadioBuffer = &'static mut [u8; 255];

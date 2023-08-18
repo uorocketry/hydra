@@ -1,13 +1,13 @@
 use super::Ascent;
-use crate::state_machine::{Landed, RocketStates, State, StateMachineContext, TransitionInto};
+use crate::state_machine::{TerminalDescent, RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
 use rtic::mutex::Mutex;
 use defmt::{write, Format, Formatter, info};
 
 #[derive(Debug, Clone)]
-pub struct Apogee {}
+pub struct Descent {}
 
-impl State for Apogee {
+impl State for Descent {
     fn enter(&self, context: &mut StateMachineContext) {
         info!("Apogee");
         context.shared_resources.gpio.lock(|gpio| gpio.fire_drogue());
@@ -18,7 +18,7 @@ impl State for Apogee {
         context.shared_resources.data_manager.lock(|data| {
             // Handle the case where we don't have any data yet
             if data.is_below_main() {
-                transition!(self, Landed)
+                transition!(self, TerminalDescent)
             } else {
                 no_transition!()
             }
@@ -26,14 +26,14 @@ impl State for Apogee {
     }
 }
 
-impl TransitionInto<Apogee> for Ascent {
-    fn transition(&self) -> Apogee {
-        Apogee {}
+impl TransitionInto<Descent> for Ascent {
+    fn transition(&self) -> Descent {
+        Descent {}
     }
 }
 
-impl Format for Apogee {
+impl Format for Descent {
     fn format(&self, f: Formatter) {
-        write!(f, "Apogee")
+        write!(f, "Descent")
     }
 }
