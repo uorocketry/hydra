@@ -125,7 +125,7 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
                 let (chan0, source, buf) = sbg.xfer.take().unwrap().stop();
                 let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).unwrap().begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
                 sbg.sbg_device.read_data(buf);
-                // unsafe{BUF_DST.copy_from_slice(&[0;SBG_BUFFER_SIZE])};
+                unsafe{BUF_DST.copy_from_slice(&[0;SBG_BUFFER_SIZE])};
                 xfer.block_transfer_interrupt();
                 sbg.xfer = Some(xfer);
             }

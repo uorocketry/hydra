@@ -23,6 +23,7 @@ use hal::sercom::uart::Duplex;
 use hal::sercom::uart::{self, EightBit, Uart};
 use hal::sercom::{IoSet1, IoSet6, Sercom5};
 use messages::sensor::*;
+use heapless::Deque;
 
 type Pads = uart::PadsFromIds<Sercom5, IoSet6, PB03, PB02>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
@@ -493,7 +494,7 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
 
     match logType {
         // silently handle errors
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),

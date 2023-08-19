@@ -192,8 +192,8 @@ mod app {
 
         cx.shared.em.run(|| {
             for msg in messages {
-                // spawn!(send_internal, msg)?;
-                info!("{}", msg);
+                spawn!(send_internal, msg)?;
+                // info!("{}", msg);
             }
             Ok(())
         });

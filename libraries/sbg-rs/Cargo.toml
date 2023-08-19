@@ -14,6 +14,7 @@ cortex-m = { workspace = true }
 cortex-m-rt = "^0.7.0"
 messages = { path = "../../libraries/messages" }
 common-arm = { path = "../../libraries/common-arm" }
+heapless = "0.7.16"
 
 [build-dependencies]
 cmake = "0.1"
