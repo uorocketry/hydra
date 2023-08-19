@@ -45,6 +45,10 @@ use systick_monotonic::fugit::RateExtU32;
 use typenum::{U0, U128, U32, U64};
 
 use atsamd_hal::dmac::Transfer;
+// use embedded_alloc::Heap;
+
+
+
 pub struct Capacities;
 
 impl mcan::messageram::Capacities for Capacities {
@@ -215,8 +219,8 @@ impl CanDevice0 {
     }
 }
 
-pub static mut BUF_DST: RadioBuffer = &mut [0; 255];
-pub static mut BUF_DST2: RadioBuffer = &mut [0; 255];
+pub static mut BUF_DST: RadioBuffer = &mut [0; 5];
+pub static mut BUF_DST2: RadioBuffer = &mut [0; 5];
 
 pub struct RadioDevice {
     uart: Uart<GroundStationUartConfig, TxDuplex>,
@@ -255,7 +259,7 @@ impl RadioDevice {
                 mav_sequence: 0,
             },
             gclk0,
-            xfer
+            xfer,
         )
     }
     pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
@@ -282,7 +286,9 @@ impl RadioDevice {
 }
 
 pub struct RadioManager {
-    xfer: RadioTransfer,
+    xfer: Option<RadioTransfer>,
+    // chan0: Option<dmac::Channel<dmac::Ch0, dmac::Ready>>,
+    // source: Option<Uart<GroundStationUartConfig, uart::RxDuplex>>,
     buf_select: bool,
 }
 
@@ -291,7 +297,10 @@ impl RadioManager {
         xfer: RadioTransfer,
     ) -> Self {
         RadioManager {
-            xfer,
+            xfer: Some(xfer),
+            // xfer: Some(xfer),
+            // chan0: None,
+            // source: None,
             buf_select: false,
         }
     }
@@ -312,21 +321,65 @@ impl RadioManager {
 
 pub fn radio_dma(cx: crate::app::radio_dma::Context) {
     let manager = cx.local.radio_manager;
+    // match manager.xfer {
+    //     Some(xfer) => {
+    //         if xfer.complete() {
+    //             let (chan0, source, payload) = xfer.stop();
+    //             manager.chan0 = Some(chan0);
+    //             manager.source = Some(source);
+    //             manager.process_message(payload)
+    //         }
+    //     }
+    //     None => {
+    //         if let Some(chan0) = manager.chan0.take() {
+    //             let source = manager.source.take().unwrap();
+    //             // static mut dest: RadioBuffer = &mut [0; 5];
+    //             let xfer = manager.xfer.get_or_insert(
+    //                 dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).unwrap()
+    //             );
+    //             manager.xfer = Some(*xfer);
+    //         }
+    //     }
+    // }
+    // let mut xfer = manager.xfer.take().unwrap();
+    match &mut manager.xfer {
+        Some(xfer) => {
+            if xfer.complete() {
+                let (chan0, source, buf) = manager.xfer.take().unwrap().stop();
+                let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).expect("f").begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+                manager.process_message(buf);
+                unsafe{BUF_DST.copy_from_slice(&[0;5])};
+                xfer.block_transfer_interrupt();
+                manager.xfer = Some(xfer);
+            }
+        }
+        None => {
+            info!("none");
+        }
+    } 
 
-    if manager.xfer.complete() {
-        cx.shared.em.run(|| {
-            let buf = match manager.buf_select {
-                false => {
-                    manager.buf_select = true;
-                    manager.xfer.recycle_source(unsafe{&mut *BUF_DST})?
-                }
-                true => {
-                    manager.buf_select = false;
-                    manager.xfer.recycle_source(unsafe{&mut *BUF_DST2})?
-                }
-            };
-            manager.process_message(buf);
-            Ok(())
-        })
-    }
+    // if manager.xfer.complete() {
+    //     cx.shared.em.run(|| {
+
+    //         let buf = match manager.buf_select {
+    //             false => {
+    //                 manager.buf_select = true;
+    //                 unsafe{BUF_DST.copy_from_slice(&[0; 5])};
+    //                 manager.xfer.recycle_source(unsafe{&mut *BUF_DST})?
+    //             }
+    //             true => {
+    //                 manager.buf_select = false;
+    //                 unsafe{BUF_DST2.copy_from_slice(&[0; 5])};
+    //                 manager.xfer.recycle_source(unsafe{&mut *BUF_DST2})?
+    //             }
+    //         };
+    //         manager.process_message(buf);
+    //         Ok(())
+    //     })
+    // }
 }
+
+// pub fn produce_dest() -> RadioBuffer {
+//     let mut dest: RadioBuffer = &mut [0; 5];
+//     dest
+// }

@@ -14,6 +14,7 @@ use core::mem::size_of;
 use core::ptr;
 // use atsamd_hal::time::*;
 use atsamd_hal::prelude::*;
+use defmt::info;
 
 // use crate::app::sbg_sd_task as sbg_sd;
 use crate::app::{sbg_handle_data};
@@ -32,7 +33,7 @@ static HEAP: Heap = Heap::empty();
 
 pub struct SBGManager {
     sbg_device: SBG,
-    xfer: SBGTransfer,
+    xfer: Option<SBGTransfer>,
     buf_select: bool,
 }
 
@@ -86,7 +87,7 @@ impl SBGManager {
         SBGManager {
             sbg_device: sbg,
             buf_select: false,
-            xfer,
+            xfer: Some(xfer),
         }
     }
 }
@@ -118,24 +119,40 @@ pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
 pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
     let sbg = cx.local.sbg_manager;
 
-    if sbg.xfer.complete() {
-        cx.shared.em.run(|| {
-            let buf = match sbg.buf_select {
-                false => {
-                    sbg.buf_select = true;
-                    sbg.xfer.recycle_source(unsafe { &mut *BUF_DST })?
-                }
-                true => {
-                    sbg.buf_select = false;
-                    sbg.xfer.recycle_source(unsafe { &mut *BUF_DST2 })?
-                }
-            };
-            // let buf_clone = buf.clone();
-            sbg.sbg_device.read_data(buf);
-            // spawn!(sbg_sd(buf_clone))?;
-            Ok(())
-        });
+    match &mut sbg.xfer {
+        Some(xfer) => {
+            if xfer.complete() {
+                let (chan0, source, buf) = sbg.xfer.take().unwrap().stop();
+                let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).unwrap().begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+                sbg.sbg_device.read_data(buf);
+                // unsafe{BUF_DST.copy_from_slice(&[0;SBG_BUFFER_SIZE])};
+                xfer.block_transfer_interrupt();
+                sbg.xfer = Some(xfer);
+            }
+        }
+        None => {
+            info!("None");
+        }
     }
+
+    // if sbg.xfer.complete() {
+    //     cx.shared.em.run(|| {
+    //         let buf = match sbg.buf_select {
+    //             false => {
+    //                 sbg.buf_select = true;
+    //                 sbg.xfer.recycle_source(unsafe { &mut *BUF_DST })?
+    //             }
+    //             true => {
+    //                 sbg.buf_select = false;
+    //                 sbg.xfer.recycle_source(unsafe { &mut *BUF_DST2 })?
+    //             }
+    //         };
+    //         // let buf_clone = buf.clone();
+    //         sbg.sbg_device.read_data(buf);
+    //         // spawn!(sbg_sd(buf_clone))?;
+    //         Ok(())
+    //     });
+    // }
 }
 
 /// Stored right before an allocation. Stores information that is needed to deallocate memory.

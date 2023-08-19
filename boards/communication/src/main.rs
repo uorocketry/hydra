@@ -46,7 +46,7 @@ mod app {
     struct Local {
         led: Pin<PA05, PushPullOutput>,
         radio: RadioDevice,
-        sd_manager: SdManager,
+        // sd_manager: SdManager,
         radio_manager: RadioManager,
     }
 
@@ -110,16 +110,16 @@ mod app {
         let radio_manager = RadioManager::new(xfer);
 
         /* SD config */
-        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
-        let sd_manager = SdManager::new(
-            &mclk,
-            peripherals.SERCOM4,
-            pclk_sd.freq(),
-            pins.pb14.into_push_pull_output(),
-            pins.pb13.into_push_pull_output(),
-            pins.pb15.into_push_pull_output(),
-            pins.pb12.into_push_pull_output(),
-        );        
+        // let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
+        // let sd_manager = SdManager::new(
+        //     &mclk,
+        //     peripherals.SERCOM4,
+        //     pclk_sd.freq(),
+        //     pins.pb14.into_push_pull_output(),
+        //     pins.pb13.into_push_pull_output(),
+        //     pins.pb15.into_push_pull_output(),
+        //     pins.pb12.into_push_pull_output(),
+        // );        
 
         /* Status LED */
         let led = pins.pa05.into_push_pull_output();
@@ -137,7 +137,8 @@ mod app {
                 data_manager: DataManager::new(),
                 can0,
             },
-            Local { led, radio, sd_manager, radio_manager },
+            Local { led, radio, radio_manager },
+            // Local { led, radio, sd_manager, radio_manager },
             init::Monotonics(mono),
         )
     }
@@ -188,16 +189,16 @@ mod app {
         });
     }
 
-    #[task(capacity = 10, local = [sd_manager], shared = [&em])]
-    fn sd_dump(mut cx: sd_dump::Context, m: Message) {
-        let mut manager = cx.local.sd_manager;
-        cx.shared.em.run(|| {
-            let mut buf = [0u8; 256];
-            let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
-            manager.write(msg_ser)?;
-            Ok(())
-        });
-    }
+    // #[task(capacity = 10, local = [sd_manager], shared = [&em])]
+    // fn sd_dump(mut cx: sd_dump::Context, m: Message) {
+    //     let mut manager = cx.local.sd_manager;
+    //     cx.shared.em.run(|| {
+    //         let mut buf = [0u8; 256];
+    //         let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
+    //         manager.write(msg_ser)?;
+    //         Ok(())
+    //     });
+    // }
 
     /**
      * Sends information about the sensors.
@@ -217,7 +218,7 @@ mod app {
         cx.shared.em.run(|| {
             for msg in messages {
                 spawn!(send_gs, msg.clone())?;
-                spawn!(sd_dump, msg)?;
+                // spawn!(sd_dump, msg)?;
             }
             Ok(())
         });
@@ -242,7 +243,7 @@ mod app {
     }
 
     extern "Rust" {
-        #[task(binds = DMAC_0, shared=[&em], local=[radio_manager])]
+        #[task(priority = 3, binds = DMAC_0, shared=[&em], local=[radio_manager])]
         fn radio_dma(context: radio_dma::Context);
     }
 }

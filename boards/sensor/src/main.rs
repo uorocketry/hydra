@@ -16,7 +16,7 @@ use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
 use hal::dmac;
-
+use defmt::info;
 use hal::gpio::Pins;
 use hal::gpio::{PB16, PB17};
 use hal::gpio::{Pin, PushPullOutput};
@@ -192,7 +192,8 @@ mod app {
 
         cx.shared.em.run(|| {
             for msg in messages {
-                spawn!(send_internal, msg)?;
+                // spawn!(send_internal, msg)?;
+                info!("{}", msg);
             }
             Ok(())
         });

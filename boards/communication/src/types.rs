@@ -39,4 +39,4 @@ pub type RadioTransfer = dmac::Transfer<
     dmac::Channel<dmac::Ch0, dmac::Busy>,
     BufferPair<Uart<GroundStationUartConfig, uart::RxDuplex>, RadioBuffer>,
 >;
-pub type RadioBuffer = &'static mut [u8; 255];
+pub type RadioBuffer = &'static mut [u8; 5];
