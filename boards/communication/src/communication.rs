@@ -219,8 +219,8 @@ impl CanDevice0 {
     }
 }
 
-pub static mut BUF_DST: RadioBuffer = &mut [0; 5];
-pub static mut BUF_DST2: RadioBuffer = &mut [0; 5];
+pub static mut BUF_DST: RadioBuffer = &mut [0; 255];
+pub static mut BUF_DST2: RadioBuffer = &mut [0; 255];
 
 pub struct RadioDevice {
     uart: Uart<GroundStationUartConfig, TxDuplex>,
@@ -268,13 +268,12 @@ impl RadioDevice {
         let mav_header = mavlink::MavHeader {
             system_id: 1,
             component_id: 1,
-            sequence: self.mav_sequence.wrapping_add(1),
+            sequence: self.increment_mav_sequence(),
         };
 
         let mav_message = mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(
             mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: payload },
         );
-
         mavlink::write_versioned_msg(
             &mut self.uart,
             mavlink::MavlinkVersion::V2,
@@ -282,6 +281,10 @@ impl RadioDevice {
             &mav_message,
         )?;
         Ok(())
+    }
+    pub fn increment_mav_sequence(&mut self) -> u8 {
+        self.mav_sequence = self.mav_sequence.wrapping_add(1);
+        self.mav_sequence
     }
 }
 
@@ -305,14 +308,17 @@ impl RadioManager {
         }
     }
     pub fn process_message(&mut self, buf: RadioBuffer) {
-        info!("Received: {:?}", buf);
+        // info!("Received: {:?}", buf);
+        // mavlink::read_versioned_msg(buf, 
+        //     mavlink::MavlinkVersion::V2,
+        // );
         match from_bytes::<Message>(buf) {
             Ok(msg) => {
                 info!("Radio: {}", msg);
                 spawn!(send_internal, msg); // dump to the Can Bus
             }
             Err(_) => {
-                info!("Radio unknown msg");
+                // info!("Radio unknown msg");
                 return;
             }
         }
@@ -348,7 +354,7 @@ pub fn radio_dma(cx: crate::app::radio_dma::Context) {
                 let (chan0, source, buf) = manager.xfer.take().unwrap().stop();
                 let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).expect("f").begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
                 manager.process_message(buf);
-                unsafe{BUF_DST.copy_from_slice(&[0;5])};
+                unsafe{BUF_DST.copy_from_slice(&[0;255])};
                 xfer.block_transfer_interrupt();
                 manager.xfer = Some(xfer);
             }

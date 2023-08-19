@@ -142,7 +142,9 @@ impl DataManager {
                     spawn!(fire_main);
                 }
             }
-            _ => {}
+            _ => {
+                info!("unkown");
+            }
         }
     }
 }

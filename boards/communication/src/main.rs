@@ -25,6 +25,7 @@ use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use messages::sensor::Sensor;
+use messages::state::State;
 use messages::*;
 use panic_halt as _;
 use systick_monotonic::*;
@@ -223,6 +224,24 @@ mod app {
             Ok(())
         });
         spawn_after!(sensor_send, ExtU64::millis(250)).ok();
+    }
+
+    #[task(shared = [data_manager, &em])]
+    fn state_send(mut cx: state_send::Context) {
+        let state_data = cx.shared.data_manager.lock(|data_manager| data_manager.clone_states());
+
+        let messages = state_data
+            .into_iter()
+            .flatten()
+            .map(|x| Message::new(&monotonics::now(), COM_ID, State::new(x)));
+
+        cx.shared.em.run(|| {
+            for msg in messages {
+                spawn!(send_gs, msg.clone())?;
+            }
+            Ok(())
+        });
+        spawn_after!(state_send, ExtU64::secs(5)).ok();
     }
 
     /**

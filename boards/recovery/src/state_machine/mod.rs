@@ -51,12 +51,16 @@ impl StateMachine {
     pub fn run(&mut self, context: &mut StateMachineContext) {
         if let Some(new_state) = self.state.step(context) {
             self.state.exit();
-            context.shared_resources.data_manager.lock(|data| {
-                data.set_state(new_state.clone());
-            });
+            // context.shared_resources.data_manager.lock(|data| {
+            //     data.set_state(new_state.clone());
+            // });
             new_state.enter(context);
             self.state = new_state;
         }
+    }
+
+    pub fn get_state(&self) -> RocketStates {
+        self.state.clone()
     }
 }
 

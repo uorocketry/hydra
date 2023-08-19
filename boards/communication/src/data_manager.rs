@@ -1,5 +1,6 @@
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, SensorData, UtcTime};
 use messages::Message;
+use messages::state::{State, StateData};
 use defmt::info;
 
 #[derive(Clone)]
@@ -10,6 +11,7 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
+    pub state: Option<StateData>,
 }
 
 impl DataManager {
@@ -21,6 +23,7 @@ impl DataManager {
             imu: (None, None),
             utc_time: None,
             gps_vel: None,
+            state: None,
         }
     }
 
@@ -34,6 +37,11 @@ impl DataManager {
             self.imu.1.clone().map(|x| x.into()),
             self.utc_time.clone().map(|x| x.into()),
             self.gps_vel.clone().map(|x| x.into()),
+        ]
+    }
+    pub fn clone_states(&self) -> [Option<StateData>; 1] {
+        [
+            self.state.clone().map(|x| x.into()),
         ]
     }
     pub fn handle_data(&mut self, data: Message) {
@@ -64,6 +72,29 @@ impl DataManager {
                     self.utc_time = Some(utc_time_data);
                 }
             },
+            messages::Data::State(state) => match state.data {
+                _ => {
+                    self.state = Some(state.data);
+                }
+                // messages::state::StateData::Abort => {
+                //     self.state = Some(state.data);
+                // }
+                // messages::state::StateData::Ascent(ascent) => {
+                //     self.state = Some(ascent);
+                // }
+                // messages::state::StateData::Descent(descent) => {
+                //     self.state = Some(descent);
+                // }
+                // messages::state::StateData::Initializing(init) => {
+                //     self.state = Some(init);
+                // }
+                // messages::state::StateData::TerminalDescent(term) => {
+                //     self.state = Some(term);
+                // }
+                // messages::state::StateData::WaitForTakeoff(wait) => {
+                //     self.state = Some(wait);
+                // }
+            }
             _ => {}
         }
     }

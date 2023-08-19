@@ -145,6 +145,9 @@ mod app {
         cx.local.state_machine.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,
         });
+        cx.shared.data_manager.lock(|data| {
+            data.set_state(cx.local.state_machine.get_state());
+        });
         // !! Question, will this error and then never spawn again? Should I just keep trying to spawn it and not care 
         // to use the error manager. 
         cx.shared.em.run(|| {
@@ -185,7 +188,7 @@ mod app {
                 rocket_state
             } else {
                 // This isn't really an error, we just don't have data yet. 
-                spawn_after!(state_send, ExtU64::secs(5))?;
+                // spawn_after!(state_send, ExtU64::secs(5))?;
                 return Ok(())
             };
             let board_state = messages::state::State {
