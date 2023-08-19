@@ -148,7 +148,7 @@ mod app {
         // !! Question, will this error and then never spawn again? Should I just keep trying to spawn it and not care 
         // to use the error manager. 
         cx.shared.em.run(|| {
-            spawn_after!(run_sm, ExtU64::secs(2))?;
+            spawn_after!(run_sm, ExtU64::millis(500))?;
             Ok(())
         })
     }

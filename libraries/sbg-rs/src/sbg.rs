@@ -16,7 +16,7 @@ use core::ffi::{c_void};
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
-use defmt::{flush, warn, error};
+use defmt::{flush, warn, error, info};
 use embedded_hal::serial::Write;
 use hal::gpio::{PB16, PB17, PB03, PB02};
 use hal::sercom::uart::Duplex;
@@ -42,6 +42,8 @@ static mut BUF_INDEX: AtomicUsize = AtomicUsize::new(0);
  * Points to the buffer that is currently being used.
  */
 static mut BUF: &[u8; SBG_BUFFER_SIZE] = &[0; SBG_BUFFER_SIZE];
+
+static mut DEQ: Deque<u8, 4096> = Deque::new();
 
 /**
  * Holds the RTC instance. This is used to get the current time.
@@ -150,7 +152,10 @@ impl SBG {
     pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
-        unsafe { BUF = buffer };
+        // unsafe { BUF = buffer };
+        for i in buffer {
+            unsafe{DEQ.push_back(*i)};
+        }
         // SAFETY: We are assigning a static variable.
         // This is safe because are the only thread reading since SBG is locked.
         unsafe {
@@ -286,46 +291,59 @@ impl SBG {
         // SAFETY: We are accessing a static mut variable.
         // This is safe because we ensure that the variable is only accessed in this function.
         let index = unsafe { *BUF_INDEX.get_mut() };
-
-        if index + bytesToRead > SBG_BUFFER_SIZE {
-            // Read what we can.
-            bytesToRead = SBG_BUFFER_SIZE - index;
-            if bytesToRead == 0 {
-                // SAFETY: We are accessing a mutable pointer.
-                // This is safe because the pointer cannot be null
-                // and the SBGECom library ensures that the pointer
-                // is not accessed during the lifetime of this function.
-                unsafe { *pBytesRead = 0 };
-                return _SbgErrorCode_SBG_READ_ERROR; // no data
+        let mut readBytes = 0;
+        for i in 0..(bytesToRead) {
+            if let Some(front) = DEQ.pop_front() {
+                readBytes += 1;
+                array[i] = front;
+            } else {
+                // info!("No item in dequeue");
+                break;
             }
-            let end = bytesToRead + index;
-            // SAFETY: We are accessing a static mut variable.
-            // This is safe because we ensure that the variable is only accessed in this function.
-            array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
-            // SAFETY: We are accessing a static mut variable.
-            // This is safe because we ensure that the variable is only accessed in this function.
-            unsafe { *BUF_INDEX.get_mut() = index + bytesToRead };
-            // SAFETY: We are accessing a mutable pointer.
-            // This is safe because the pointer cannot be null
-            // and the SBGECom library ensures that the pointer
-            // is not accessed during the lifetime of this function.
-            unsafe { *pBytesRead = bytesToRead };
-            return _SbgErrorCode_SBG_NO_ERROR;
         }
-        let end = bytesToRead + index;
-        // SAFETY: We are accessing a static mut variable.
-        // This is safe because we ensure that the variable is only accessed in this function.
-        array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
-        // SAFETY: We are accessing a static mut variable.
-        // This is safe because we ensure that the variable is only accessed in this function.
-        unsafe { *BUF_INDEX.get_mut() = index + bytesToRead };
-        // SAFETY: We are accessing a mutable pointer.
-        // This is safe because the pointer cannot be null
-        // and the SBGECom library ensures that the pointer
-        // is not accessed during the lifetime of this function.
-        unsafe { *pBytesRead = bytesToRead };
+        // info!("Bytes Read {}", readBytes);
+        unsafe {*pBytesRead = readBytes}; 
+        return _SbgErrorCode_SBG_NO_ERROR;
 
-        _SbgErrorCode_SBG_NO_ERROR
+        // if index + bytesToRead > SBG_BUFFER_SIZE {
+        //     // Read what we can.
+        //     bytesToRead = SBG_BUFFER_SIZE - index;
+        //     if bytesToRead == 0 {
+        //         // SAFETY: We are accessing a mutable pointer.
+        //         // This is safe because the pointer cannot be null
+        //         // and the SBGECom library ensures that the pointer
+        //         // is not accessed during the lifetime of this function.
+        //         unsafe { *pBytesRead = 0 };
+        //         return _SbgErrorCode_SBG_READ_ERROR; // no data
+        //     }
+        //     let end = bytesToRead + index;
+        //     // SAFETY: We are accessing a static mut variable.
+        //     // This is safe because we ensure that the variable is only accessed in this function.
+        //     array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
+        //     // SAFETY: We are accessing a static mut variable.
+        //     // This is safe because we ensure that the variable is only accessed in this function.
+        //     unsafe { *BUF_INDEX.get_mut() = index + bytesToRead };
+        //     // SAFETY: We are accessing a mutable pointer.
+        //     // This is safe because the pointer cannot be null
+        //     // and the SBGECom library ensures that the pointer
+        //     // is not accessed during the lifetime of this function.
+        //     unsafe { *pBytesRead = bytesToRead };
+        //     return _SbgErrorCode_SBG_NO_ERROR;
+        // }
+        // let end = bytesToRead + index;
+        // // SAFETY: We are accessing a static mut variable.
+        // // This is safe because we ensure that the variable is only accessed in this function.
+        // array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
+        // // SAFETY: We are accessing a static mut variable.
+        // // This is safe because we ensure that the variable is only accessed in this function.
+        // unsafe { *BUF_INDEX.get_mut() = index + bytesToRead };
+        // // SAFETY: We are accessing a mutable pointer.
+        // // This is safe because the pointer cannot be null
+        // // and the SBGECom library ensures that the pointer
+        // // is not accessed during the lifetime of this function.
+        // unsafe { *pBytesRead = bytesToRead };
+
+        // _SbgErrorCode_SBG_NO_ERROR
     }
 
     /**
@@ -494,7 +512,7 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
 
     match logType {
         // silently handle errors
-        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),

@@ -41,7 +41,7 @@ pub struct StateMachine {
 // Define some functions to interact with the state machine
 impl StateMachine {
     pub fn new() -> Self {
-        let state = Ascent {};
+        let state = Initializing {};
 
         StateMachine {
             state: state.into(),

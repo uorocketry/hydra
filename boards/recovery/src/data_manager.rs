@@ -7,7 +7,7 @@ use messages::Message;
 use defmt::{info};
 
 const MAIN_HEIGHT: f32 = 500.0;
-const HEIGHT_MIN: f32 = 900.0;
+const HEIGHT_MIN: f32 = 300.0;
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -36,6 +36,13 @@ impl DataManager {
     }
     /// Returns true if the rocket is descending 
     pub fn is_falling(&self) -> bool {
+        // if let Some(air) = &self.air {
+        //     if air.altitude < HEIGHT_MIN {
+        //         return false 
+        //     }
+        // } else {
+        //     return false;
+        // }
         if self.historical_barometer_altitude.len() < 8 {
             return false;
         }
@@ -53,7 +60,7 @@ impl DataManager {
                     prev = i;
                 }
                 match avg_sum / 7.0 { // 7 because we have 8 points.   
-                    x if x > -5.0 || x < -120.0 => { 
+                    x if x > -2.0 || x < -100.0 => { 
                         info!("avg: {}", avg_sum / 7.0);
                         return false;
                     }

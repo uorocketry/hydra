@@ -197,7 +197,7 @@ mod app {
             }
             Ok(())
         });
-        spawn_after!(sensor_send, ExtU64::millis(250)).ok();
+        spawn_after!(sensor_send, ExtU64::millis(100)).ok();
     }
 
     /**
