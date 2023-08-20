@@ -60,7 +60,7 @@ impl DataManager {
                     prev = i;
                 }
                 match avg_sum / 7.0 { // 7 because we have 8 points.   
-                    x if x > -2.0 || x < -100.0 => { 
+                    x if !(-100.0..=-2.0).contains(&x) => { 
                         info!("avg: {}", avg_sum / 7.0);
                         return false;
                     }

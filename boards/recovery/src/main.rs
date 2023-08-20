@@ -139,7 +139,7 @@ mod app {
 
     /// Runs the state machine.
     /// This takes control of the shared resources.
-    #[task(local = [state_machine], shared = [can0, gpio, data_manager, &em])]
+    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager, &em])]
     fn run_sm(mut cx: run_sm::Context) {
         cx.shared.data_manager.lock(|dm| info!("alt: {}", dm.get_alt()));
         cx.local.state_machine.run(&mut StateMachineContext {
@@ -150,10 +150,7 @@ mod app {
         });
         // !! Question, will this error and then never spawn again? Should I just keep trying to spawn it and not care 
         // to use the error manager. 
-        cx.shared.em.run(|| {
-            spawn_after!(run_sm, ExtU64::millis(500))?;
-            Ok(())
-        })
+        spawn_after!(run_sm, ExtU64::millis(500)).ok();
     }
 
     /// Handles the CAN0 interrupt.
@@ -178,7 +175,6 @@ mod app {
     /// Sends info about the current state of the system.
     #[task(shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
-        let em_error = cx.shared.em.has_error();
         cx.shared.em.run(|| {
             let rocket_state = cx
                 .shared
@@ -188,7 +184,6 @@ mod app {
                 rocket_state
             } else {
                 // This isn't really an error, we just don't have data yet. 
-                // spawn_after!(state_send, ExtU64::secs(5))?;
                 return Ok(())
             };
             let board_state = messages::state::State {
@@ -196,9 +191,9 @@ mod app {
             };
             let message = Message::new(&monotonics::now(), COM_ID, board_state);
             spawn!(send_internal, message)?;
-            spawn_after!(state_send, ExtU64::secs(5))?;
             Ok(())
-        })
+        });
+        spawn_after!(state_send, ExtU64::secs(2));
     }
 
     /// Simple blink task to test the system.

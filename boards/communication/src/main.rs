@@ -127,6 +127,7 @@ mod app {
 
         /* Spawn tasks */
         sensor_send::spawn().ok();
+        state_send::spawn().ok();
         blink::spawn().ok();
 
         /* Monotonic clock */
@@ -228,17 +229,25 @@ mod app {
 
     #[task(shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
-        let state_data = cx.shared.data_manager.lock(|data_manager| data_manager.clone_states());
-
-        let messages = state_data
-            .into_iter()
-            .flatten()
-            .map(|x| Message::new(&monotonics::now(), COM_ID, State::new(x)));
+        let state_data = cx.shared.data_manager.lock(|data_manager| {
+            if let Some(state) = &data_manager.state {
+                state.clone()
+            } else {
+                messages::state::StateData::Abort
+            }
+        });
+        let message = Message::new(&monotonics::now(), COM_ID, State::new(state_data));
+        // let messages = state_data
+        //     .into_iter()
+        //     .flatten()
+        //     .map(|x| Message::new(&monotonics::now(), COM_ID, State::new(x)));
 
         cx.shared.em.run(|| {
-            for msg in messages {
-                spawn!(send_gs, msg.clone())?;
-            }
+            spawn!(send_gs, message.clone())?;
+            // for msg in messages {
+            //     // spawn!(send_gs, msg.clone())?;
+            //     info!("state: {}", msg);
+            // }
             Ok(())
         });
         spawn_after!(state_send, ExtU64::secs(5)).ok();
@@ -262,7 +271,7 @@ mod app {
     }
 
     extern "Rust" {
-        #[task(priority = 3, binds = DMAC_0, shared=[&em], local=[radio_manager])]
+        #[task(binds = DMAC_0, shared=[&em], local=[radio_manager])]
         fn radio_dma(context: radio_dma::Context);
     }
 }

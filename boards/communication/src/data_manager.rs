@@ -74,28 +74,13 @@ impl DataManager {
             },
             messages::Data::State(state) => match state.data {
                 _ => {
+                    info!("state: {}", state.data.clone());
                     self.state = Some(state.data);
                 }
-                // messages::state::StateData::Abort => {
-                //     self.state = Some(state.data);
-                // }
-                // messages::state::StateData::Ascent(ascent) => {
-                //     self.state = Some(ascent);
-                // }
-                // messages::state::StateData::Descent(descent) => {
-                //     self.state = Some(descent);
-                // }
-                // messages::state::StateData::Initializing(init) => {
-                //     self.state = Some(init);
-                // }
-                // messages::state::StateData::TerminalDescent(term) => {
-                //     self.state = Some(term);
-                // }
-                // messages::state::StateData::WaitForTakeoff(wait) => {
-                //     self.state = Some(wait);
-                // }
             }
-            _ => {}
+            _ => {
+                info!("unkown");
+            }
         }
     }
 }

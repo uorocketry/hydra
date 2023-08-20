@@ -44,7 +44,7 @@ pub struct SdManager {
 }
 
 impl SdManager {
-    pub fn _new(
+    pub fn new(
         mclk: &pac::MCLK,
         sercom: pac::SERCOM4,
         freq: Hertz,
@@ -111,14 +111,14 @@ impl SdManager {
             file,
         }
     }
-    pub fn _write(
+    pub fn write(
         &mut self,
         file: &mut sd::File,
         buffer: &[u8],
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
         self.sd_controller.write(&mut self.volume, file, buffer)
     }
-    pub fn _write_str(
+    pub fn write_str(
         &mut self,
         file: &mut sd::File,
         msg: &str,
@@ -126,7 +126,7 @@ impl SdManager {
         let buffer: &[u8] = msg.as_bytes();
         self.sd_controller.write(&mut self.volume, file, buffer)
     }
-    pub fn _open_file(&mut self, file_name: &str) -> Result<sd::File, sd::Error<sd::SdMmcError>> {
+    pub fn open_file(&mut self, file_name: &str) -> Result<sd::File, sd::Error<sd::SdMmcError>> {
         self.sd_controller.open_file_in_dir(
             &mut self.volume,
             &self.root_directory,
@@ -134,10 +134,10 @@ impl SdManager {
             sd::Mode::ReadWriteCreateOrTruncate,
         )
     }
-    pub fn _close_file(&mut self, file: sd::File) -> Result<(), sd::Error<sd::SdMmcError>> {
+    pub fn close_file(&mut self, file: sd::File) -> Result<(), sd::Error<sd::SdMmcError>> {
         self.sd_controller.close_file(&self.volume, file)
     }
-    pub fn _close(mut self) {
+    pub fn close(mut self) {
         self.sd_controller
             .close_dir(&self.volume, self.root_directory);
     }

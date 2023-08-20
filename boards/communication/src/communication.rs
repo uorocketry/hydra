@@ -24,6 +24,7 @@ use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
 use common_arm::HydraError;
+use defmt::flush;
 use defmt::info;
 use crate::app::send_internal;
 use common_arm::spawn;
@@ -205,7 +206,8 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                data_manager.handle_data(data);
+                                // data_manager.handle_data(data);
+                                info!("{}", data);
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
@@ -315,10 +317,10 @@ impl RadioManager {
         match from_bytes::<Message>(buf) {
             Ok(msg) => {
                 info!("Radio: {}", msg);
-                spawn!(send_internal, msg); // dump to the Can Bus
+                // spawn!(send_internal, msg); // dump to the Can Bus
             }
             Err(_) => {
-                // info!("Radio unknown msg");
+                info!("Radio unknown msg");
                 return;
             }
         }

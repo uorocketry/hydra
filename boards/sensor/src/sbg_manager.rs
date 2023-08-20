@@ -15,8 +15,8 @@ use core::ptr;
 // use atsamd_hal::time::*;
 use atsamd_hal::prelude::*;
 use defmt::info;
-
-// use crate::app::sbg_sd_task as sbg_sd;
+use common_arm::spawn;
+use crate::app::sbg_sd_task as sbg_sd;
 use crate::app::{sbg_handle_data};
 use atsamd_hal::sercom::{uart, Sercom, Sercom5};
 use embedded_alloc::Heap;
@@ -103,15 +103,14 @@ pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
     });
 }
 
-// pub fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]) {
-//     cx.shared.sd_manager.lock(|manager| {
-//         if let Ok(mut file) = manager.open_file("sbg.bin") {
-//             manager.write(&mut file, &data); 
-//             manager.close_file(file);
-//             info!("SBG data written to SD card");
-//         }
-//     });
-// }
+pub fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]) {
+    cx.shared.sd_manager.lock(|manager| {
+        if let Ok(mut file) = manager.open_file("sbg.txt") {
+            manager.write(&mut file, &data); 
+            manager.close_file(file);
+        }
+    });
+}
 /**
  * Handles the DMA interrupt.
  * Handles the SBG data.
@@ -124,9 +123,11 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
             if xfer.complete() {
                 let (chan0, source, buf) = sbg.xfer.take().unwrap().stop();
                 let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).unwrap().begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+                let buf_clone = buf.clone();
                 sbg.sbg_device.read_data(buf);
                 unsafe{BUF_DST.copy_from_slice(&[0;SBG_BUFFER_SIZE])};
                 xfer.block_transfer_interrupt();
+                spawn!(sbg_sd(buf_clone));
                 sbg.xfer = Some(xfer);
             }
         }
