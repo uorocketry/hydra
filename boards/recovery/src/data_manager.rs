@@ -132,6 +132,9 @@ impl DataManager {
                 }
                 messages::sensor::SensorData::UtcTime(utc_time_data) => {
                     self.utc_time = Some(utc_time_data);
+                },
+                _ => {
+                    info!("impl power");
                 }
             },
             messages::Data::Command(command) => match command.data {
