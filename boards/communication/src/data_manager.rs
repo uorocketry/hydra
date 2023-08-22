@@ -41,7 +41,7 @@ impl DataManager {
     }
     pub fn clone_states(&self) -> [Option<StateData>; 1] {
         [
-            self.state.clone().map(|x| x.into()),
+            self.state.clone(),
         ]
     }
     pub fn handle_data(&mut self, data: Message) {
@@ -75,11 +75,8 @@ impl DataManager {
                     info!("impl power related");
                 }
             },
-            messages::Data::State(state) => match state.data {
-                _ => {
-                    info!("state: {}", state.data.clone());
+            messages::Data::State(state) => {
                     self.state = Some(state.data);
-                }
             }
             _ => {
                 info!("unkown");

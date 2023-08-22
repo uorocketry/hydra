@@ -33,7 +33,6 @@ static HEAP: Heap = Heap::empty();
 pub struct SBGManager {
     sbg_device: SBG,
     xfer: Option<SBGTransfer>,
-    buf_select: bool,
 }
 
 impl SBGManager {
@@ -85,7 +84,6 @@ impl SBGManager {
 
         SBGManager {
             sbg_device: sbg,
-            buf_select: false,
             xfer: Some(xfer),
         }
     }
@@ -105,13 +103,17 @@ pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
 pub fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]) {
     cx.shared.sd_manager.lock(|manager| {
         if let Some(mut file) = manager.file.take() {
-            manager.write(&mut file, &data);
+            cx.shared.em.run(|| {
+                manager.write(&mut file, &data)?;
+                Ok(())
+            });
             manager.file = Some(file); // give the file back after use
-        } else {
-            if let Ok(mut file) = manager.open_file("sbg.txt") {
-                manager.write(&mut file, &data);
-                manager.file = Some(file);
-            }
+        } else if let Ok(mut file) = manager.open_file("sbg.txt") {
+            cx.shared.em.run(|| {
+                manager.write(&mut file, &data)?;
+                Ok(())
+            });
+            manager.file = Some(file);
         } 
     });
 }
@@ -127,13 +129,13 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
             if xfer.complete() {
                 let (chan0, source, buf) = sbg.xfer.take().unwrap().stop();
                 let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).unwrap().begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
-                let buf_clone = buf.clone();
+                let buf_copy = buf.copy();
                 sbg.sbg_device.read_data(buf);
                 unsafe{BUF_DST.copy_from_slice(&[0;SBG_BUFFER_SIZE])};
                 xfer.block_transfer_interrupt();
                 sbg.xfer = Some(xfer);
                 cx.shared.em.run(|| {
-                    spawn!(sbg_sd(buf_clone));
+                    spawn!(sbg_sd(buf_copy));
                     Ok(())
                 });
             }

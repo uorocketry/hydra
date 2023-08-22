@@ -160,12 +160,17 @@ mod app {
         loop {}
     }
 
-    #[task(local = [sbg_power_pin], shared = [sd_manager])]
+    #[task(local = [sbg_power_pin], shared = [sd_manager, &em])]
     fn sleep_system(mut cx: sleep_system::Context) {
         // close out sd files. 
-        cx.shared.sd_manager.lock(|sd| sd.close_current_file());
+        cx.shared.sd_manager.lock(|sd| {
+            cx.shared.em.run(|| {
+                sd.close_current_file();
+                Ok(())
+            });
+        });
         // power down sbg
-        cx.local.sbg_power_pin.set_low();
+        cx.local.sbg_power_pin.set_low(); // define hydra error for this error type. 
         // Call core.SCB.set_deepsleep for even less power consumption. 
     }
 

@@ -61,6 +61,12 @@ impl StateMachine {
     }
 }
 
+impl Default for StateMachine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // All events are found here
 pub enum RocketEvents {
     DeployDrogue,
@@ -96,16 +102,17 @@ impl From<state::StateData> for RocketStates {
         }
     }
 }
-impl Into<state::StateData> for RocketStates {
-    fn into(self) -> state::StateData {
-        match self {
-            RocketStates::Initializing(_) => state::StateData::Initializing,
-            RocketStates::WaitForTakeoff(_) => state::StateData::WaitForTakeoff,
-            RocketStates::Ascent(_) => state::StateData::Ascent,
-            RocketStates::Descent(_) => state::StateData::Descent,
-            RocketStates::TerminalDescent(_) => state::StateData::TerminalDescent,
-            RocketStates::WaitForRecovery(_) => state::StateData::WaitForRecovery,
-            RocketStates::Abort(_) => state::StateData::Abort,
-        }
-    }
-}
+// Linter: an implementation of From is preferred since it gives you Into<_> for free where the reverse isn't true
+// impl Into<state::StateData> for RocketStates {
+//     fn into(self) -> state::StateData {
+//         match self {
+//             RocketStates::Initializing(_) => state::StateData::Initializing,
+//             RocketStates::WaitForTakeoff(_) => state::StateData::WaitForTakeoff,
+//             RocketStates::Ascent(_) => state::StateData::Ascent,
+//             RocketStates::Descent(_) => state::StateData::Descent,
+//             RocketStates::TerminalDescent(_) => state::StateData::TerminalDescent,
+//             RocketStates::WaitForRecovery(_) => state::StateData::WaitForRecovery,
+//             RocketStates::Abort(_) => state::StateData::Abort,
+//         }
+//     }
+// }

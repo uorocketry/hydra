@@ -192,19 +192,17 @@ mod app {
     }
 
     #[task(capacity = 10, local = [sd_manager], shared = [&em])]
-    fn sd_dump(mut cx: sd_dump::Context, m: Message) {
-        let mut manager = cx.local.sd_manager;
+    fn sd_dump(cx: sd_dump::Context, m: Message) {
+        let manager = cx.local.sd_manager;
         cx.shared.em.run(|| {
             let mut buf: [u8; 255] = [0; 255]; 
             let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
             if let Some(mut file) = manager.file.take() {
                 manager.write(&mut file, &msg_ser)?;
                 manager.file = Some(file);
-            } else {
-                if let Ok(mut file) = manager.open_file("log.txt") {
-                    manager.write(&mut file, &msg_ser)?;
-                    manager.file = Some(file);
-                }
+            } else if let Ok(mut file) = manager.open_file("log.txt") {
+                manager.write(&mut file, &msg_ser)?;
+                manager.file = Some(file);
             }
             Ok(())
         });

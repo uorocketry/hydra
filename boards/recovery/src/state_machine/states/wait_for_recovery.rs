@@ -19,7 +19,12 @@ impl State for WaitForRecovery {
             board: SensorBoard
         };
         let message = Message::new(&monotonics::now(), COM_ID, Command::new(sensor_power_down));
-        context.shared_resources.can0.lock(|can| can.send_message(message)); // unhandled result 
+        context.shared_resources.can0.lock(|can| {
+            context.shared_resources.em.run(||{
+                can.send_message(message)?;
+                Ok(())
+            })
+        });  
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         no_transition!() // this is our final resting place. We should also powerdown this board. 
