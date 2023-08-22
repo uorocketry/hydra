@@ -9,14 +9,10 @@ pub struct Descent {}
 
 impl State for Descent {
     fn enter(&self, context: &mut StateMachineContext) {
-        info!("Apogee");
         context.shared_resources.gpio.lock(|gpio| gpio.fire_drogue());
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
-        // is this 450 AGL? I could put these types of values in a top file like
-        // types.rs to make it easier to change.
         context.shared_resources.data_manager.lock(|data| {
-            // Handle the case where we don't have any data yet
             if data.is_below_main() {
                 transition!(self, TerminalDescent)
             } else {

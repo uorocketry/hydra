@@ -105,17 +105,6 @@ impl CanDevice0 {
             .interrupt_configuration()
             .enable_line_0(interrupts_to_be_enabled);
 
-        // We accept messages from the sensor board as we need data from the sensors.
-        can.filters_standard()
-            .push(Filter::Classic {
-                action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
-                    .unwrap(),
-                mask: ecan::StandardId::ZERO,
-            })
-            .unwrap_or_else(|_| panic!("Sensor Board filter"));
-
-        // We accept messages from the communication board as we may need to force the deployment of the parachute.
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo1,

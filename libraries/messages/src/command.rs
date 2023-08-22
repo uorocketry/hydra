@@ -1,6 +1,7 @@
 use derive_more::From;
 use defmt::Format;
 use serde::{Deserialize, Serialize};
+use crate::sender::Sender;
 
 #[cfg(test)]
 use proptest_derive::Arbitrary;
@@ -23,6 +24,7 @@ pub struct Command {
 pub enum CommandData {
     DeployDrogue(DeployDrogue),
     DeployMain(DeployMain),
+    PowerDown(PowerDown),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
@@ -40,6 +42,14 @@ pub struct DeployDrogue {
 pub struct DeployMain {
     pub val: bool,
     // Auth? 
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct PowerDown {
+    pub board: Sender, // This isn't proper naming !! This is the board to be powered down. Changes name of sender.rs to board.rs.
 }
 
 impl Command {

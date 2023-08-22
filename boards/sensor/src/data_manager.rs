@@ -1,4 +1,8 @@
+use common_arm::spawn;
+use messages::sender::Sender;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, SensorData, UtcTime};
+use messages::Message;
+use crate::app::sleep_system;
 
 #[derive(Clone)]
 pub struct DataManager {
@@ -33,6 +37,30 @@ impl DataManager {
             self.utc_time.clone().map(|x| x.into()),
             self.gps_vel.clone().map(|x| x.into()),
         ]
+    }
+
+    pub fn handle_data(&mut self, data: Message) {
+        match data.data {
+            messages::Data::Command(command) => match command.data {
+                messages::command::CommandData::PowerDown(info) => {
+                    match info.board {
+                        Sender::SensorBoard => {
+                        // sleep the system.
+                        spawn!(sleep_system);
+                        }
+                        _ => {
+                            // don't care 
+                        }
+                    }
+                }
+                _ => {
+                    // We don't care atm about these other commands. 
+                }
+            }
+            _ => {
+                // we can disregard all other messages for now. 
+            }
+        }
     }
 }
 

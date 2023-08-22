@@ -17,14 +17,10 @@ use communication::Capacities;
 use communication::CanDevice0;
 use systick_monotonic::*;
 use panic_halt as _;
-use defmt::info;
+use crate::data_manager::DataManager;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
-    use hal::gpio::{PA10, Input, Floating, Alternate, B, PA08, C, PA09, PA02, AlternateB};
-
-    use crate::data_manager::DataManager;
-
     use super::*;
 
     #[shared]
@@ -38,8 +34,6 @@ mod app {
     struct Local {
         led_green: Pin<PB16, PushPullOutput>,
         led_red: Pin<PB17, PushPullOutput>,
-        adc_test: hal::adc::Adc<hal::pac::ADC0>,
-        adc_pin: Pin<PA10, AlternateB>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -79,16 +73,16 @@ mod app {
 
 
 
-        let (pclk_adc0, gclk0) = Pclk::enable(tokens.pclks.adc0, gclk0);
+        // let (pclk_adc0, gclk0) = Pclk::enable(tokens.pclks.adc0, gclk0);
         
 
-        // SAFETY: Misusing the PAC API can break the system.
-        // This is safe because we only steal the MCLK.
-        let (_, _, gclk, mut mclk) = unsafe { clocks.pac.steal() };
+        // // SAFETY: Misusing the PAC API can break the system.
+        // // This is safe because we only steal the MCLK.
+        // let (_, _, gclk, mut mclk) = unsafe { clocks.pac.steal() };
 
 
-        // setup ADC 
-        let mut adc_test = hal::adc::Adc::adc0(peripherals.ADC0, &mut mclk);
+        // // setup ADC 
+        // let mut adc_test = hal::adc::Adc::adc0(peripherals.ADC0, &mut mclk);
     
 
         // LEDs
@@ -96,7 +90,7 @@ mod app {
         let led_red = pins.pb17.into_push_pull_output();
 
         blink::spawn().ok();
-        adc::spawn().ok();
+        // adc::spawn().ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -108,7 +102,7 @@ mod app {
                 can0,
             },
             Local {
-                led_green, led_red, adc_test, adc_pin: pins.pa10.into_alternate()
+                led_green, led_red,
             },
             init::Monotonics(mono),
         )
@@ -120,25 +114,25 @@ mod app {
         loop {}
     }
     
-    #[task(local = [adc_test, adc_pin], shared = [&em])]
-    fn adc(cx: adc::Context) {
-        // test adc for 5v PWR sense 
-        info!("try adc");
-        cx.shared.em.run(||{
-            let val = cx.local.adc_test.read(cx.local.adc_pin);
-            let x: u16 = match val {
-                Ok(v) => {
-                    v
-                }
-                Err(_) => {
-                    0
-                }
-            };
-            info!("{}", x);
-            Ok(())
-        });
-        spawn_after!(adc, ExtU64::millis(500)).ok();
-    }
+    // #[task(local = [adc_test, adc_pin], shared = [&em])]
+    // fn adc(cx: adc::Context) {
+    //     // test adc for 5v PWR sense 
+    //     info!("try adc");
+    //     cx.shared.em.run(||{
+    //         let val = cx.local.adc_test.read(cx.local.adc_pin);
+    //         let x: u16 = match val {
+    //             Ok(v) => {
+    //                 v
+    //             }
+    //             Err(_) => {
+    //                 0
+    //             }
+    //         };
+    //         info!("{}", x);
+    //         Ok(())
+    //     });
+    //     spawn_after!(adc, ExtU64::millis(500)).ok();
+    // }
 
     /// Simple blink task to test the system.
     /// Acts as a heartbeat for the system.

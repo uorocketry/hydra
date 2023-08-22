@@ -1,7 +1,7 @@
 use defmt::{write, Format, Formatter, info};
 
-use crate::no_transition;
-use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
+use crate::{no_transition, transition};
+use crate::state_machine::{WaitForRecovery, RocketStates, State, StateMachineContext, TransitionInto};
 use rtic::mutex::Mutex;
 use super::Descent;
 
@@ -10,11 +10,19 @@ pub struct TerminalDescent {}
 
 impl State for TerminalDescent {
     fn enter(&self,context: &mut StateMachineContext) {
-        info!("Terminal Descent");
         context.shared_resources.gpio.lock(|gpio| gpio.fire_main());
     }
-    fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
-        no_transition!()
+    fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
+        context
+            .shared_resources
+            .data_manager
+            .lock(|data| {
+                if data.is_landed() {
+                    transition!(self, WaitForRecovery)
+                } else {
+                    no_transition!()
+                }
+            })
     }
 }
 

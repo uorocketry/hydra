@@ -6,8 +6,8 @@ use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTi
 use messages::Message;
 use defmt::{info};
 
-const MAIN_HEIGHT: f32 = 500.0;
-const HEIGHT_MIN: f32 = 300.0;
+const MAIN_HEIGHT: f32 = 500.0; // meters 
+const HEIGHT_MIN: f32 = 300.0; // meters 
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -36,13 +36,6 @@ impl DataManager {
     }
     /// Returns true if the rocket is descending 
     pub fn is_falling(&self) -> bool {
-        // if let Some(air) = &self.air {
-        //     if air.altitude < HEIGHT_MIN {
-        //         return false 
-        //     }
-        // } else {
-        //     return false;
-        // }
         if self.historical_barometer_altitude.len() < 8 {
             return false;
         }
@@ -81,16 +74,44 @@ impl DataManager {
             None => false,
         }
     }
+    pub fn is_landed(&self) -> bool {
+        if self.historical_barometer_altitude.len() < 8 {
+            return false;
+        }
+        let mut buf = self.historical_barometer_altitude.oldest_ordered();
+        match buf.next() {
+            Some(last) => {
+                let mut avg_sum: f32 = 0.0;
+                let mut prev = last;
+                for i in buf {
+                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
+                    if time_diff == 0.0 {
+                        continue;
+                    }
+                    avg_sum += (i.0 - prev.0)/time_diff; 
+                    prev = i;
+                }
+                match avg_sum / 7.0 {   
+                    // if we aren't going faster than +- 1 m/s it is safe to assume we have landed.
+                    x if (1.0..=-1.0).contains(&x) => { 
+                        info!("avg: {}", avg_sum / 7.0);
+                        return true;
+                    }
+                    _ => {
+                        info!("avg: {}", avg_sum / 7.0);
+                    }
+                }
+            }
+            None => {
+                return false;
+            }
+        }
+        false
+    }
     pub fn is_below_main(&self) -> bool {
         match self.air.as_ref() {
             Some(air) => air.altitude < MAIN_HEIGHT,
             None => false,
-        }
-    }
-    pub fn get_alt(&self) -> f32 {
-        match self.air.as_ref() {
-            Some(air) => air.altitude,
-            None => 0.0,
         }
     }
     pub fn set_state(&mut self, state: RocketStates) {
@@ -143,6 +164,9 @@ impl DataManager {
                 },
                 messages::command::CommandData::DeployMain(main) => {
                     spawn!(fire_main);
+                },
+                messages::command::CommandData::PowerDown(_) => {
+                    // don't handle for now.
                 }
             }
             _ => {

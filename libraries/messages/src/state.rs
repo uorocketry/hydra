@@ -1,4 +1,3 @@
-use derive_more::From;
 use defmt::Format;
 use serde::{Deserialize, Serialize};
 
@@ -26,6 +25,7 @@ pub enum StateData {
     Ascent,
     Descent,
     TerminalDescent,
+    WaitForRecovery,
     Abort,
 }
 

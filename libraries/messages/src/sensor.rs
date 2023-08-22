@@ -31,6 +31,45 @@ pub enum SensorData {
     Imu1(Imu1),
     Imu2(Imu2),
     GpsVel(GpsVel),
+    Current(Current),
+    Voltage(Voltage),
+    Regulator(Regulator),
+    Temperature(Temperature),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct Regulator {
+    pub status: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct Voltage {
+    pub voltage: f32,
+    pub rolling_avg: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct Current {
+    pub current: f32,
+    pub rolling_avg: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct Temperature {
+    pub temperature: f32,
+    pub rolling_avg: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]

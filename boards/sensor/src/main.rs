@@ -18,7 +18,7 @@ use data_manager::DataManager;
 use hal::dmac;
 use defmt::info;
 use hal::gpio::Pins;
-use hal::gpio::{PB16, PB17};
+use hal::gpio::{PB16, PB17, PB01};
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
@@ -51,6 +51,7 @@ mod app {
         led_green: Pin<PB16, PushPullOutput>,
         led_red: Pin<PB17, PushPullOutput>,
         sbg_manager: SBGManager,
+        sbg_power_pin: Pin<PB01, PushPullOutput>, // this is here so we do not need to lock sbg_manager.! put into a gpio controller with leds. 
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -65,8 +66,8 @@ mod app {
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
 
-        let mut sbg_pin = pins.pb01.into_push_pull_output();
-        sbg_pin.set_high().unwrap(); // turn on sbg
+        let mut sbg_power_pin = pins.pb01.into_push_pull_output();
+        sbg_power_pin.set_high().unwrap();
 
         let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
         let dmaChannels = dmac.split();
@@ -147,21 +148,31 @@ mod app {
                 led_green,
                 led_red,
                 sbg_manager,
+                sbg_power_pin,
             },
             init::Monotonics(mono),
         )
     }
 
-    // /// Idle task for when no other tasks are running.
-    // #[idle]
-    // fn idle(_: idle::Context) -> ! {
-    //     loop {}
-    // }
+    /// Idle task for when no other tasks are running.
+    #[idle]
+    fn idle(_: idle::Context) -> ! {
+        loop {}
+    }
 
-    #[task(binds = CAN0, shared = [can])]
+    #[task(local = [sbg_power_pin], shared = [sd_manager])]
+    fn sleep_system(mut cx: sleep_system::Context) {
+        // close out sd files. 
+        cx.shared.sd_manager.lock(|sd| sd.close_current_file());
+        // power down sbg
+        cx.local.sbg_power_pin.set_low();
+        // Call core.SCB.set_deepsleep for even less power consumption. 
+    }
+
+    #[task(binds = CAN0, shared = [can, data_manager])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can.lock(|can| {
-            can.process_data();
+            cx.shared.data_manager.lock(|manager| can.process_data(manager))
         });
     }
 

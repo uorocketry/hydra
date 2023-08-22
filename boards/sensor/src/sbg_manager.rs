@@ -4,7 +4,7 @@ use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::dmac;
 use atsamd_hal::dmac::Transfer;
 use atsamd_hal::sercom::{IoSet6};
-use atsamd_hal::gpio::{Pin, Reset, PB03, PB02};
+use atsamd_hal::gpio::{Pin, Reset, PB03, PB02, PB01, PushPullOutput};
 use atsamd_hal::pac::{MCLK, RTC};
 // use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;
@@ -26,7 +26,6 @@ use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
 
 
 pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
-pub static mut BUF_DST2: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 
 // Simple heap required by the SBG library
 static HEAP: Heap = Heap::empty();
@@ -54,7 +53,7 @@ impl SBGManager {
             static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
             unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
         }
-
+        
         let pads_sbg = uart::Pads::<Sercom5, IoSet6>::default().rx(rx).tx(tx);
         let uart_sbg = ConfigSBG::new(mclk, sercom5, pads_sbg, pclk_sercom5.freq())
             .baud(
@@ -105,10 +104,15 @@ pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
 
 pub fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]) {
     cx.shared.sd_manager.lock(|manager| {
-        if let Ok(mut file) = manager.open_file("sbg.txt") {
-            manager.write(&mut file, &data); 
-            manager.close_file(file);
-        }
+        if let Some(mut file) = manager.file.take() {
+            manager.write(&mut file, &data);
+            manager.file = Some(file); // give the file back after use
+        } else {
+            if let Ok(mut file) = manager.open_file("sbg.txt") {
+                manager.write(&mut file, &data);
+                manager.file = Some(file);
+            }
+        } 
     });
 }
 /**
@@ -127,33 +131,17 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
                 sbg.sbg_device.read_data(buf);
                 unsafe{BUF_DST.copy_from_slice(&[0;SBG_BUFFER_SIZE])};
                 xfer.block_transfer_interrupt();
-                spawn!(sbg_sd(buf_clone));
                 sbg.xfer = Some(xfer);
+                cx.shared.em.run(|| {
+                    spawn!(sbg_sd(buf_clone));
+                    Ok(())
+                });
             }
         }
-        None => {
+        None => { // it should be impossible to reach here. 
             info!("None");
         }
     }
-
-    // if sbg.xfer.complete() {
-    //     cx.shared.em.run(|| {
-    //         let buf = match sbg.buf_select {
-    //             false => {
-    //                 sbg.buf_select = true;
-    //                 sbg.xfer.recycle_source(unsafe { &mut *BUF_DST })?
-    //             }
-    //             true => {
-    //                 sbg.buf_select = false;
-    //                 sbg.xfer.recycle_source(unsafe { &mut *BUF_DST2 })?
-    //             }
-    //         };
-    //         // let buf_clone = buf.clone();
-    //         sbg.sbg_device.read_data(buf);
-    //         // spawn!(sbg_sd(buf_clone))?;
-    //         Ok(())
-    //     });
-    // }
 }
 
 /// Stored right before an allocation. Stores information that is needed to deallocate memory.

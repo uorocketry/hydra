@@ -31,6 +31,8 @@ use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
 use typenum::{U0, U128, U32, U64};
 
+use crate::data_manager::{DataManager, self};
+
 pub struct Capacities;
 
 impl mcan::messageram::Capacities for Capacities {
@@ -114,7 +116,7 @@ impl CanDevice0 {
                     .unwrap(),
                 mask: ecan::StandardId::ZERO,
             })
-            .unwrap_or_else(|_| panic!("Self filter"));
+            .unwrap_or_else(|_| panic!("Communication filter"));
 
 
         can.filters_standard()
@@ -160,7 +162,7 @@ impl CanDevice0 {
         )?;
         Ok(())
     }
-    pub fn process_data(&mut self) {
+    pub fn process_data(&mut self, data_manager: &mut DataManager) {
         let line_interrupts = &self.line_interrupts;
         for interrupt in line_interrupts.iter_flagged() {
             match interrupt {
@@ -168,7 +170,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("Message: {:?}", data)
+                                data_manager.handle_data(data);
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
@@ -180,153 +182,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("Message: {:?}", data)
-                            }
-                            Err(e) => {
-                                info!("Error: {:?}", e)
-                            }
-                        }
-                    }
-                }
-                _ => (),
-            }
-        }
-    }
-}
-
-pub struct CanDevice1 {
-    pub can: Can<
-        'static,
-        Can1,
-        Dependencies<Can1, Gclk0Id, Pin<PB15, Alternate<H>>, Pin<PB14, Alternate<H>>, CAN1>,
-        Capacities,
-    >,
-    line_interrupts: OwnedInterruptSet<Can1, EnabledLine0>,
-}
-
-impl CanDevice1 {
-    pub fn new<S>(
-        can_rx: Pin<PB15, AlternateH>,
-        can_tx: Pin<PB14, AlternateH>,
-        pclk_can: Pclk<Can1, Gclk0Id>,
-        ahb_clock: AhbClk<Can1>,
-        peripheral: CAN1,
-        gclk0: S,
-        can_memory: &'static mut SharedMemory<Capacities>,
-        loopback: bool,
-    ) -> (Self, S::Inc)
-    where
-        S: Source<Id = Gclk0Id> + Increment,
-    {
-        let (can_dependencies, gclk0) =
-            Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
-
-        let mut can =
-            mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, can_memory).unwrap();
-        can.config().mode = Mode::Fd {
-            allow_bit_rate_switching: false,
-            data_phase_timing: BitTiming::new(500.kHz()),
-        };
-
-        if loopback {
-            can.config().loopback = true;
-        }
-
-        let interrupts_to_be_enabled = can
-            .interrupts()
-            .split(
-                [
-                    Interrupt::RxFifo0NewMessage,
-                    Interrupt::RxFifo0Full,
-                    Interrupt::RxFifo0MessageLost,
-                    Interrupt::RxFifo1NewMessage,
-                    Interrupt::RxFifo1Full,
-                    Interrupt::RxFifo1MessageLost,
-                ]
-                .into_iter()
-                .collect(),
-            )
-            .unwrap();
-
-        // Line 0 and 1 are connected to the same interrupt line
-        let line_interrupts = can
-            .interrupt_configuration()
-            .enable_line_0(interrupts_to_be_enabled);
-
-        can.filters_standard()
-            .push(Filter::Classic {
-                action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::CommunicationBoard.into())
-                    .unwrap(),
-                mask: ecan::StandardId::ZERO,
-            })
-            .unwrap_or_else(|_| panic!("Self filter"));
-
-
-        can.filters_standard()
-            .push(Filter::Classic {
-                action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::RecoveryBoard.into())
-                    .unwrap(),
-                mask: ecan::StandardId::ZERO,
-            })
-            .unwrap_or_else(|_| panic!("Recovery filter"));
-
-        can.filters_standard()
-            .push(Filter::Classic {
-                action: Action::StoreFifo1,
-                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into())
-                    .unwrap(),
-                mask: ecan::StandardId::ZERO,
-            })
-            .unwrap_or_else(|_| panic!("Ground Station filter"));
-
-        let can = can.finalize().unwrap();
-        (
-            CanDevice1 {
-                can,
-                line_interrupts,
-            },
-            gclk0,
-        )
-    }
-    pub fn _send_message(&mut self, m: Message) -> Result<(), HydraError> {
-        let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
-        self.can.tx.transmit_queued(
-            tx::MessageBuilder {
-                id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
-                frame_type: tx::FrameType::FlexibleDatarate {
-                    payload: &payload[..],
-                    bit_rate_switching: false,
-                    force_error_state_indicator: false,
-                },
-                store_tx_event: None,
-            }
-            .build()?,
-        )?;
-        Ok(())
-    }
-    pub fn _process_data(&mut self) {
-        let line_interrupts = &self.line_interrupts;
-        for interrupt in line_interrupts.iter_flagged() {
-            match interrupt {
-                Interrupt::RxFifo0NewMessage => {
-                    for message in &mut self.can.rx_fifo_0 {
-                        match from_bytes::<Message>(message.data()) {
-                            Ok(data) => {
-                                info!("Message: {:?}", data)
-                            }
-                            Err(e) => {
-                                info!("Error: {:?}", e)
-                            }
-                        }
-                    }
-                }
-                Interrupt::RxFifo1NewMessage => {
-                    for message in &mut self.can.rx_fifo_1 {
-                        match from_bytes::<Message>(message.data()) {
-                            Ok(data) => {
-                                info!("Message: {:?}", data)
+                                data_manager.handle_data(data);
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)

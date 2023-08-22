@@ -9,7 +9,6 @@ pub struct Initializing {}
 
 impl State for Initializing {
     fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
-        // Check that all systems are ok, then transition
         transition!(self, WaitForTakeoff)
     }
 }

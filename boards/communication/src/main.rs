@@ -17,8 +17,9 @@ use communication::Capacities;
 use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
 use sd_manager::SdManager;
-use communication::radio_dma;
+// use communication::radio_dma;
 
+use heapless::Vec;
 use hal::gpio::Pins;
 use hal::gpio::PA05;
 use hal::gpio::{Pin, PushPullOutput};
@@ -47,7 +48,7 @@ mod app {
     struct Local {
         led: Pin<PA05, PushPullOutput>,
         radio: RadioDevice,
-        // sd_manager: SdManager,
+        sd_manager: SdManager,
         radio_manager: RadioManager,
     }
 
@@ -111,16 +112,16 @@ mod app {
         let radio_manager = RadioManager::new(xfer);
 
         /* SD config */
-        // let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
-        // let sd_manager = SdManager::new(
-        //     &mclk,
-        //     peripherals.SERCOM4,
-        //     pclk_sd.freq(),
-        //     pins.pb14.into_push_pull_output(),
-        //     pins.pb13.into_push_pull_output(),
-        //     pins.pb15.into_push_pull_output(),
-        //     pins.pb12.into_push_pull_output(),
-        // );        
+        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
+        let sd_manager = SdManager::new(
+            &mclk,
+            peripherals.SERCOM4,
+            pclk_sd.freq(),
+            pins.pb14.into_push_pull_output(),
+            pins.pb13.into_push_pull_output(),
+            pins.pb15.into_push_pull_output(),
+            pins.pb12.into_push_pull_output(),
+        );        
 
         /* Status LED */
         let led = pins.pa05.into_push_pull_output();
@@ -139,8 +140,7 @@ mod app {
                 data_manager: DataManager::new(),
                 can0,
             },
-            Local { led, radio, radio_manager },
-            // Local { led, radio, sd_manager, radio_manager },
+            Local { led, radio, sd_manager, radio_manager },
             init::Monotonics(mono),
         )
     }
@@ -191,16 +191,24 @@ mod app {
         });
     }
 
-    // #[task(capacity = 10, local = [sd_manager], shared = [&em])]
-    // fn sd_dump(mut cx: sd_dump::Context, m: Message) {
-    //     let mut manager = cx.local.sd_manager;
-    //     cx.shared.em.run(|| {
-    //         let mut buf = [0u8; 256];
-    //         let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
-    //         manager.write(msg_ser)?;
-    //         Ok(())
-    //     });
-    // }
+    #[task(capacity = 10, local = [sd_manager], shared = [&em])]
+    fn sd_dump(mut cx: sd_dump::Context, m: Message) {
+        let mut manager = cx.local.sd_manager;
+        cx.shared.em.run(|| {
+            let mut buf: [u8; 255] = [0; 255]; 
+            let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
+            if let Some(mut file) = manager.file.take() {
+                manager.write(&mut file, &msg_ser)?;
+                manager.file = Some(file);
+            } else {
+                if let Ok(mut file) = manager.open_file("log.txt") {
+                    manager.write(&mut file, &msg_ser)?;
+                    manager.file = Some(file);
+                }
+            }
+            Ok(())
+        });
+    }
 
     /**
      * Sends information about the sensors.
@@ -220,7 +228,7 @@ mod app {
         cx.shared.em.run(|| {
             for msg in messages {
                 spawn!(send_gs, msg.clone())?;
-                // spawn!(sd_dump, msg)?;
+                spawn!(sd_dump, msg)?;
             }
             Ok(())
         });
@@ -230,24 +238,13 @@ mod app {
     #[task(shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
         let state_data = cx.shared.data_manager.lock(|data_manager| {
-            if let Some(state) = &data_manager.state {
-                state.clone()
-            } else {
-                messages::state::StateData::Abort
-            }
+            data_manager.state.clone()
         });
-        let message = Message::new(&monotonics::now(), COM_ID, State::new(state_data));
-        // let messages = state_data
-        //     .into_iter()
-        //     .flatten()
-        //     .map(|x| Message::new(&monotonics::now(), COM_ID, State::new(x)));
-
         cx.shared.em.run(|| {
-            spawn!(send_gs, message.clone())?;
-            // for msg in messages {
-            //     // spawn!(send_gs, msg.clone())?;
-            //     info!("state: {}", msg);
-            // }
+            if let Some(x) = state_data {
+                let message = Message::new(&monotonics::now(), COM_ID, State::new(x));
+                spawn!(send_gs, message)?;
+            } // if there is none we still return since we simply don't have data yet. 
             Ok(())
         });
         spawn_after!(state_send, ExtU64::secs(5)).ok();
@@ -270,8 +267,8 @@ mod app {
         });
     }
 
-    extern "Rust" {
-        #[task(binds = DMAC_0, shared=[&em], local=[radio_manager])]
-        fn radio_dma(context: radio_dma::Context);
-    }
+    // extern "Rust" {
+    //     #[task(binds = DMAC_0, shared=[&em], local=[radio_manager])]
+    //     fn radio_dma(context: radio_dma::Context);
+    // }
 }

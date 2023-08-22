@@ -39,7 +39,7 @@ pub struct SdManager {
     pub sd_controller: SdController,
     pub volume: sd::Volume,
     pub root_directory: sd::Directory,
-    pub file: sd::File,
+    pub file: Option<sd::File>,
 }
 
 impl SdManager {
@@ -66,10 +66,9 @@ impl SdManager {
         match sd_cont.device().init() {
             Ok(_) => match sd_cont.device().card_size_bytes() {
                 Ok(size) => info!("Card is {} bytes", size),
-                Err(_) => warn!("Cannot get card size"),
+                Err(_) => panic!("Cannot get card size"),
             },
             Err(_) => {
-                warn!("Cannot get SD card");
                 panic!("Cannot get SD card.");
             }
         }
@@ -77,7 +76,6 @@ impl SdManager {
         let mut volume = match sd_cont.get_volume(sd::VolumeIdx(0)) {
             Ok(volume) => volume,
             Err(_) => {
-                warn!("Cannot get volume 0");
                 panic!("Cannot get volume 0");
             }
         };
@@ -85,7 +83,6 @@ impl SdManager {
         let root_directory = match sd_cont.open_root_dir(&volume) {
             Ok(root_directory) => root_directory,
             Err(_) => {
-                warn!("Cannot get root");
                 panic!("Cannot get root");
             }
         };
@@ -98,7 +95,6 @@ impl SdManager {
         let file = match file {
             Ok(file) => file,
             Err(_) => {
-                warn!("Cannot create file.");
                 panic!("Cannot create file.");
             }
         };
@@ -107,15 +103,15 @@ impl SdManager {
             sd_controller: sd_cont,
             volume,
             root_directory,
-            file,
+            file: Some(file),
         }
     }
     pub fn write(
         &mut self,
-        // file: &mut sd::File,
+        file: &mut sd::File,
         buffer: &[u8],
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
-        self.sd_controller.write(&mut self.volume, &mut self.file, buffer)
+        self.sd_controller.write(&mut self.volume, file, buffer)
     }
     pub fn write_str(
         &mut self,
@@ -132,6 +128,12 @@ impl SdManager {
             file_name,
             sd::Mode::ReadWriteCreateOrTruncate,
         )
+    }
+    pub fn close_current_file(&mut self) -> Result<(), sd::Error<sd::SdMmcError>> {
+        if let Some(file) = self.file.take() {
+            return self.close_file(file);
+        }
+        Ok(())
     }
     pub fn close_file(&mut self, file: sd::File) -> Result<(), sd::Error<sd::SdMmcError>> {
         self.sd_controller.close_file(&self.volume, file)

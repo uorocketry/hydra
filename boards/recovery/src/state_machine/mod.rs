@@ -51,9 +51,6 @@ impl StateMachine {
     pub fn run(&mut self, context: &mut StateMachineContext) {
         if let Some(new_state) = self.state.step(context) {
             self.state.exit();
-            // context.shared_resources.data_manager.lock(|data| {
-            //     data.set_state(new_state.clone());
-            // });
             new_state.enter(context);
             self.state = new_state;
         }
@@ -80,10 +77,11 @@ pub enum RocketStates {
     Ascent,
     Descent,
     TerminalDescent,
+    WaitForRecovery,
     Abort,
 }
 
-// Not ideal, but it works for now.
+// Not a fan of this.
 // Should be able to put this is a shared library.
 impl From<state::StateData> for RocketStates {
     fn from(state: state::StateData) -> Self {
@@ -93,11 +91,11 @@ impl From<state::StateData> for RocketStates {
             state::StateData::Ascent => RocketStates::Ascent(Ascent {}),
             state::StateData::Descent => RocketStates::Descent(Descent {}),
             state::StateData::TerminalDescent => RocketStates::TerminalDescent(TerminalDescent {  } ),
+            state::StateData::WaitForRecovery => RocketStates::WaitForTakeoff(WaitForTakeoff {  }),
             state::StateData::Abort => RocketStates::Abort(Abort {}),
         }
     }
 }
-
 impl Into<state::StateData> for RocketStates {
     fn into(self) -> state::StateData {
         match self {
@@ -106,6 +104,7 @@ impl Into<state::StateData> for RocketStates {
             RocketStates::Ascent(_) => state::StateData::Ascent,
             RocketStates::Descent(_) => state::StateData::Descent,
             RocketStates::TerminalDescent(_) => state::StateData::TerminalDescent,
+            RocketStates::WaitForRecovery(_) => state::StateData::WaitForRecovery,
             RocketStates::Abort(_) => state::StateData::Abort,
         }
     }

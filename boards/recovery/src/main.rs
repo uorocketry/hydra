@@ -141,15 +141,12 @@ mod app {
     /// This takes control of the shared resources.
     #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager, &em])]
     fn run_sm(mut cx: run_sm::Context) {
-        cx.shared.data_manager.lock(|dm| info!("alt: {}", dm.get_alt()));
         cx.local.state_machine.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,
         });
         cx.shared.data_manager.lock(|data| {
             data.set_state(cx.local.state_machine.get_state());
         });
-        // !! Question, will this error and then never spawn again? Should I just keep trying to spawn it and not care 
-        // to use the error manager. 
         spawn_after!(run_sm, ExtU64::millis(500)).ok();
     }
 
