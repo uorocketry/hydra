@@ -38,7 +38,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         name: "Build all binaries"
         with:
-          command: build
+          command: build -r
 # TODO: Broken, need to fix them
 #      - uses: actions-rs/cargo@v1
 #        name: "Compile Device Tests (no running)"
