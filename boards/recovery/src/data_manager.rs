@@ -53,7 +53,7 @@ impl DataManager {
                     prev = i;
                 }
                 match avg_sum / 7.0 { // 7 because we have 8 points.   
-                    x if !(-100.0..=-2.0).contains(&x) => { 
+                    x if !(-100.0..=-5.0).contains(&x) => { 
                         info!("avg: {}", avg_sum / 7.0);
                         return false;
                     }
@@ -92,8 +92,7 @@ impl DataManager {
                     prev = i;
                 }
                 match avg_sum / 7.0 {   
-                    // if we aren't going faster than +- 1 m/s it is safe to assume we have landed.
-                    x if (1.0..=-1.0).contains(&x) => { 
+                    x if x > -4.0 && x < 4.0  => { 
                         info!("avg: {}", avg_sum / 7.0);
                         return true;
                     }

@@ -173,7 +173,6 @@ mod app {
 
 
     /// Probably should use this ( ﾉ^ω^)ﾉ
-    /// I see no need for this and this loses the sender information
     pub fn queue_gs_message(d: impl Into<Data>) {
         let message = Message::new(&monotonics::now(), COM_ID, d.into());
 

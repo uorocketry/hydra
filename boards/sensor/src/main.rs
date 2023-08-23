@@ -162,6 +162,7 @@ mod app {
 
     #[task(local = [sbg_power_pin], shared = [sd_manager, &em])]
     fn sleep_system(mut cx: sleep_system::Context) {
+        info!("Power Down");
         // close out sd files. 
         cx.shared.sd_manager.lock(|sd| {
             cx.shared.em.run(|| {
@@ -174,7 +175,7 @@ mod app {
         // Call core.SCB.set_deepsleep for even less power consumption. 
     }
 
-    #[task(binds = CAN0, shared = [can, data_manager])]
+    #[task(priority = 3, binds = CAN0, shared = [can, data_manager])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can.lock(|can| {
             cx.shared.data_manager.lock(|manager| can.process_data(manager))

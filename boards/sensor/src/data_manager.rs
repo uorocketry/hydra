@@ -3,6 +3,7 @@ use messages::sender::Sender;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, SensorData, UtcTime};
 use messages::Message;
 use crate::app::sleep_system;
+use defmt::info;
 
 #[derive(Clone)]
 pub struct DataManager {
@@ -42,16 +43,8 @@ impl DataManager {
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
             messages::Data::Command(command) => match command.data {
-                messages::command::CommandData::PowerDown(info) => {
-                    match info.board {
-                        Sender::SensorBoard => {
-                        // sleep the system.
-                        spawn!(sleep_system);
-                        }
-                        _ => {
-                            // don't care 
-                        }
-                    }
+                messages::command::CommandData::PowerDown(info) => {    
+                    spawn!(sleep_system);
                 }
                 _ => {
                     // We don't care atm about these other commands. 

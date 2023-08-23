@@ -15,16 +15,18 @@ pub struct WaitForRecovery {}
 impl State for WaitForRecovery {
     fn enter(&self, context: &mut StateMachineContext) {
         // send a command over CAN to shut down non-critical systems for recovery. 
-        let sensor_power_down = PowerDown {
-            board: SensorBoard
-        };
-        let message = Message::new(&monotonics::now(), COM_ID, Command::new(sensor_power_down));
-        context.shared_resources.can0.lock(|can| {
-            context.shared_resources.em.run(||{
-                can.send_message(message)?;
-                Ok(())
-            })
-        });  
+        for i in 0..10 {
+            let sensor_power_down = PowerDown {
+                board: SensorBoard
+            };
+            let message = Message::new(&monotonics::now(), COM_ID, Command::new(sensor_power_down));
+            context.shared_resources.can0.lock(|can| {
+                context.shared_resources.em.run(||{
+                    can.send_message(message)?;
+                    Ok(())
+                })
+            });  
+        }
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         no_transition!() // this is our final resting place. We should also powerdown this board. 

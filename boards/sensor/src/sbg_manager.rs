@@ -129,13 +129,13 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
             if xfer.complete() {
                 let (chan0, source, buf) = sbg.xfer.take().unwrap().stop();
                 let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).unwrap().begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
-                let buf_copy = buf.copy();
+                let buf_clone = buf.clone();
                 sbg.sbg_device.read_data(buf);
                 unsafe{BUF_DST.copy_from_slice(&[0;SBG_BUFFER_SIZE])};
                 xfer.block_transfer_interrupt();
                 sbg.xfer = Some(xfer);
                 cx.shared.em.run(|| {
-                    spawn!(sbg_sd(buf_copy));
+                    spawn!(sbg_sd(buf_clone));
                     Ok(())
                 });
             }
