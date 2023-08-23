@@ -129,8 +129,6 @@ impl DataManager {
                     if let Some(recent) = self.historical_barometer_altitude.recent() {
                         if recent.1 != tup_data.1 {
                             self.historical_barometer_altitude.write(tup_data);
-                        } else {
-                            info!("duplicate data {}", tup_data.1);
                         }
                     } else {
                         self.historical_barometer_altitude.write(tup_data);
