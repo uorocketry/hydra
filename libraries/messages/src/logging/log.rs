@@ -13,8 +13,8 @@ use proptest_derive::Arbitrary;
 #[cfg_attr(feature = "ts", ts(export))]
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct Log {
-    level: LogLevel,
-    event: Event,
+    pub level: LogLevel,
+    pub event: Event,
 }
 
 impl Log {
