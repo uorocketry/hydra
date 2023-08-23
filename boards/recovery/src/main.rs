@@ -147,7 +147,7 @@ mod app {
         cx.shared.data_manager.lock(|data| {
             data.set_state(cx.local.state_machine.get_state());
         });
-        spawn_after!(run_sm, ExtU64::millis(200)).ok();
+        spawn_after!(run_sm, ExtU64::millis(500)).ok();
     }
 
     /// Handles the CAN0 interrupt.

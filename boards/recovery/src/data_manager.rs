@@ -49,12 +49,15 @@ impl DataManager {
                     if time_diff == 0.0 {
                         continue;
                     }
-                    avg_sum += (i.0 - prev.0)/time_diff; 
+                    let slope = (i.0 - prev.0)/time_diff; 
+                    if slope > -100.0 {
+                        return false; // this is done since a shock wave would go extreme high to low resulting in a middle average. 
+                    }
+                    avg_sum += slope; 
                     prev = i;
                 }
                 match avg_sum / 7.0 { // 7 because we have 8 points.   
                     x if !(-100.0..=-5.0).contains(&x) => { 
-                        info!("avg: {}", avg_sum / 7.0);
                         return false;
                     }
                     _ => {
@@ -91,8 +94,9 @@ impl DataManager {
                     avg_sum += (i.0 - prev.0)/time_diff; 
                     prev = i;
                 }
-                match avg_sum / 7.0 {   
-                    x if x > -4.0 && x < 4.0  => { 
+                match avg_sum / 7.0 {
+                    // inclusive range    
+                    x if (-4.0..=4.0).contains(&x)  => { 
                         info!("avg: {}", avg_sum / 7.0);
                         return true;
                     }
