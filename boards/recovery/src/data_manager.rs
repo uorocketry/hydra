@@ -17,12 +17,18 @@ pub struct DataManager {
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
     pub historical_barometer_altitude: HistoryBuffer<(f32, u32), 8>,
+    pub historical_pressure: HistoryBuffer<(f32, u32), 8>,
     pub current_state: Option<RocketStates>,
+    pub rolling_avg_baro_alt: f32,
+    pub rolling_avg_pres: f32,
+    pub rolling_avg_baro_alt_n: f32,
+    pub rolling_avg_pres_n: f32, 
 }
 
 impl DataManager {
     pub fn new() -> Self {
         let historical_barometer_altitude = HistoryBuffer::new();
+        let historical_pressure = HistoryBuffer::new();
         Self {
             air: None,
             ekf_nav: (None, None),
@@ -31,37 +37,67 @@ impl DataManager {
             utc_time: None,
             gps_vel: None,
             historical_barometer_altitude,
+            historical_pressure,
             current_state: None,
+            rolling_avg_baro_alt: 0.0,
+            rolling_avg_pres: 0.0,
+            rolling_avg_baro_alt_n: 0.0,
+            rolling_avg_pres_n: 0.0,
         }
     }
     /// Returns true if the rocket is descending 
-    pub fn is_falling(&self) -> bool {
+    pub fn is_falling(&mut self) -> bool {
         if self.historical_barometer_altitude.len() < 8 {
             return false;
         }
-        let mut buf = self.historical_barometer_altitude.oldest_ordered();
-        match buf.next() {
+        let mut buf_baro = self.historical_barometer_altitude.oldest_ordered();
+        match buf_baro.next() {
             Some(last) => {
                 let mut avg_sum: f32 = 0.0;
                 let mut prev = last;
-                for i in buf {
+                for i in buf_baro {
                     let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
-                    if time_diff == 0.0 {
-                        continue;
-                    }
-                    let slope = (i.0 - prev.0)/time_diff; 
-                    if slope < -100.0 {
-                        return false; // this is done since a shock wave would go extreme high to low resulting in a middle average. 
-                    }
-                    avg_sum += slope; 
+                    avg_sum += (i.0 - prev.0)/time_diff; 
                     prev = i;
                 }
-                match avg_sum / 7.0 { // 7 because we have 8 points.   
-                    x if !(-100.0..=-5.0).contains(&x) => { 
+                self.rolling_avg_baro_alt_n = self.rolling_avg_baro_alt_n + 7.0; // 7 slopes 
+                self.rolling_avg_baro_alt = self.rolling_avg_baro_alt + avg_sum;
+
+                match self.rolling_avg_baro_alt/self.rolling_avg_baro_alt_n {
+                    // exclusive range    
+                    x if !(-100.0..=-5.0).contains(&x)  => { 
+                        info!("avg baro: {}", self.rolling_avg_baro_alt/self.rolling_avg_baro_alt_n);
                         return false;
                     }
                     _ => {
-                        info!("avg: {}", avg_sum / 7.0);
+                        info!("avg baro: {}", self.rolling_avg_baro_alt/self.rolling_avg_baro_alt_n);
+                    }
+                }
+            }
+            None => {
+                return false;
+            }
+        }
+        let mut buf_pres = self.historical_pressure.oldest_ordered();
+        match buf_pres.next() {
+            Some(last) => {
+                let mut avg_sum: f32 = 0.0;
+                let mut prev = last;
+                for i in buf_pres {
+                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
+                    avg_sum += (i.0 - prev.0)/time_diff; 
+                    prev = i;
+                }
+                self.rolling_avg_pres_n = self.rolling_avg_pres_n + 7.0; // 7 slopes 
+                self.rolling_avg_pres = self.rolling_avg_pres + avg_sum;
+                match self.rolling_avg_pres / self.rolling_avg_pres_n {
+                    // exclusive range  
+                    x if x < 0.0  => { 
+                        info!("avg pressure: {}", self.rolling_avg_pres / self.rolling_avg_pres_n);
+                        return false;
+                    }
+                    _ => {
+                        info!("avg pressure: {}", self.rolling_avg_pres / self.rolling_avg_pres_n);
                     }
                 }
             }
@@ -77,31 +113,31 @@ impl DataManager {
             None => false,
         }
     }
-    pub fn is_landed(&self) -> bool {
+    pub fn is_landed(&mut self) -> bool {
         if self.historical_barometer_altitude.len() < 8 {
             return false;
         }
-        let mut buf = self.historical_barometer_altitude.oldest_ordered();
-        match buf.next() {
+        let mut buf_baro = self.historical_barometer_altitude.oldest_ordered();
+        match buf_baro.next() {
             Some(last) => {
                 let mut avg_sum: f32 = 0.0;
                 let mut prev = last;
-                for i in buf {
+                for i in buf_baro {
                     let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
-                    if time_diff == 0.0 {
-                        continue;
-                    }
                     avg_sum += (i.0 - prev.0)/time_diff; 
                     prev = i;
                 }
-                match avg_sum / 7.0 {
+                self.rolling_avg_baro_alt_n = self.rolling_avg_baro_alt_n + 7.0; // 7 slopes 
+                self.rolling_avg_baro_alt = self.rolling_avg_baro_alt + avg_sum;
+
+                match self.rolling_avg_baro_alt/self.rolling_avg_baro_alt_n {
                     // inclusive range    
                     x if (-4.0..=4.0).contains(&x)  => { 
-                        info!("avg: {}", avg_sum / 7.0);
+                        info!("avg baro: {}", self.rolling_avg_baro_alt/self.rolling_avg_baro_alt_n);
                         return true;
                     }
                     _ => {
-                        info!("avg: {}", avg_sum / 7.0);
+                        info!("avg baro: {}", self.rolling_avg_baro_alt/self.rolling_avg_baro_alt_n);
                     }
                 }
             }
@@ -124,16 +160,22 @@ impl DataManager {
         match data.data {
             messages::Data::Sensor(sensor) => match sensor.data {
                 messages::sensor::SensorData::Air(air_data) => {
-                    let tup_data = (air_data.altitude, air_data.time_stamp);
+                    let tup_data_alt = (air_data.altitude, air_data.time_stamp.clone());
+                    let tup_data_pres = (air_data.pressure_abs, air_data.time_stamp);
                     self.air = Some(air_data);
                     if let Some(recent) = self.historical_barometer_altitude.recent() {
-                        if recent.1 != tup_data.1 {
-                            self.historical_barometer_altitude.write(tup_data);
-                        } else {
-                            info!("duplicate data {}", tup_data.1);
+                        if recent.1 != tup_data_alt.1 {
+                            self.historical_barometer_altitude.write(tup_data_alt);
                         }
-                    } else {
-                        self.historical_barometer_altitude.write(tup_data);
+                    } else { // first element
+                        self.historical_barometer_altitude.write(tup_data_alt);
+                    }
+                    if let Some(recent) = self.historical_pressure.recent() {
+                        if recent.1 != tup_data_pres.1 {
+                            self.historical_pressure.write(tup_data_pres);
+                        }
+                    } else { // first element
+                        self.historical_pressure.write(tup_data_pres);
                     }
                 }
                 messages::sensor::SensorData::EkfNav1(nav1_data) => {
