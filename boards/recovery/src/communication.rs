@@ -138,7 +138,6 @@ impl CanDevice0 {
     }
     pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
         let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
-        info!("{}", m.clone());
         self.can.tx.transmit_queued(
             tx::MessageBuilder {
                 id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),

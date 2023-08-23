@@ -63,14 +63,20 @@ impl DataManager {
                 self.rolling_avg_baro_alt_n = self.rolling_avg_baro_alt_n + 7.0; // 7 slopes 
                 self.rolling_avg_baro_alt = self.rolling_avg_baro_alt + avg_sum;
 
-                match self.rolling_avg_baro_alt/self.rolling_avg_baro_alt_n {
+                if let Some(air) = &self.air {
+                    info!("alt {}", air.altitude);
+                }
+                if (100.0 < self.rolling_avg_baro_alt) {
+                    return false; 
+                }
+                match avg_sum / 7.0 {
                     // exclusive range    
                     x if !(-100.0..=-5.0).contains(&x)  => { 
-                        info!("avg baro: {}", self.rolling_avg_baro_alt/self.rolling_avg_baro_alt_n);
+                        info!("avg baro {}", avg_sum / 7.0 );
                         return false;
                     }
                     _ => {
-                        info!("avg baro: {}", self.rolling_avg_baro_alt/self.rolling_avg_baro_alt_n);
+                        info!("avg baro: {}", avg_sum / 7.0);
                     }
                 }
             }
@@ -78,33 +84,33 @@ impl DataManager {
                 return false;
             }
         }
-        let mut buf_pres = self.historical_pressure.oldest_ordered();
-        match buf_pres.next() {
-            Some(last) => {
-                let mut avg_sum: f32 = 0.0;
-                let mut prev = last;
-                for i in buf_pres {
-                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
-                    avg_sum += (i.0 - prev.0)/time_diff; 
-                    prev = i;
-                }
-                self.rolling_avg_pres_n = self.rolling_avg_pres_n + 7.0; // 7 slopes 
-                self.rolling_avg_pres = self.rolling_avg_pres + avg_sum;
-                match self.rolling_avg_pres / self.rolling_avg_pres_n {
-                    // exclusive range  
-                    x if x < 0.0  => { 
-                        info!("avg pressure: {}", self.rolling_avg_pres / self.rolling_avg_pres_n);
-                        return false;
-                    }
-                    _ => {
-                        info!("avg pressure: {}", self.rolling_avg_pres / self.rolling_avg_pres_n);
-                    }
-                }
-            }
-            None => {
-                return false;
-            }
-        }
+        // let mut buf_pres = self.historical_pressure.oldest_ordered();
+        // match buf_pres.next() {
+        //     Some(last) => {
+        //         let mut avg_sum: f32 = 0.0;
+        //         let mut prev = last;
+        //         for i in buf_pres {
+        //             let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
+        //             avg_sum += (i.0 - prev.0)/time_diff; 
+        //             prev = i;
+        //         }
+        //         self.rolling_avg_pres_n = self.rolling_avg_pres_n + 7.0; // 7 slopes 
+        //         self.rolling_avg_pres = self.rolling_avg_pres + avg_sum;
+        //         match self.rolling_avg_pres / self.rolling_avg_pres_n {
+        //             // exclusive range  
+        //             x if x < 0.0  => { 
+        //                 info!("avg pressure: {}", self.rolling_avg_pres / self.rolling_avg_pres_n);
+        //                 return false;
+        //             }
+        //             _ => {
+        //                 info!("avg pressure: {}", self.rolling_avg_pres / self.rolling_avg_pres_n);
+        //             }
+        //         }
+        //     }
+        //     None => {
+        //         return false;
+        //     }
+        // }
         true
     }
     pub fn is_launched(&self) -> bool {
