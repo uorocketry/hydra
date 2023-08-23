@@ -50,7 +50,7 @@ impl DataManager {
                         continue;
                     }
                     let slope = (i.0 - prev.0)/time_diff; 
-                    if slope > -100.0 {
+                    if slope < -100.0 {
                         return false; // this is done since a shock wave would go extreme high to low resulting in a middle average. 
                     }
                     avg_sum += slope; 
