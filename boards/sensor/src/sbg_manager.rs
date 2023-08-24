@@ -97,6 +97,7 @@ pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
         CallbackData::EkfNav(x) => manager.ekf_nav = Some(x),
         CallbackData::Imu(x) => manager.imu = Some(x),
         CallbackData::GpsVel(x) => manager.gps_vel = Some(x),
+        CallbackData::GpsPos(x) => manager.gps_pos = Some(x),
     });
 }
 

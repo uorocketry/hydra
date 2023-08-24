@@ -36,6 +36,8 @@ use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+    use defmt::flush;
+
     use super::*;
 
     #[shared]

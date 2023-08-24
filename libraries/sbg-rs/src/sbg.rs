@@ -2,6 +2,7 @@ use crate::bindings::{
     self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
     _SbgEComLog_SBG_ECOM_LOG_AIR_DATA, _SbgEComLog_SBG_ECOM_LOG_EKF_NAV,
     _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL, _SbgEComLog_SBG_ECOM_LOG_UTC_TIME,
+    _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
     _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgErrorCode_SBG_NO_ERROR,
     _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
     sbgEComCmdOutputSetConf, sbgEComHandle,
@@ -59,6 +60,7 @@ pub enum CallbackData {
     EkfNav((EkfNav1, EkfNav2)),
     Imu((Imu1, Imu2)),
     GpsVel(GpsVel),
+    GpsPos((GpsPos1, GpsPos2)),
 }
 
 struct UARTSBGInterface {
@@ -417,6 +419,9 @@ impl SBG {
                         }
                         _SbgEComLog_SBG_ECOM_LOG_EKF_NAV => {
                             callback(CallbackData::EkfNav((*pLogData).ekfNavData.into()))
+                        }
+                        _SbgEComLog_SBG_ECOM_LOG_GPS1_POS => {
+                            callback(CallbackData::GpsPos((*pLogData).gpsPosData.into()))
                         }
                         _ => (),
                     }

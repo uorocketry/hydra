@@ -31,10 +31,53 @@ pub enum SensorData {
     Imu1(Imu1),
     Imu2(Imu2),
     GpsVel(GpsVel),
+    GpsPos1(GpsPos1),
+    GpsPos2(GpsPos2),
     Current(Current),
     Voltage(Voltage),
     Regulator(Regulator),
     Temperature(Temperature),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct GpsPos1 {
+    #[doc = "< Time in us since the sensor power up."]
+    pub timeStamp: u32,
+    #[doc = "< GPS position status, type and bitmask."]
+    pub status: u32,
+    #[doc = "< GPS time of week in ms."]
+    pub timeOfWeek: u32,
+    #[doc = "< Latitude in degrees, positive north."]
+    pub latitude: f64,
+    #[doc = "< Longitude in degrees, positive east."]
+    pub longitude: f64,
+    #[doc = "< Altitude above Mean Sea Level in meters."]
+    pub altitude: f64,
+    #[doc = "< Altitude difference between the geoid and the Ellipsoid in meters (Height above Ellipsoid = altitude + undulation)."]
+    pub undulation: f32,
+}
+
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct GpsPos2 {
+    #[doc = "< 1 sigma latitude accuracy in meters."]
+    pub latitudeAccuracy: f32,
+    #[doc = "< 1 sigma longitude accuracy in meters."]
+    pub longitudeAccuracy: f32,
+    #[doc = "< 1 sigma altitude accuracy in meters."]
+    pub altitudeAccuracy: f32,
+    #[doc = "< Number of space vehicles used to compute the solution (since version 1.4)."]
+    pub numSvUsed: u8,
+    #[doc = "< Base station id for differential corrections (0-4095). Set to 0xFFFF if differential corrections are not used (since version 1.4)."]
+    pub baseStationId: u16,
+    #[doc = "< Differential correction age in 0.01 seconds. Set to 0XFFFF if differential corrections are not used (since version 1.4)."]
+    pub differentialAge: u16,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
