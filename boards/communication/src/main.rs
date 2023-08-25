@@ -32,6 +32,7 @@ use panic_halt as _;
 use systick_monotonic::*;
 use types::*;
 use defmt::{info, flush};
+use messages::command::RadioRate;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -212,10 +213,15 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let sensor_data = cx
+        let (sensor_data, logging_rate) = cx
             .shared
             .data_manager
-            .lock(|data_manager| data_manager.clone_sensors());
+            .lock(|data_manager| {
+                (
+                    data_manager.clone_sensors(),
+                    data_manager.get_logging_rate()
+                )
+            });
 
         let messages = sensor_data
             .into_iter()
@@ -229,7 +235,14 @@ mod app {
             }
             Ok(())
         });
-        spawn_after!(sensor_send, ExtU64::millis(250)).ok();
+        match logging_rate {
+            RadioRate::Fast => { 
+                spawn_after!(sensor_send, ExtU64::millis(250)).ok();
+            },
+            RadioRate::Slow => {
+                spawn_after!(sensor_send, ExtU64::millis(2000)).ok();
+            }
+        }
     }
 
     #[task(shared = [data_manager, &em])]

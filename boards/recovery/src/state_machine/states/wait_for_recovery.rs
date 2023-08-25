@@ -5,7 +5,7 @@ use crate::types::COM_ID;
 use crate::{no_transition, transition};
 use rtic::mutex::Mutex;
 use defmt::{write, Format, Formatter, info};
-use messages::command::{Command, CommandData, PowerDown};
+use messages::command::{Command, CommandData, PowerDown, RadioRateChange, RadioRate};
 use messages::Message;
 use messages::sender::Sender::SensorBoard;
 
@@ -19,10 +19,15 @@ impl State for WaitForRecovery {
             let sensor_power_down = PowerDown {
                 board: SensorBoard
             };
+            let radio_rate_change = RadioRateChange {
+                rate: RadioRate::Slow,
+            };
             let message = Message::new(&monotonics::now(), COM_ID, Command::new(sensor_power_down));
+            let message_com = Message::new(&monotonics::now(), COM_ID, Command::new(radio_rate_change));
             context.shared_resources.can0.lock(|can| {
                 context.shared_resources.em.run(||{
                     can.send_message(message)?;
+                    can.send_message(message_com)?;
                     Ok(())
                 })
             });  

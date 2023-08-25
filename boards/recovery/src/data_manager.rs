@@ -168,6 +168,9 @@ impl DataManager {
                 },
                 messages::command::CommandData::PowerDown(_) => {
                     // don't handle for now.
+                },
+                _ => {
+                    
                 }
             }
             _ => {

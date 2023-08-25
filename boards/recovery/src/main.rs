@@ -101,7 +101,6 @@ mod app {
         run_sm::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
-        fire_drogue::spawn_after(ExtU64::secs(10)).ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());

@@ -25,6 +25,7 @@ pub enum CommandData {
     DeployDrogue(DeployDrogue),
     DeployMain(DeployMain),
     PowerDown(PowerDown),
+    RadioRateChange(RadioRateChange),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
@@ -50,6 +51,23 @@ pub struct DeployMain {
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct PowerDown {
     pub board: Sender, // This isn't proper naming !! This is the board to be powered down. Changes name of sender.rs to board.rs.
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct RadioRateChange {
+    pub rate: RadioRate,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
+#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub enum RadioRate {
+    Fast,
+    Slow,
 }
 
 impl Command {
