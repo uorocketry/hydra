@@ -3,6 +3,7 @@
 
 mod communication;
 mod data_manager;
+mod gpio_manager;
 mod state_machine;
 mod types;
 
@@ -15,6 +16,7 @@ use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
+use gpio_manager::GPIOManager;
 use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
@@ -22,7 +24,6 @@ use messages::*;
 use panic_halt as _;
 use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
-use types::GPIOController;
 use types::COM_ID;
 use defmt::info;
 
@@ -35,7 +36,7 @@ mod app {
         em: ErrorManager,
         data_manager: DataManager,
         can0: communication::CanDevice0,
-        gpio: GPIOController,
+        gpio: GPIOManager,
     }
 
     #[local]
@@ -90,7 +91,7 @@ mod app {
         /* GPIO config */
         let led_green = pins.pb16.into_push_pull_output();
         let led_red = pins.pb17.into_push_pull_output();
-        let gpio = GPIOController::new(
+        let gpio = GPIOManager::new(
             pins.pa09.into_push_pull_output(),
             pins.pa06.into_push_pull_output(),
         );
@@ -101,6 +102,7 @@ mod app {
         run_sm::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
+        fire_main::spawn_after(ExtU64::secs(10)).ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());

@@ -5,7 +5,7 @@ use messages::state;
 use crate::communication::CanDevice0;
 use crate::data_manager::DataManager;
 use crate::state_machine::states::*;
-use crate::GPIOController;
+use crate::gpio_manager::GPIOManager;
 pub use black_magic::*;
 pub use states::Initializing;
 use core::fmt::Debug;
@@ -16,7 +16,7 @@ use rtic::Mutex;
 pub trait StateMachineSharedResources {
     fn lock_can(&mut self, f: &dyn Fn(&mut CanDevice0));
     fn lock_data_manager(&mut self, f: &dyn Fn(&mut DataManager));
-    fn lock_gpio(&mut self, f: &dyn Fn(&mut GPIOController));
+    fn lock_gpio(&mut self, f: &dyn Fn(&mut GPIOManager));
 }
 
 impl<'a> StateMachineSharedResources for crate::app::__rtic_internal_run_smSharedResources<'a> {
@@ -26,7 +26,7 @@ impl<'a> StateMachineSharedResources for crate::app::__rtic_internal_run_smShare
     fn lock_data_manager(&mut self, fun: &dyn Fn(&mut DataManager)) {
         self.data_manager.lock(fun)
     }
-    fn lock_gpio(&mut self, fun: &dyn Fn(&mut GPIOController)) {
+    fn lock_gpio(&mut self, fun: &dyn Fn(&mut GPIOManager)) {
         self.gpio.lock(fun)
     }
 }

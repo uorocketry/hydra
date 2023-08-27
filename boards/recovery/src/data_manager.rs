@@ -51,12 +51,13 @@ impl DataManager {
                     }
                     let slope = (i.0 - prev.0)/time_diff; 
                     if slope < -100.0 {
-                        return false; // this is done since a shock wave would go extreme high to low resulting in a middle average. 
+                        return false; 
                     }
                     avg_sum += slope; 
                     prev = i;
                 }
-                match avg_sum / 7.0 { // 7 because we have 8 points.   
+                match avg_sum / 7.0 { // 7 because we have 8 points.  
+                    // exclusive range  
                     x if !(-100.0..=-5.0).contains(&x) => { 
                         return false;
                     }
@@ -97,11 +98,10 @@ impl DataManager {
                 match avg_sum / 7.0 {
                     // inclusive range    
                     x if (-4.0..=4.0).contains(&x)  => { 
-                        info!("avg: {}", avg_sum / 7.0);
                         return true;
                     }
                     _ => {
-                        info!("avg: {}", avg_sum / 7.0);
+                        // continue 
                     }
                 }
             }
@@ -156,7 +156,6 @@ impl DataManager {
                     self.utc_time = Some(utc_time_data);
                 },
                 _ => {
-                    info!("impl power");
                 }
             },
             messages::Data::Command(command) => match command.data {
@@ -174,7 +173,6 @@ impl DataManager {
                 }
             }
             _ => {
-                info!("unkown");
             }
         }
     }
