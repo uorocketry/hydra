@@ -101,8 +101,8 @@ mod app {
         run_sm::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
-        fire_main::spawn_after(ExtU64::secs(15)).ok();
-        fire_drogue::spawn_after(ExtU64::secs(15)).ok();
+        // fire_main::spawn_after(ExtU64::secs(15)).ok();
+        // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -132,12 +132,12 @@ mod app {
                 gpio.fire_drogue();
                 *cx.local.fired = true; 
             });
+            spawn_after!(fire_drogue, ExtU64::secs(5));
         } else {
             cx.shared.gpio.lock(|gpio| {
-                gpio.close_drouge();
+                gpio.close_drogue();
             });
         }
-        spawn_after!(fire_drogue, ExtU64::secs(5));
     }
 
     #[task(local = [fired: bool = false], shared=[gpio])]
@@ -147,12 +147,12 @@ mod app {
                 gpio.fire_main();
                 *cx.local.fired = true;
             });
+            spawn_after!(fire_main, ExtU64::secs(5));
         } else {
             cx.shared.gpio.lock(|gpio| {
                 gpio.close_main();
             });
         }
-        spawn_after!(fire_main, ExtU64::secs(5));
     }
 
     /// Runs the state machine.

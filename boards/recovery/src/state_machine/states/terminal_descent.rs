@@ -1,16 +1,17 @@
 use defmt::{write, Format, Formatter, info};
-
+use crate::app::fire_main;
 use crate::{no_transition, transition};
 use crate::state_machine::{WaitForRecovery, RocketStates, State, StateMachineContext, TransitionInto};
 use rtic::mutex::Mutex;
 use super::Descent;
+use common_arm::spawn;
 
 #[derive(Debug, Clone)]
 pub struct TerminalDescent {}
 
 impl State for TerminalDescent {
     fn enter(&self,context: &mut StateMachineContext) {
-        context.shared_resources.gpio.lock(|gpio| gpio.fire_main());
+        spawn!(fire_main);
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         context

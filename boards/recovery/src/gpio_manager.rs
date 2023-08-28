@@ -21,7 +21,7 @@ impl GPIOManager {
     pub fn fire_main(&mut self) {
         self.main_ematch.set_high().ok();
     }
-    pub fn close_drouge(&mut self) {
+    pub fn close_drogue(&mut self) {
         self.drogue_ematch.set_low().ok();
     }
     pub fn close_main(&mut self) {
