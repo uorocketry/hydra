@@ -122,7 +122,7 @@ mod app {
         });
         if (*cx.local.num < 3) {
             *cx.local.num += 1;
-            spawn_after!(toggle_cams, ExtU64::millis(250));
+            spawn_after!(toggle_cams, ExtU64::millis(100));
         }
     }
 

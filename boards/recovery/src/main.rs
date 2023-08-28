@@ -91,8 +91,8 @@ mod app {
         let led_green = pins.pb16.into_push_pull_output();
         let led_red = pins.pb17.into_push_pull_output();
         let gpio = GPIOManager::new(
-            pins.pa09.into_push_pull_output(),
             pins.pa06.into_push_pull_output(),
+            pins.pa09.into_push_pull_output(),
         );
         /* State Machine config */
         let state_machine = StateMachine::new();
