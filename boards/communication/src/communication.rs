@@ -1,3 +1,4 @@
+use crate::app::send_internal;
 use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
@@ -12,21 +13,20 @@ use atsamd_hal::gpio::{Alternate, AlternateI, Disabled, Floating, Pin, I, PA22, 
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM5;
+use atsamd_hal::sercom;
+use atsamd_hal::sercom::uart::{Duplex, Uart};
+use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
 use atsamd_hal::sercom::Sercom;
 use atsamd_hal::sercom::{uart, Sercom5};
-use atsamd_hal::sercom;
-use atsamd_hal::sercom::uart::{ TxDuplex, RxDuplex};
-use atsamd_hal::sercom::uart::{Duplex, Uart};
 use atsamd_hal::time::*;
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
+use common_arm::spawn;
 use common_arm::HydraError;
 use defmt::flush;
 use defmt::info;
-use crate::app::send_internal;
-use common_arm::spawn;
 use heapless::Vec;
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
@@ -246,9 +246,13 @@ impl RadioDevice {
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
             )
             .enable();
-        let (rx, tx) = uart.split(); // tx sends rx uses dma to receive so we need to setup dma here. 
-        dma_channel.as_mut().enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        let xfer = Transfer::new(dma_channel, rx, unsafe {&mut *BUF_DST}, false).expect("DMA Radio RX").begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+        let (rx, tx) = uart.split(); // tx sends rx uses dma to receive so we need to setup dma here.
+        dma_channel
+            .as_mut()
+            .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
+        let xfer = Transfer::new(dma_channel, rx, unsafe { &mut *BUF_DST }, false)
+            .expect("DMA Radio RX")
+            .begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
         (
             RadioDevice {
                 uart: tx,
@@ -290,9 +294,7 @@ pub struct RadioManager {
 }
 
 impl RadioManager {
-    pub fn new(
-        xfer: RadioTransfer,
-    ) -> Self {
+    pub fn new(xfer: RadioTransfer) -> Self {
         RadioManager {
             xfer: Some(xfer),
             buf_select: false,
@@ -328,5 +330,5 @@ impl RadioManager {
 //         None => {
 //             info!("none");
 //         }
-//     } 
+//     }
 // }

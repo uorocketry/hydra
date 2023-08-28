@@ -4,38 +4,39 @@
 mod communication;
 mod data_manager;
 mod types;
-mod sd_manager;
 
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
-use atsamd_hal::dmac::DmaController;
 use atsamd_hal::dmac;
+use atsamd_hal::dmac::DmaController;
 use common_arm::mcan;
+use common_arm::SdManager;
 use common_arm::*;
 use communication::Capacities;
 use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
-use sd_manager::SdManager;
 // use communication::radio_dma;
 
-use heapless::Vec;
+use defmt::{flush, info};
 use hal::gpio::Pins;
-use hal::gpio::PA05;
-use hal::gpio::{Pin, PushPullOutput};
+use hal::gpio::{Alternate, Pin, PushPull, PushPullOutput, C, PA05, PB12, PB13, PB14, PB15};
 use hal::prelude::*;
+use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
+use heapless::Vec;
 use mcan::messageram::SharedMemory;
+use messages::command::RadioRate;
 use messages::sensor::Sensor;
 use messages::state::State;
 use messages::*;
 use panic_halt as _;
 use systick_monotonic::*;
 use types::*;
-use defmt::{info, flush};
-use messages::command::RadioRate;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+    use hal::gpio::Output;
+
     use super::*;
 
     #[shared]
@@ -49,7 +50,21 @@ mod app {
     struct Local {
         led: Pin<PA05, PushPullOutput>,
         radio: RadioDevice,
-        sd_manager: SdManager,
+        sd_manager: SdManager<
+            Spi<
+                Config<
+                    Pads<
+                        hal::pac::SERCOM4,
+                        IoSet1,
+                        Pin<PB15, Alternate<C>>,
+                        Pin<PB12, Alternate<C>>,
+                        Pin<PB13, Alternate<C>>,
+                    >,
+                >,
+                Duplex,
+            >,
+            Pin<PB14, Output<PushPull>>,
+        >,
         radio_manager: RadioManager,
     }
 
@@ -114,15 +129,16 @@ mod app {
 
         /* SD config */
         let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
-        let sd_manager = SdManager::new(
-            &mclk,
-            peripherals.SERCOM4,
-            pclk_sd.freq(),
-            pins.pb14.into_push_pull_output(),
-            pins.pb13.into_push_pull_output(),
-            pins.pb15.into_push_pull_output(),
-            pins.pb12.into_push_pull_output(),
-        );        
+        let pads_spi = spi::Pads::<Sercom4, IoSet1>::default()
+            .sclk(pins.pb13)
+            .data_in(pins.pb15)
+            .data_out(pins.pb12);
+        let sdmmc_spi = spi::Config::new(&mclk, peripherals.SERCOM4, pads_spi, pclk_sd.freq())
+            .length::<spi::lengths::U1>()
+            .bit_order(spi::BitOrder::MsbFirst)
+            .spi_mode(spi::MODE_0)
+            .enable();
+        let sd_manager = SdManager::new(sdmmc_spi, pins.pb14.into_push_pull_output());
 
         /* Status LED */
         let led = pins.pa05.into_push_pull_output();
@@ -141,7 +157,12 @@ mod app {
                 data_manager: DataManager::new(),
                 can0,
             },
-            Local { led, radio, sd_manager, radio_manager },
+            Local {
+                led,
+                radio,
+                sd_manager,
+                radio_manager,
+            },
             init::Monotonics(mono),
         )
     }
@@ -172,7 +193,6 @@ mod app {
         });
     }
 
-
     /// Probably should use this ( ﾉ^ω^)ﾉ
     pub fn queue_gs_message(d: impl Into<Data>) {
         let message = Message::new(&monotonics::now(), COM_ID, d.into());
@@ -195,7 +215,7 @@ mod app {
     fn sd_dump(cx: sd_dump::Context, m: Message) {
         let manager = cx.local.sd_manager;
         cx.shared.em.run(|| {
-            let mut buf: [u8; 255] = [0; 255]; 
+            let mut buf: [u8; 255] = [0; 255];
             let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
             if let Some(mut file) = manager.file.take() {
                 manager.write(&mut file, &msg_ser)?;
@@ -213,15 +233,12 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (sensor_data, logging_rate) = cx
-            .shared
-            .data_manager
-            .lock(|data_manager| {
-                (
-                    data_manager.clone_sensors(),
-                    data_manager.get_logging_rate()
-                )
-            });
+        let (sensor_data, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
+            (
+                data_manager.clone_sensors(),
+                data_manager.get_logging_rate(),
+            )
+        });
 
         let messages = sensor_data
             .into_iter()
@@ -236,9 +253,9 @@ mod app {
             Ok(())
         });
         match logging_rate {
-            RadioRate::Fast => { 
+            RadioRate::Fast => {
                 spawn_after!(sensor_send, ExtU64::millis(250)).ok();
-            },
+            }
             RadioRate::Slow => {
                 spawn_after!(sensor_send, ExtU64::millis(2000)).ok();
             }
@@ -247,14 +264,15 @@ mod app {
 
     #[task(shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
-        let state_data = cx.shared.data_manager.lock(|data_manager| {
-            data_manager.state.clone()
-        });
+        let state_data = cx
+            .shared
+            .data_manager
+            .lock(|data_manager| data_manager.state.clone());
         cx.shared.em.run(|| {
             if let Some(x) = state_data {
                 let message = Message::new(&monotonics::now(), COM_ID, State::new(x));
                 spawn!(send_gs, message)?;
-            } // if there is none we still return since we simply don't have data yet. 
+            } // if there is none we still return since we simply don't have data yet.
             Ok(())
         });
         spawn_after!(state_send, ExtU64::secs(5)).ok();

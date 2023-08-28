@@ -1,8 +1,10 @@
-use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, SensorData, UtcTime, GpsPos1, GpsPos2};
-use messages::Message;
-use messages::command::{Command, CommandData, RadioRateChange, RadioRate};
-use messages::state::{State, StateData};
 use defmt::info;
+use messages::command::{Command, CommandData, RadioRate, RadioRateChange};
+use messages::sensor::{
+    Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime,
+};
+use messages::state::{State, StateData};
+use messages::Message;
 
 #[derive(Clone)]
 pub struct DataManager {
@@ -28,7 +30,7 @@ impl DataManager {
             gps_vel: None,
             gps_pos: (None, None),
             state: None,
-            logging_rate: Some(RadioRate::Slow), // start slow. 
+            logging_rate: Some(RadioRate::Slow), // start slow.
         }
     }
 
@@ -36,10 +38,10 @@ impl DataManager {
         if let Some(rate) = self.logging_rate.take() {
             let rate_cln = rate.clone();
             self.logging_rate = Some(rate);
-            return rate_cln
-        } 
+            return rate_cln;
+        }
         self.logging_rate = Some(RadioRate::Slow);
-        return RadioRate::Slow
+        return RadioRate::Slow;
     }
 
     pub fn clone_sensors(&self) -> [Option<SensorData>; 10] {
@@ -57,9 +59,7 @@ impl DataManager {
         ]
     }
     pub fn clone_states(&self) -> [Option<StateData>; 1] {
-        [
-            self.state.clone(),
-        ]
+        [self.state.clone()]
     }
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
@@ -87,10 +87,10 @@ impl DataManager {
                 }
                 messages::sensor::SensorData::UtcTime(utc_time_data) => {
                     self.utc_time = Some(utc_time_data);
-                },
+                }
                 messages::sensor::SensorData::GpsPos1(gps) => {
                     self.gps_pos.0 = Some(gps);
-                },
+                }
                 messages::sensor::SensorData::GpsPos2(gps) => {
                     self.gps_pos.1 = Some(gps);
                 }
@@ -100,15 +100,13 @@ impl DataManager {
             },
             messages::Data::State(state) => {
                 self.state = Some(state.data);
-            },
+            }
             messages::Data::Command(command) => match command.data {
                 messages::command::CommandData::RadioRateChange(command_data) => {
                     self.logging_rate = Some(command_data.rate);
-                },
-                _ => {
-
                 }
-            }
+                _ => {}
+            },
             _ => {
                 info!("unkown");
             }
