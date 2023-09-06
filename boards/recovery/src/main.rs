@@ -3,10 +3,10 @@
 
 mod communication;
 mod data_manager;
+mod gpio_manager;
 mod state_machine;
 mod types;
 
-use crate::state_machine::RocketStates;
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
@@ -15,15 +15,16 @@ use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
-use hal::gpio::{Pin, Pins, PushPullOutput, PA14};
+use gpio_manager::GPIOManager;
+use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use messages::*;
 use panic_halt as _;
 use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
-use types::GPIOController;
 use types::COM_ID;
+use defmt::info;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -34,12 +35,13 @@ mod app {
         em: ErrorManager,
         data_manager: DataManager,
         can0: communication::CanDevice0,
-        gpio: GPIOController,
+        gpio: GPIOManager,
     }
 
     #[local]
     struct Local {
-        led: Pin<PA14, PushPullOutput>,
+        led_green: Pin<PB16, PushPullOutput>,
+        led_red: Pin<PB17, PushPullOutput>,
         state_machine: StateMachine,
     }
 
@@ -86,10 +88,11 @@ mod app {
         );
 
         /* GPIO config */
-        let led = pins.pa14.into_push_pull_output();
-        let gpio = GPIOController::new(
-            pins.pa18.into_push_pull_output(),
-            pins.pa19.into_push_pull_output(),
+        let led_green = pins.pb16.into_push_pull_output();
+        let led_red = pins.pb17.into_push_pull_output();
+        let gpio = GPIOManager::new( // pins switched from schematic 
+            pins.pa09.into_push_pull_output(),
+            pins.pa06.into_push_pull_output(),
         );
         /* State Machine config */
         let state_machine = StateMachine::new();
@@ -98,9 +101,11 @@ mod app {
         run_sm::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
+        // fire_main::spawn_after(ExtU64::secs(15)).ok();
+        // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
 
         /* Monotonic clock */
-        let mono = Systick::new(core.SYST, gclk0.freq().0);
+        let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
         (
             Shared {
@@ -109,7 +114,7 @@ mod app {
                 can0,
                 gpio,
             },
-            Local { led, state_machine },
+            Local {led_green, led_red, state_machine},
             init::Monotonics(mono),
         )
     }
@@ -120,17 +125,51 @@ mod app {
         loop {}
     }
 
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
+    fn fire_drogue(mut cx: fire_drogue::Context) {
+        if !(*cx.local.fired) {
+            cx.shared.gpio.lock(|gpio| {
+                gpio.fire_drogue();
+                *cx.local.fired = true; 
+            });
+            spawn_after!(fire_drogue, ExtU64::secs(5));
+        } else {
+            cx.shared.gpio.lock(|gpio| {
+                gpio.close_drogue();
+            });
+        }
+    }
+
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
+    fn fire_main(mut cx: fire_main::Context) {
+        if !(*cx.local.fired) {
+            cx.shared.gpio.lock(|gpio| {
+                gpio.fire_main();
+                *cx.local.fired = true;
+            });
+            spawn_after!(fire_main, ExtU64::secs(5));
+        } else {
+            cx.shared.gpio.lock(|gpio| {
+                gpio.close_main();
+            });
+        }
+    }
+
     /// Runs the state machine.
     /// This takes control of the shared resources.
-    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager])]
+    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager, &em])]
     fn run_sm(mut cx: run_sm::Context) {
         cx.local.state_machine.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,
-        })
+        });
+        cx.shared.data_manager.lock(|data| {
+            data.set_state(cx.local.state_machine.get_state());
+        });
+        spawn_after!(run_sm, ExtU64::millis(500)).ok();
     }
 
     /// Handles the CAN0 interrupt.
-    #[task(priority = 3, binds = CAN0, shared = [can0, data_manager])]
+    #[task(binds = CAN0, shared = [can0, data_manager])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
             cx.shared
@@ -151,7 +190,6 @@ mod app {
     /// Sends info about the current state of the system.
     #[task(shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
-        let em_error = cx.shared.em.has_error();
         cx.shared.em.run(|| {
             let rocket_state = cx
                 .shared
@@ -160,29 +198,30 @@ mod app {
             let state = if let Some(rocket_state) = rocket_state {
                 rocket_state
             } else {
-                RocketStates::Initializing(state_machine::Initializing {})
+                // This isn't really an error, we just don't have data yet. 
+                return Ok(())
             };
-            let board_state = messages::State {
-                status: state.into(),
-                has_error: em_error,
+            let board_state = messages::state::State {
+                data: state.into(),
             };
             let message = Message::new(&monotonics::now(), COM_ID, board_state);
             spawn!(send_internal, message)?;
-            spawn_after!(state_send, 5.secs())?;
             Ok(())
-        })
+        });
+        spawn_after!(state_send, ExtU64::secs(2));
     }
 
     /// Simple blink task to test the system.
     /// Acts as a heartbeat for the system.
-    #[task(local = [led], shared = [&em])]
+    #[task(local = [led_green, led_red], shared = [&em])]
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
-            cx.local.led.toggle()?;
             if cx.shared.em.has_error() {
-                spawn_after!(blink, 200.millis())?;
+                cx.local.led_red.toggle()?;
+                spawn_after!(blink, ExtU64::millis(200))?;
             } else {
-                spawn_after!(blink, 1.secs())?;
+                cx.local.led_green.toggle()?;
+                spawn_after!(blink, ExtU64::secs(1))?;
             }
             Ok(())
         });

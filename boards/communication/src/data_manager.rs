@@ -1,4 +1,9 @@
-use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, SensorData, UtcTime};
+use defmt::info;
+use messages::command::{Command, CommandData, RadioRate, RadioRateChange};
+use messages::sensor::{
+    Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime,
+};
+use messages::state::{State, StateData};
 use messages::Message;
 
 #[derive(Clone)]
@@ -9,6 +14,9 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
+    pub gps_pos: (Option<GpsPos1>, Option<GpsPos2>),
+    pub state: Option<StateData>,
+    pub logging_rate: Option<RadioRate>,
 }
 
 impl DataManager {
@@ -20,10 +28,23 @@ impl DataManager {
             imu: (None, None),
             utc_time: None,
             gps_vel: None,
+            gps_pos: (None, None),
+            state: None,
+            logging_rate: Some(RadioRate::Slow), // start slow.
         }
     }
 
-    pub fn clone_sensors(&self) -> [Option<SensorData>; 8] {
+    pub fn get_logging_rate(&mut self) -> RadioRate {
+        if let Some(rate) = self.logging_rate.take() {
+            let rate_cln = rate.clone();
+            self.logging_rate = Some(rate);
+            return rate_cln;
+        }
+        self.logging_rate = Some(RadioRate::Slow);
+        return RadioRate::Slow;
+    }
+
+    pub fn clone_sensors(&self) -> [Option<SensorData>; 10] {
         [
             self.air.clone().map(|x| x.into()),
             self.ekf_nav.0.clone().map(|x| x.into()),
@@ -33,7 +54,12 @@ impl DataManager {
             self.imu.1.clone().map(|x| x.into()),
             self.utc_time.clone().map(|x| x.into()),
             self.gps_vel.clone().map(|x| x.into()),
+            self.gps_pos.0.clone().map(|x| x.into()),
+            self.gps_pos.1.clone().map(|x| x.into()),
         ]
+    }
+    pub fn clone_states(&self) -> [Option<StateData>; 1] {
+        [self.state.clone()]
     }
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
@@ -62,8 +88,28 @@ impl DataManager {
                 messages::sensor::SensorData::UtcTime(utc_time_data) => {
                     self.utc_time = Some(utc_time_data);
                 }
+                messages::sensor::SensorData::GpsPos1(gps) => {
+                    self.gps_pos.0 = Some(gps);
+                }
+                messages::sensor::SensorData::GpsPos2(gps) => {
+                    self.gps_pos.1 = Some(gps);
+                }
+                _ => {
+                    info!("impl power related");
+                }
             },
-            _ => {}
+            messages::Data::State(state) => {
+                self.state = Some(state.data);
+            }
+            messages::Data::Command(command) => match command.data {
+                messages::command::CommandData::RadioRateChange(command_data) => {
+                    self.logging_rate = Some(command_data.rate);
+                }
+                _ => {}
+            },
+            _ => {
+                info!("unkown");
+            }
         }
     }
 }

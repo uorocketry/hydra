@@ -1,11 +1,13 @@
 use crate::state_machine::RocketStates;
+use crate::app::{fire_drogue, fire_main};
+use common_arm::spawn;
 use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
+use defmt::{info};
 
-const MAIN_HEIGHT: f32 = 450.0;
-const VELOCITY_MIN: f32 = 20.0;
-const HEIGHT_MIN: f32 = 300.0;
+const MAIN_HEIGHT: f32 = 876.0; // meters ASL
+const HEIGHT_MIN: f32 = 600.0; // meters ASL
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -14,13 +16,13 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
-    pub historical_pressure: HistoryBuffer<f32, 5>,
+    pub historical_barometer_altitude: HistoryBuffer<(f32, u32), 8>,
     pub current_state: Option<RocketStates>,
 }
 
 impl DataManager {
     pub fn new() -> Self {
-        let historical_pressure = HistoryBuffer::new();
+        let historical_barometer_altitude = HistoryBuffer::new();
         Self {
             air: None,
             ekf_nav: (None, None),
@@ -28,29 +30,40 @@ impl DataManager {
             imu: (None, None),
             utc_time: None,
             gps_vel: None,
-            historical_pressure,
+            historical_barometer_altitude,
             current_state: None,
         }
     }
-    /// Returns true if the rocket has passed apogee.
-    /// This is determined by looking at the historical pressure data.
-    /// Furthermore, we only start checking pressure data when velocity is less than 20m/s
-    /// because we want to avoid the complexities of pressure during transonic flight.
+    /// Returns true if the rocket is descending 
     pub fn is_falling(&self) -> bool {
-        let ekf_nav1 = self.ekf_nav.0.as_ref();
-        if let Some(ekf_nav1) = ekf_nav1 {
-            if ekf_nav1.velocity[2] > VELOCITY_MIN {
-                return false;
-            }
+        if self.historical_barometer_altitude.len() < 8 {
+            return false;
         }
-        match self.historical_pressure.recent() {
-            Some(mut point_previous) => {
-                for i in self.historical_pressure.oldest_ordered() {
-                    let slope = i - point_previous;
-                    if slope > 0.0 {
+        let mut buf = self.historical_barometer_altitude.oldest_ordered();
+        match buf.next() {
+            Some(last) => {
+                let mut avg_sum: f32 = 0.0;
+                let mut prev = last;
+                for i in buf {
+                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
+                    if time_diff == 0.0 {
+                        continue;
+                    }
+                    let slope = (i.0 - prev.0)/time_diff; 
+                    if slope < -100.0 {
+                        return false; 
+                    }
+                    avg_sum += slope; 
+                    prev = i;
+                }
+                match avg_sum / 7.0 { // 7 because we have 8 points.  
+                    // exclusive range  
+                    x if !(-100.0..=-5.0).contains(&x) => { 
                         return false;
                     }
-                    point_previous = i;
+                    _ => {
+                        info!("avg: {}", avg_sum / 7.0);
+                    }
                 }
             }
             None => {
@@ -65,19 +78,61 @@ impl DataManager {
             None => false,
         }
     }
+    pub fn is_landed(&self) -> bool {
+        if self.historical_barometer_altitude.len() < 8 {
+            return false;
+        }
+        let mut buf = self.historical_barometer_altitude.oldest_ordered();
+        match buf.next() {
+            Some(last) => {
+                let mut avg_sum: f32 = 0.0;
+                let mut prev = last;
+                for i in buf {
+                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
+                    if time_diff == 0.0 {
+                        continue;
+                    }
+                    avg_sum += (i.0 - prev.0)/time_diff; 
+                    prev = i;
+                }
+                match avg_sum / 7.0 {
+                    // inclusive range    
+                    x if (-4.0..=4.0).contains(&x)  => { 
+                        return true;
+                    }
+                    _ => {
+                        // continue 
+                    }
+                }
+            }
+            None => {
+                return false;
+            }
+        }
+        false
+    }
     pub fn is_below_main(&self) -> bool {
         match self.air.as_ref() {
             Some(air) => air.altitude < MAIN_HEIGHT,
             None => false,
         }
     }
+    pub fn set_state(&mut self, state: RocketStates) {
+        self.current_state = Some(state);
+    }
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
             messages::Data::Sensor(sensor) => match sensor.data {
                 messages::sensor::SensorData::Air(air_data) => {
-                    let pressure = air_data.pressure_abs;
+                    let tup_data = (air_data.altitude, air_data.time_stamp);
                     self.air = Some(air_data);
-                    self.historical_pressure.write(pressure);
+                    if let Some(recent) = self.historical_barometer_altitude.recent() {
+                        if recent.1 != tup_data.1 {
+                            self.historical_barometer_altitude.write(tup_data);
+                        }
+                    } else {
+                        self.historical_barometer_altitude.write(tup_data);
+                    }
                 }
                 messages::sensor::SensorData::EkfNav1(nav1_data) => {
                     self.ekf_nav.0 = Some(nav1_data);
@@ -99,9 +154,26 @@ impl DataManager {
                 }
                 messages::sensor::SensorData::UtcTime(utc_time_data) => {
                     self.utc_time = Some(utc_time_data);
+                },
+                _ => {
                 }
             },
-            _ => {}
+            messages::Data::Command(command) => match command.data {
+                messages::command::CommandData::DeployDrogue(drogue) => {
+                    spawn!(fire_drogue);
+                },
+                messages::command::CommandData::DeployMain(main) => {
+                    spawn!(fire_main);
+                },
+                messages::command::CommandData::PowerDown(_) => {
+                    // don't handle for now.
+                },
+                _ => {
+                    
+                }
+            }
+            _ => {
+            }
         }
     }
 }

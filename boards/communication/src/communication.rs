@@ -1,4 +1,4 @@
-/// Encapsulates all communication logic.
+use crate::app::send_internal;
 use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
@@ -8,19 +8,24 @@ use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::Can0;
 use atsamd_hal::clock::v2::Source;
+use atsamd_hal::dmac;
 use atsamd_hal::gpio::{Alternate, AlternateI, Disabled, Floating, Pin, I, PA22, PA23, PB16, PB17};
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM5;
 use atsamd_hal::sercom;
-use atsamd_hal::sercom::uart;
 use atsamd_hal::sercom::uart::{Duplex, Uart};
-use atsamd_hal::time::U32Ext;
+use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
+use atsamd_hal::sercom::Sercom;
+use atsamd_hal::sercom::{uart, Sercom5};
+use atsamd_hal::time::*;
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
+use common_arm::spawn;
 use common_arm::HydraError;
+use defmt::flush;
 use defmt::info;
 use heapless::Vec;
 use mcan::bus::Can;
@@ -38,6 +43,8 @@ use messages::Message;
 use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
 use typenum::{U0, U128, U32, U64};
+
+use atsamd_hal::dmac::Transfer;
 
 pub struct Capacities;
 
@@ -120,7 +127,7 @@ impl CanDevice0 {
                 action: Action::StoreFifo0,
                 filter: ecan::StandardId::new(messages::sender::Sender::RecoveryBoard.into())
                     .unwrap(),
-                mask: ecan::StandardId::MAX,
+                mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Recovery filter"));
 
@@ -129,7 +136,7 @@ impl CanDevice0 {
                 action: Action::StoreFifo1,
                 filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
                     .unwrap(),
-                mask: ecan::StandardId::MAX,
+                mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Sensor filter"));
 
@@ -137,7 +144,7 @@ impl CanDevice0 {
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
                 filter: ecan::StandardId::new(messages::sender::Sender::PowerBoard.into()).unwrap(),
-                mask: ecan::StandardId::MAX,
+                mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Power filter"));
 
@@ -146,7 +153,7 @@ impl CanDevice0 {
                 action: Action::StoreFifo0,
                 filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into())
                     .unwrap(),
-                mask: ecan::StandardId::MAX,
+                mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Ground Station filter"));
 
@@ -209,8 +216,10 @@ impl CanDevice0 {
     }
 }
 
+pub static mut BUF_DST: RadioBuffer = &mut [0; 255];
+
 pub struct RadioDevice {
-    uart: Uart<GroundStationUartConfig, Duplex>,
+    uart: Uart<GroundStationUartConfig, TxDuplex>,
     mav_sequence: u8,
 }
 
@@ -222,7 +231,8 @@ impl RadioDevice {
         rx_pin: Pin<PB17, Disabled<Floating>>,
         tx_pin: Pin<PB16, Disabled<Floating>>,
         gclk0: S,
-    ) -> (Self, S::Inc)
+        mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
+    ) -> (Self, S::Inc, RadioTransfer)
     where
         S: Source<Id = Gclk0Id> + Increment,
     {
@@ -232,16 +242,24 @@ impl RadioDevice {
             .tx(tx_pin);
         let uart = GroundStationUartConfig::new(mclk, sercom, pads, pclk_radio.freq())
             .baud(
-                57600.hz(),
+                57600.Hz(),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
             )
             .enable();
+        let (rx, tx) = uart.split(); // tx sends rx uses dma to receive so we need to setup dma here.
+        dma_channel
+            .as_mut()
+            .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
+        let xfer = Transfer::new(dma_channel, rx, unsafe { &mut *BUF_DST }, false)
+            .expect("DMA Radio RX")
+            .begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
         (
             RadioDevice {
-                uart,
+                uart: tx,
                 mav_sequence: 0,
             },
             gclk0,
+            xfer,
         )
     }
     pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
@@ -250,13 +268,12 @@ impl RadioDevice {
         let mav_header = mavlink::MavHeader {
             system_id: 1,
             component_id: 1,
-            sequence: self.mav_sequence.wrapping_add(1),
+            sequence: self.increment_mav_sequence(),
         };
 
         let mav_message = mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(
             mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: payload },
         );
-
         mavlink::write_versioned_msg(
             &mut self.uart,
             mavlink::MavlinkVersion::V2,
@@ -265,4 +282,53 @@ impl RadioDevice {
         )?;
         Ok(())
     }
+    pub fn increment_mav_sequence(&mut self) -> u8 {
+        self.mav_sequence = self.mav_sequence.wrapping_add(1);
+        self.mav_sequence
+    }
 }
+
+pub struct RadioManager {
+    xfer: Option<RadioTransfer>,
+    buf_select: bool,
+}
+
+impl RadioManager {
+    pub fn new(xfer: RadioTransfer) -> Self {
+        RadioManager {
+            xfer: Some(xfer),
+            buf_select: false,
+        }
+    }
+    pub fn process_message(&mut self, buf: RadioBuffer) {
+        match from_bytes::<Message>(buf) {
+            Ok(msg) => {
+                info!("Radio: {}", msg);
+                // spawn!(send_internal, msg); // dump to the Can Bus
+            }
+            Err(_) => {
+                info!("Radio unknown msg");
+                return;
+            }
+        }
+    }
+}
+
+// pub fn radio_dma(cx: crate::app::radio_dma::Context) {
+//     let manager = cx.local.radio_manager;
+//     match &mut manager.xfer {
+//         Some(xfer) => {
+//             if xfer.complete() {
+//                 let (chan0, source, buf) = manager.xfer.take().unwrap().stop();
+//                 let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).expect("f").begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+//                 manager.process_message(buf);
+//                 unsafe{BUF_DST.copy_from_slice(&[0;255])};
+//                 xfer.block_transfer_interrupt();
+//                 manager.xfer = Some(xfer);
+//             }
+//         }
+//         None => {
+//             info!("none");
+//         }
+//     }
+// }

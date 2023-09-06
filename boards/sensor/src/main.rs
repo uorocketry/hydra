@@ -16,36 +16,44 @@ use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
 use hal::dmac;
+use defmt::info;
 use hal::gpio::Pins;
-use hal::gpio::PA14;
+use hal::gpio::{PB16, PB17, PB01};
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
-use sbg_manager::{sbg_dma, sbg_handle_data, SBGManager};
-use sbg_rs::sbg::CallbackData;
 use sd_manager::SdManager;
+use sbg_manager::{sbg_dma, sbg_handle_data, sbg_sd_task, SBGManager};
+//use sbg_manager::{sbg_dma, sbg_handle_data, SBGManager};
+
+use sbg_rs::sbg::{CallbackData, SBG_BUFFER_SIZE};
+
 use systick_monotonic::*;
 use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+    use defmt::flush;
+
     use super::*;
 
     #[shared]
     struct Shared {
         em: ErrorManager,
         data_manager: DataManager,
-        can0: communication::CanDevice0,
+        can: communication::CanDevice0,
+        sd_manager: SdManager,
     }
 
     #[local]
     struct Local {
-        led: Pin<PA14, PushPullOutput>,
-        sd_manager: SdManager,
+        led_green: Pin<PB16, PushPullOutput>,
+        led_red: Pin<PB17, PushPullOutput>,
         sbg_manager: SBGManager,
+        sbg_power_pin: Pin<PB01, PushPullOutput>, // this is here so we do not need to lock sbg_manager.! put into a gpio controller with leds. 
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -59,6 +67,9 @@ mod app {
         let mut peripherals = cx.device;
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
+
+        let mut sbg_power_pin = pins.pb01.into_push_pull_output();
+        sbg_power_pin.set_high().unwrap();
 
         let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
         let dmaChannels = dmac.split();
@@ -79,7 +90,7 @@ mod app {
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
-        let (can0, gclk0) = communication::CanDevice0::new(
+        let (can, gclk0) = communication::CanDevice0::new(
             pins.pa23.into_mode(),
             pins.pa22.into_mode(),
             pclk_can,
@@ -90,51 +101,56 @@ mod app {
             false,
         );
 
-        /* SD config */
-        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom1, gclk0);
+        // /* SD config */
+        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
         let sd_manager = SdManager::new(
             &mclk,
-            peripherals.SERCOM1,
+            peripherals.SERCOM4,
             pclk_sd.freq(),
-            pins.pa18.into_push_pull_output(),
-            pins.pa17.into_push_pull_output(),
-            pins.pa19.into_push_pull_output(),
-            pins.pa16.into_push_pull_output(),
+            pins.pb10.into_push_pull_output(),
+            pins.pb09.into_push_pull_output(),
+            pins.pb11.into_push_pull_output(),
+            pins.pb08.into_push_pull_output(),
         );
 
         /* SBG config */
-        let (pclk_sbg, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
+        let (pclk_sbg, gclk0) = Pclk::enable(tokens.pclks.sercom5, gclk0);
         let dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
         let sbg_manager = SBGManager::new(
-            pins.pa09,
-            pins.pa08,
+            pins.pb03,
+            pins.pb02,
             pclk_sbg,
             &mut mclk,
-            peripherals.SERCOM0,
+            peripherals.SERCOM5,
             peripherals.RTC,
             dmaCh0,
         );
 
+        // Buzzer should go here. There is complexity using the new clock system with the atsamdhal pwm implementation. 
+
         /* Status LED */
-        let led = pins.pa14.into_push_pull_output();
+        let led_green = pins.pb16.into_push_pull_output();
+        let led_red = pins.pb17.into_push_pull_output();
 
         /* Spawn tasks */
         sensor_send::spawn().ok();
         blink::spawn().ok();
 
         /* Monotonic clock */
-        let mono = Systick::new(core.SYST, gclk0.freq().0);
+        let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
         (
             Shared {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
-                can0,
+                can,
+                sd_manager,
             },
             Local {
-                led,
-                sd_manager,
+                led_green,
+                led_red,
                 sbg_manager,
+                sbg_power_pin,
             },
             init::Monotonics(mono),
         )
@@ -146,20 +162,35 @@ mod app {
         loop {}
     }
 
-    #[task(priority = 3, binds = CAN0, shared = [can0])]
+    #[task(local = [sbg_power_pin], shared = [sd_manager, &em])]
+    fn sleep_system(mut cx: sleep_system::Context) {
+        info!("Power Down");
+        // close out sd files. 
+        cx.shared.sd_manager.lock(|sd| {
+            cx.shared.em.run(|| {
+                sd.close_current_file();
+                Ok(())
+            });
+        });
+        // power down sbg
+        cx.local.sbg_power_pin.set_low(); // define hydra error for this error type. 
+        // Call core.SCB.set_deepsleep for even less power consumption. 
+    }
+
+    #[task(priority = 3, binds = CAN0, shared = [can, data_manager])]
     fn can0(mut cx: can0::Context) {
-        cx.shared.can0.lock(|can| {
-            can.process_data();
+        cx.shared.can.lock(|can| {
+            cx.shared.data_manager.lock(|manager| can.process_data(manager))
         });
     }
 
     /**
      * Sends a message over CAN.
      */
-    #[task(capacity = 10, local = [counter: u16 = 0], shared = [can0, &em])]
+    #[task(capacity = 10, local = [counter: u16 = 0], shared = [can, &em])]
     fn send_internal(mut cx: send_internal::Context, m: Message) {
         cx.shared.em.run(|| {
-            cx.shared.can0.lock(|can| can.send_message(m))?;
+            cx.shared.can.lock(|can| can.send_message(m))?;
             Ok(())
         });
     }
@@ -183,30 +214,33 @@ mod app {
             for msg in messages {
                 spawn!(send_internal, msg)?;
             }
-
             Ok(())
         });
-        spawn_after!(sensor_send, 250.millis()).ok();
+        spawn_after!(sensor_send, ExtU64::millis(100)).ok();
     }
 
     /**
      * Simple blink task to test the system.
      * Acts as a heartbeat for the system.
      */
-    #[task(local = [led], shared = [&em])]
+    #[task(local = [led_green, led_red], shared = [&em])]
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
-            cx.local.led.toggle()?;
             if cx.shared.em.has_error() {
-                spawn_after!(blink, 200.millis())?;
+                cx.local.led_red.toggle()?;
+                spawn_after!(blink, ExtU64::millis(200))?;
             } else {
-                spawn_after!(blink, 1.secs())?;
+                cx.local.led_green.toggle()?;
+                spawn_after!(blink, ExtU64::secs(1))?;
             }
             Ok(())
         });
     }
 
     extern "Rust" {
+        #[task(capacity = 3, shared = [&em, sd_manager])]
+        fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
+
         #[task(binds = DMAC_0, shared = [&em], local = [sbg_manager])]
         fn sbg_dma(context: sbg_dma::Context);
 

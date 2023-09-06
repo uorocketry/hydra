@@ -1,9 +1,9 @@
 use core::marker::PhantomData;
 
 use crate::types::SdController;
-use atsamd_hal::gpio::{Output, Pin, PushPull, PA16, PA17, PA18, PA19};
+use atsamd_hal::gpio::{Output, Pin, PushPull, PB10, PB09, PB11, PB08};
 use atsamd_hal::pac;
-use atsamd_hal::sercom::{spi, IoSet1, Sercom1};
+use atsamd_hal::sercom::{spi, Sercom4, IoSet2};
 use atsamd_hal::time::Hertz;
 use defmt::{info, warn};
 use embedded_sdmmc as sd;
@@ -40,20 +40,20 @@ pub struct SdManager {
     pub sd_controller: SdController,
     pub volume: sd::Volume,
     pub root_directory: sd::Directory,
-    pub file: sd::File,
+    pub file: Option<sd::File>,
 }
 
 impl SdManager {
     pub fn new(
         mclk: &pac::MCLK,
-        sercom: pac::SERCOM1,
+        sercom: pac::SERCOM4,
         freq: Hertz,
-        cs: Pin<PA18, Output<PushPull>>,
-        sck: Pin<PA17, Output<PushPull>>,
-        miso: Pin<PA19, Output<PushPull>>,
-        mosi: Pin<PA16, Output<PushPull>>,
+        cs: Pin<PB10, Output<PushPull>>,
+        sck: Pin<PB09, Output<PushPull>>,
+        miso: Pin<PB11, Output<PushPull>>,
+        mosi: Pin<PB08, Output<PushPull>>,
     ) -> Self {
-        let pads_spi = spi::Pads::<Sercom1, IoSet1>::default()
+        let pads_spi = spi::Pads::<Sercom4, IoSet2>::default()
             .sclk(sck)
             .data_in(miso)
             .data_out(mosi);
@@ -67,10 +67,9 @@ impl SdManager {
         match sd_cont.device().init() {
             Ok(_) => match sd_cont.device().card_size_bytes() {
                 Ok(size) => info!("Card is {} bytes", size),
-                Err(_) => warn!("Cannot get card size"),
+                Err(_) => panic!("Cannot get card size"),
             },
             Err(_) => {
-                warn!("Cannot get SD card");
                 panic!("Cannot get SD card.");
             }
         }
@@ -78,7 +77,6 @@ impl SdManager {
         let mut volume = match sd_cont.get_volume(sd::VolumeIdx(0)) {
             Ok(volume) => volume,
             Err(_) => {
-                warn!("Cannot get volume 0");
                 panic!("Cannot get volume 0");
             }
         };
@@ -86,20 +84,18 @@ impl SdManager {
         let root_directory = match sd_cont.open_root_dir(&volume) {
             Ok(root_directory) => root_directory,
             Err(_) => {
-                warn!("Cannot get root");
                 panic!("Cannot get root");
             }
         };
         let file = sd_cont.open_file_in_dir(
             &mut volume,
             &root_directory,
-            "test2.txt",
+            "sbg.txt",
             sd::Mode::ReadWriteCreateOrTruncate,
         );
         let file = match file {
             Ok(file) => file,
             Err(_) => {
-                warn!("Cannot create file.");
                 panic!("Cannot create file.");
             }
         };
@@ -108,12 +104,12 @@ impl SdManager {
             sd_controller: sd_cont,
             volume,
             root_directory,
-            file,
+            file: Some(file),
         }
     }
     pub fn write(
         &mut self,
-        file: &mut sd::File,
+        file: &mut sd::File, // this should be an option 
         buffer: &[u8],
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
         self.sd_controller.write(&mut self.volume, file, buffer)
@@ -133,6 +129,12 @@ impl SdManager {
             file_name,
             sd::Mode::ReadWriteCreateOrTruncate,
         )
+    }
+    pub fn close_current_file(&mut self) -> Result<(), sd::Error<sd::SdMmcError>> {
+        if let Some(file) = self.file.take() {
+            return self.close_file(file);
+        }
+        Ok(()) // no file to close 
     }
     pub fn close_file(&mut self, file: sd::File) -> Result<(), sd::Error<sd::SdMmcError>> {
         self.sd_controller.close_file(&self.volume, file)

@@ -1,8 +1,8 @@
 use crate::bindings::{
-    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR,
-    _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
+    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
     _SbgEComLog_SBG_ECOM_LOG_AIR_DATA, _SbgEComLog_SBG_ECOM_LOG_EKF_NAV,
     _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL, _SbgEComLog_SBG_ECOM_LOG_UTC_TIME,
+    _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
     _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgErrorCode_SBG_NO_ERROR,
     _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
     sbgEComCmdOutputSetConf, sbgEComHandle,
@@ -13,19 +13,20 @@ use crate::bindings::{
     _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol, _SbgErrorCode, _SbgInterface,
 };
 use atsamd_hal as hal;
-use core::ffi::{c_void, CStr};
+use core::ffi::{c_void};
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
-use defmt::{debug, error, flush, info, warn};
+use defmt::{flush, warn, error, info};
 use embedded_hal::serial::Write;
-use hal::gpio::{PA08, PA09, PB16, PB17};
+use hal::gpio::{PB16, PB17, PB03, PB02};
 use hal::sercom::uart::Duplex;
 use hal::sercom::uart::{self, EightBit, Uart};
-use hal::sercom::{IoSet1, Sercom0, Sercom5};
+use hal::sercom::{IoSet1, IoSet6, Sercom5};
 use messages::sensor::*;
+use heapless::Deque;
 
-type Pads = uart::PadsFromIds<Sercom0, IoSet1, PA09, PA08>;
+type Pads = uart::PadsFromIds<Sercom5, IoSet6, PB03, PB02>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
 type Config = uart::Config<Pads, EightBit>;
 
@@ -43,6 +44,8 @@ static mut BUF_INDEX: AtomicUsize = AtomicUsize::new(0);
  */
 static mut BUF: &[u8; SBG_BUFFER_SIZE] = &[0; SBG_BUFFER_SIZE];
 
+static mut DEQ: Deque<u8, 4096> = Deque::new();
+
 /**
  * Holds the RTC instance. This is used to get the current time.
  */
@@ -57,6 +60,7 @@ pub enum CallbackData {
     EkfNav((EkfNav1, EkfNav2)),
     Imu((Imu1, Imu2)),
     GpsVel(GpsVel),
+    GpsPos((GpsPos1, GpsPos2)),
 }
 
 struct UARTSBGInterface {
@@ -150,7 +154,10 @@ impl SBG {
     pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
-        unsafe { BUF = buffer };
+        // unsafe { BUF = buffer };
+        for i in buffer {
+            unsafe{DEQ.push_back(*i)};
+        }
         // SAFETY: We are assigning a static variable.
         // This is safe because are the only thread reading since SBG is locked.
         unsafe {
@@ -286,46 +293,59 @@ impl SBG {
         // SAFETY: We are accessing a static mut variable.
         // This is safe because we ensure that the variable is only accessed in this function.
         let index = unsafe { *BUF_INDEX.get_mut() };
-
-        if index + bytesToRead > SBG_BUFFER_SIZE {
-            // Read what we can.
-            bytesToRead = SBG_BUFFER_SIZE - index;
-            if bytesToRead == 0 {
-                // SAFETY: We are accessing a mutable pointer.
-                // This is safe because the pointer cannot be null
-                // and the SBGECom library ensures that the pointer
-                // is not accessed during the lifetime of this function.
-                unsafe { *pBytesRead = 0 };
-                return _SbgErrorCode_SBG_READ_ERROR; // no data
+        let mut readBytes = 0;
+        for i in 0..(bytesToRead) {
+            if let Some(front) = DEQ.pop_front() {
+                readBytes += 1;
+                array[i] = front;
+            } else {
+                // info!("No item in dequeue");
+                break;
             }
-            let end = bytesToRead + index;
-            // SAFETY: We are accessing a static mut variable.
-            // This is safe because we ensure that the variable is only accessed in this function.
-            array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
-            // SAFETY: We are accessing a static mut variable.
-            // This is safe because we ensure that the variable is only accessed in this function.
-            unsafe { *BUF_INDEX.get_mut() = index + bytesToRead };
-            // SAFETY: We are accessing a mutable pointer.
-            // This is safe because the pointer cannot be null
-            // and the SBGECom library ensures that the pointer
-            // is not accessed during the lifetime of this function.
-            unsafe { *pBytesRead = bytesToRead };
-            return _SbgErrorCode_SBG_NO_ERROR;
         }
-        let end = bytesToRead + index;
-        // SAFETY: We are accessing a static mut variable.
-        // This is safe because we ensure that the variable is only accessed in this function.
-        array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
-        // SAFETY: We are accessing a static mut variable.
-        // This is safe because we ensure that the variable is only accessed in this function.
-        unsafe { *BUF_INDEX.get_mut() = index + bytesToRead };
-        // SAFETY: We are accessing a mutable pointer.
-        // This is safe because the pointer cannot be null
-        // and the SBGECom library ensures that the pointer
-        // is not accessed during the lifetime of this function.
-        unsafe { *pBytesRead = bytesToRead };
+        // info!("Bytes Read {}", readBytes);
+        unsafe {*pBytesRead = readBytes}; 
+        return _SbgErrorCode_SBG_NO_ERROR;
 
-        _SbgErrorCode_SBG_NO_ERROR
+        // if index + bytesToRead > SBG_BUFFER_SIZE {
+        //     // Read what we can.
+        //     bytesToRead = SBG_BUFFER_SIZE - index;
+        //     if bytesToRead == 0 {
+        //         // SAFETY: We are accessing a mutable pointer.
+        //         // This is safe because the pointer cannot be null
+        //         // and the SBGECom library ensures that the pointer
+        //         // is not accessed during the lifetime of this function.
+        //         unsafe { *pBytesRead = 0 };
+        //         return _SbgErrorCode_SBG_READ_ERROR; // no data
+        //     }
+        //     let end = bytesToRead + index;
+        //     // SAFETY: We are accessing a static mut variable.
+        //     // This is safe because we ensure that the variable is only accessed in this function.
+        //     array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
+        //     // SAFETY: We are accessing a static mut variable.
+        //     // This is safe because we ensure that the variable is only accessed in this function.
+        //     unsafe { *BUF_INDEX.get_mut() = index + bytesToRead };
+        //     // SAFETY: We are accessing a mutable pointer.
+        //     // This is safe because the pointer cannot be null
+        //     // and the SBGECom library ensures that the pointer
+        //     // is not accessed during the lifetime of this function.
+        //     unsafe { *pBytesRead = bytesToRead };
+        //     return _SbgErrorCode_SBG_NO_ERROR;
+        // }
+        // let end = bytesToRead + index;
+        // // SAFETY: We are accessing a static mut variable.
+        // // This is safe because we ensure that the variable is only accessed in this function.
+        // array[0..bytesToRead - 1].copy_from_slice(unsafe { &BUF[index..end - 1] });
+        // // SAFETY: We are accessing a static mut variable.
+        // // This is safe because we ensure that the variable is only accessed in this function.
+        // unsafe { *BUF_INDEX.get_mut() = index + bytesToRead };
+        // // SAFETY: We are accessing a mutable pointer.
+        // // This is safe because the pointer cannot be null
+        // // and the SBGECom library ensures that the pointer
+        // // is not accessed during the lifetime of this function.
+        // unsafe { *pBytesRead = bytesToRead };
+
+        // _SbgErrorCode_SBG_NO_ERROR
     }
 
     /**
@@ -400,6 +420,9 @@ impl SBG {
                         _SbgEComLog_SBG_ECOM_LOG_EKF_NAV => {
                             callback(CallbackData::EkfNav((*pLogData).ekfNavData.into()))
                         }
+                        _SbgEComLog_SBG_ECOM_LOG_GPS1_POS => {
+                            callback(CallbackData::GpsPos((*pLogData).gpsPosData.into()))
+                        }
                         _ => (),
                     }
                 }
@@ -473,31 +496,31 @@ unsafe impl Send for SBG {}
  */
 #[no_mangle]
 pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
-    pFileName: *const ::core::ffi::c_char,
-    pFunctionName: *const ::core::ffi::c_char,
+    _pFileName: *const ::core::ffi::c_char,
+    _pFunctionName: *const ::core::ffi::c_char,
     _line: u32,
-    pCategory: *const ::core::ffi::c_char,
+    _pCategory: *const ::core::ffi::c_char,
     logType: _SbgDebugLogType,
     _errorCode: _SbgErrorCode,
-    pFormat: *const ::core::ffi::c_char,
+    _pFormat: *const ::core::ffi::c_char,
 ) {
-    if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
-        return;
-    }
-    // SAFETY: We are converting a raw pointer to a CStr and then to a str.
-    // This is safe because we check if the pointers are null and
-    // the pointers can only be accessed during the lifetime of this function.
-    let file = unsafe { CStr::from_ptr(pFileName).to_str().unwrap() };
-    let function = unsafe { CStr::from_ptr(pFunctionName).to_str().unwrap() };
-    let _category = unsafe { CStr::from_ptr(pCategory).to_str().unwrap() };
-    let _format = unsafe { CStr::from_ptr(pFormat).to_str().unwrap() };
+    // if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
+    //     return;
+    // }
+    // // SAFETY: We are converting a raw pointer to a CStr and then to a str.
+    // // This is safe because we check if the pointers are null and
+    // // the pointers can only be accessed during the lifetime of this function.
+    // let file = unsafe { CStr::from_ptr(pFileName).to_str().unwrap() };
+    // let function = unsafe { CStr::from_ptr(pFunctionName).to_str().unwrap() };
+    // let _category = unsafe { CStr::from_ptr(pCategory).to_str().unwrap() };
+    // let _format = unsafe { CStr::from_ptr(pFormat).to_str().unwrap() };
 
     match logType {
         // silently handle errors
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error {} {}", file, function),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning {} {}", file, function),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),
         _ => (),
     };
     flush();

@@ -53,7 +53,7 @@ mod app {
 
         // Use the system's Systick for RTIC to keep track of the time
         let sysclk: Hertz = clocks.gclk0().into();
-        let mono = Systick::new(core.SYST, sysclk.0);
+        let mono = Systick::new(core.SYST, sysclk.to_Hz());
 
         (Shared {}, Local { led }, init::Monotonics(mono))
     }
@@ -73,6 +73,6 @@ mod app {
         let time = monotonics::now().duration_since_epoch().to_secs();
         info!("Seconds since epoch: {}", time);
 
-        blink::spawn_after(1.secs()).ok();
+        blink::spawn_after(ExtU64::secs(1)).ok();
     }
 }
