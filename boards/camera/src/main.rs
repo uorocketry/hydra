@@ -94,11 +94,9 @@ mod app {
 
         let state_machine = StateMachine::new();
 
-        /* Spawn tasks */
-        spawn!(toggle_cams);
-                
-        // run_sm::spawn().ok();
-
+        /* Spawn tasks */                
+        run_sm::spawn().ok();
+        blink::spawn().ok();
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
@@ -109,6 +107,16 @@ mod app {
     #[idle]
     fn idle(_: idle::Context) -> ! {
         loop {}
+    }
+
+    /// Handles the CAN0 interrupt.
+    #[task(binds = CAN0, shared = [can0, data_manager])]
+    fn can0(mut cx: can0::Context) {
+        cx.shared.can0.lock(|can| {
+            cx.shared
+                .data_manager
+                .lock(|data_manager| can.process_data(data_manager));
+        });
     }
 
     #[task(priority = 3, local = [num: u8 = 0], shared = [gpio_manager, &em])]
@@ -122,7 +130,7 @@ mod app {
         });
         if (*cx.local.num < 3) {
             *cx.local.num += 1;
-            spawn_after!(toggle_cams, ExtU64::millis(100));
+            spawn_after!(toggle_cams, ExtU64::millis(150));
         }
     }
 

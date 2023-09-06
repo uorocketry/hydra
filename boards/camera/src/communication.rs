@@ -136,22 +136,6 @@ impl CanDevice0 {
             gclk0,
         )
     }
-    pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
-        let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
-        self.can.tx.transmit_queued(
-            tx::MessageBuilder {
-                id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
-                frame_type: tx::FrameType::FlexibleDatarate {
-                    payload: &payload[..],
-                    bit_rate_switching: false,
-                    force_error_state_indicator: false,
-                },
-                store_tx_event: None,
-            }
-            .build()?,
-        )?;
-        Ok(())
-    }
     pub fn process_data(&mut self, data_manager: &mut DataManager) {
         let line_interrupts = &self.line_interrupts;
         for interrupt in line_interrupts.iter_flagged() {

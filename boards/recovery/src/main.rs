@@ -90,9 +90,9 @@ mod app {
         /* GPIO config */
         let led_green = pins.pb16.into_push_pull_output();
         let led_red = pins.pb17.into_push_pull_output();
-        let gpio = GPIOManager::new(
-            pins.pa06.into_push_pull_output(),
+        let gpio = GPIOManager::new( // pins switched from schematic 
             pins.pa09.into_push_pull_output(),
+            pins.pa06.into_push_pull_output(),
         );
         /* State Machine config */
         let state_machine = StateMachine::new();
@@ -125,7 +125,7 @@ mod app {
         loop {}
     }
 
-    #[task(local = [fired: bool = false], shared=[gpio])]
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
     fn fire_drogue(mut cx: fire_drogue::Context) {
         if !(*cx.local.fired) {
             cx.shared.gpio.lock(|gpio| {
@@ -140,7 +140,7 @@ mod app {
         }
     }
 
-    #[task(local = [fired: bool = false], shared=[gpio])]
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
     fn fire_main(mut cx: fire_main::Context) {
         if !(*cx.local.fired) {
             cx.shared.gpio.lock(|gpio| {

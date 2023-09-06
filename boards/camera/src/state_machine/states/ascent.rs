@@ -10,16 +10,14 @@ use crate::types::COM_ID;
 use crate::app::monotonics;
 use systick_monotonic::ExtU64;
 use crate::app::toggle_cams;
-use common_arm::spawn_after;
+use common_arm::spawn;
 
 #[derive(Debug, Clone)]
 pub struct Ascent {}
 
 impl State for Ascent {
     fn enter(&self, context: &mut StateMachineContext) {
-        for i in 0..3 {
-            spawn_after!(toggle_cams, ExtU64::millis(2));
-        }
+        spawn!(toggle_cams);
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         context
