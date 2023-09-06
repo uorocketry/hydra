@@ -90,7 +90,7 @@ impl SdManager {
         let file = sd_cont.open_file_in_dir(
             &mut volume,
             &root_directory,
-            "test2.txt",
+            "sbg.txt",
             sd::Mode::ReadWriteCreateOrTruncate,
         );
         let file = match file {

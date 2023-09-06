@@ -7,7 +7,6 @@ mod gpio_manager;
 mod state_machine;
 mod types;
 
-
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
@@ -91,7 +90,7 @@ mod app {
         /* GPIO config */
         let led_green = pins.pb16.into_push_pull_output();
         let led_red = pins.pb17.into_push_pull_output();
-        let gpio = GPIOManager::new(
+        let gpio = GPIOManager::new( // pins switched from schematic 
             pins.pa09.into_push_pull_output(),
             pins.pa06.into_push_pull_output(),
         );
@@ -102,7 +101,8 @@ mod app {
         run_sm::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
-        fire_main::spawn_after(ExtU64::secs(10)).ok();
+        // fire_main::spawn_after(ExtU64::secs(15)).ok();
+        // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -125,18 +125,34 @@ mod app {
         loop {}
     }
 
-    #[task(shared=[gpio])]
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
     fn fire_drogue(mut cx: fire_drogue::Context) {
-        cx.shared.gpio.lock(|gpio| {
-            gpio.fire_drogue();
-        });
+        if !(*cx.local.fired) {
+            cx.shared.gpio.lock(|gpio| {
+                gpio.fire_drogue();
+                *cx.local.fired = true; 
+            });
+            spawn_after!(fire_drogue, ExtU64::secs(5));
+        } else {
+            cx.shared.gpio.lock(|gpio| {
+                gpio.close_drogue();
+            });
+        }
     }
 
-    #[task(shared=[gpio])]
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
     fn fire_main(mut cx: fire_main::Context) {
-        cx.shared.gpio.lock(|gpio| {
-            gpio.fire_main();
-        });
+        if !(*cx.local.fired) {
+            cx.shared.gpio.lock(|gpio| {
+                gpio.fire_main();
+                *cx.local.fired = true;
+            });
+            spawn_after!(fire_main, ExtU64::secs(5));
+        } else {
+            cx.shared.gpio.lock(|gpio| {
+                gpio.close_main();
+            });
+        }
     }
 
     /// Runs the state machine.

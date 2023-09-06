@@ -6,8 +6,8 @@ use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTi
 use messages::Message;
 use defmt::{info};
 
-const MAIN_HEIGHT: f32 = 500.0; // meters 
-const HEIGHT_MIN: f32 = 300.0; // meters 
+const MAIN_HEIGHT: f32 = 876.0; // meters ASL
+const HEIGHT_MIN: f32 = 600.0; // meters ASL
 
 pub struct DataManager {
     pub air: Option<Air>,
