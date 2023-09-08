@@ -83,7 +83,7 @@ impl DataManager {
                 }
                 match avg_sum / 7.0 {
                     // inclusive range    
-                    x if (-4.0..=4.0).contains(&x)  => { 
+                    x if (-0.25..=0.25).contains(&x)  => { 
                         return true;
                     }
                     _ => {
