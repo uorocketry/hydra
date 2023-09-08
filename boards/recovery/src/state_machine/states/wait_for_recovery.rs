@@ -14,6 +14,7 @@ pub struct WaitForRecovery {}
 
 impl State for WaitForRecovery {
     fn enter(&self, context: &mut StateMachineContext) {
+        // This should change to a ack and not be sent 10 times
         // send a command over CAN to shut down non-critical systems for recovery. 
         for i in 0..10 {
             let sensor_power_down = PowerDown {
