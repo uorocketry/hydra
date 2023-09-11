@@ -1,10 +1,8 @@
 use atsamd_hal::{gpio::*, dmac};
 use atsamd_hal::sercom::uart::EightBit;
-
 use atsamd_hal::sercom::{Sercom5, uart, IoSet1};
 use messages::sender::Sender;
 use messages::sender::Sender::CommunicationBoard;
-
 use atsamd_hal::dmac::BufferPair;
 use atsamd_hal::sercom::uart::Uart;
 

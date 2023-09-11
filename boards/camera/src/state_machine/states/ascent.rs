@@ -3,11 +3,8 @@ use crate::state_machine::states::wait_for_takeoff::WaitForTakeoff;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
 
-
 use defmt::{write, Format, Formatter};
 use rtic::mutex::Mutex;
-
-
 
 use crate::app::toggle_cams;
 use common_arm::spawn;
@@ -23,16 +20,13 @@ impl State for Ascent {
         });
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
-        context
-            .shared_resources
-            .data_manager
-            .lock(|data| {
-                if data.is_falling() {
-                    transition!(self, Descent)
-                } else {
-                    no_transition!()
-                }
-            })
+        context.shared_resources.data_manager.lock(|data| {
+            if data.is_falling() {
+                transition!(self, Descent)
+            } else {
+                no_transition!()
+            }
+        })
     }
 }
 

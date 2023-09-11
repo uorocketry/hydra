@@ -4,7 +4,6 @@
 mod communication;
 mod data_manager;
 mod sbg_manager;
-mod sd_manager;
 mod types;
 
 use atsamd_hal as hal;
@@ -12,20 +11,22 @@ use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac::DmaController;
 use common_arm::mcan;
+use common_arm::SdManager;
+use hal::gpio::Output;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
 use hal::dmac;
 use defmt::info;
 use hal::gpio::Pins;
-use hal::gpio::{PB16, PB17, PB01};
+use hal::gpio::{PB16, PB17, PB10, PB01, PushPull};
 use hal::gpio::{Pin, PushPullOutput};
 use hal::prelude::*;
+use hal::sercom::{spi, Sercom4, IoSet2};
 use mcan::messageram::SharedMemory;
 use messages::sensor::Sensor;
 use messages::*;
 use panic_halt as _;
-use sd_manager::SdManager;
 use sbg_manager::{sbg_dma, sbg_handle_data, sbg_sd_task, SBGManager};
 //use sbg_manager::{sbg_dma, sbg_handle_data, SBGManager};
 
@@ -43,7 +44,10 @@ mod app {
         em: ErrorManager,
         data_manager: DataManager,
         can: communication::CanDevice0,
-        sd_manager: SdManager,
+        sd_manager: SdManager<
+            SdSpi,
+            Pin<PB10, Output<PushPull>>,
+        >,
     }
 
     #[local]
@@ -99,17 +103,19 @@ mod app {
             false,
         );
 
-        // /* SD config */
+        /* SD config */
         let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
-        let sd_manager = SdManager::new(
-            &mclk,
-            peripherals.SERCOM4,
-            pclk_sd.freq(),
-            pins.pb10.into_push_pull_output(),
-            pins.pb09.into_push_pull_output(),
-            pins.pb11.into_push_pull_output(),
-            pins.pb08.into_push_pull_output(),
-        );
+        let pads_spi = spi::Pads::<Sercom4, IoSet2>::default()
+            .sclk(pins.pb09)
+            .data_in(pins.pb11)
+            .data_out(pins.pb08);
+
+        let sdmmc_spi = spi::Config::new(&mclk, peripherals.SERCOM4, pads_spi, pclk_sd.freq())
+            .length::<spi::lengths::U1>()
+            .bit_order(spi::BitOrder::MsbFirst)
+            .spi_mode(spi::MODE_0)
+            .enable();
+        let sd_manager = SdManager::new(sdmmc_spi, pins.pb10.into_push_pull_output());
 
         /* SBG config */
         let (pclk_sbg, gclk0) = Pclk::enable(tokens.pclks.sercom5, gclk0);
