@@ -7,21 +7,21 @@ impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2) {
     fn from(value: SbgLogGpsPos) -> Self {
         (
             GpsPos1 {
-                timeStamp: value.timeStamp,
+                time_stamp: value.timeStamp,
                 status: value.status,
-                timeOfWeek: value.timeOfWeek,
+                time_of_week: value.timeOfWeek,
                 latitude: value.latitude,
                 longitude: value.longitude,
                 altitude: value.altitude,
                 undulation: value.undulation,
             },
             GpsPos2 {
-                latitudeAccuracy: value.latitudeAccuracy,
-                longitudeAccuracy: value.longitudeAccuracy,
-                altitudeAccuracy: value.altitudeAccuracy,
-                numSvUsed: value.numSvUsed,
-                baseStationId: value.baseStationId,
-                differentialAge: value.differentialAge,
+                latitude_accuracy: value.latitudeAccuracy,
+                longitude_accuracy: value.longitudeAccuracy,
+                altitude_accuracy: value.altitudeAccuracy,
+                num_sv_used: value.numSvUsed,
+                base_station_id: value.baseStationId,
+                differential_age: value.differentialAge,
             },
         )
     }

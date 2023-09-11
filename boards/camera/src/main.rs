@@ -69,7 +69,7 @@ mod app {
 
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
-        let (_, _, _, mclk) = unsafe { clocks.pac.steal() };
+        let (_, _, _, _mclk) = unsafe { clocks.pac.steal() };
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
@@ -128,9 +128,9 @@ mod app {
             });
             Ok(())
         });
-        if (*cx.local.num < 3) {
+        if *cx.local.num < 3 {
             *cx.local.num += 1;
-            spawn_after!(toggle_cams, ExtU64::millis(150));
+            spawn_after!(toggle_cams, ExtU64::millis(150)).ok();
         }
     }
 

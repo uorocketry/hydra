@@ -24,7 +24,6 @@ use panic_halt as _;
 use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
 use types::COM_ID;
-use defmt::info;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -132,7 +131,7 @@ mod app {
                 gpio.fire_drogue();
                 *cx.local.fired = true; 
             });
-            spawn_after!(fire_drogue, ExtU64::secs(5));
+            spawn_after!(fire_drogue, ExtU64::secs(5)).ok();
         } else {
             cx.shared.gpio.lock(|gpio| {
                 gpio.close_drogue();
@@ -147,7 +146,7 @@ mod app {
                 gpio.fire_main();
                 *cx.local.fired = true;
             });
-            spawn_after!(fire_main, ExtU64::secs(5));
+            spawn_after!(fire_main, ExtU64::secs(5)).ok();
         } else {
             cx.shared.gpio.lock(|gpio| {
                 gpio.close_main();
@@ -208,7 +207,7 @@ mod app {
             spawn!(send_internal, message)?;
             Ok(())
         });
-        spawn_after!(state_send, ExtU64::secs(2));
+        spawn_after!(state_send, ExtU64::secs(2)).ok();
     }
 
     /// Simple blink task to test the system.

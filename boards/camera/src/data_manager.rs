@@ -1,6 +1,6 @@
 use messages::sensor::{Air};
 use messages::Message;
-use messages::state::{State, StateData};
+
 use defmt::info;
 use heapless::HistoryBuffer;
 
