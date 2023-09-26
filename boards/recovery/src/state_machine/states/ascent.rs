@@ -2,7 +2,7 @@ use crate::state_machine::states::descent::Descent;
 use crate::state_machine::states::wait_for_takeoff::WaitForTakeoff;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
-use messages::command::{Command, CommandData, PowerDown, RadioRateChange, RadioRate};
+use messages::command::{Command, RadioRateChange, RadioRate};
 use messages::Message;
 use defmt::{write, Format, Formatter};
 use rtic::mutex::Mutex;
@@ -14,7 +14,7 @@ pub struct Ascent {}
 
 impl State for Ascent {
     fn enter(&self, context: &mut StateMachineContext) {
-        for i in 0..10 {
+        for _i in 0..10 {
             let radio_rate_change = RadioRateChange {
                 rate: RadioRate::Fast,
             };

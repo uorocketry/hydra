@@ -1,9 +1,7 @@
 use common_arm::spawn;
-use messages::sender::Sender;
 use messages::sensor::{GpsPos1, GpsPos2, Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, SensorData, UtcTime};
 use messages::Message;
 use crate::app::sleep_system;
-use defmt::info;
 
 #[derive(Clone)]
 pub struct DataManager {
@@ -47,8 +45,8 @@ impl DataManager {
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
             messages::Data::Command(command) => match command.data {
-                messages::command::CommandData::PowerDown(info) => {    
-                    spawn!(sleep_system);
+                messages::command::CommandData::PowerDown(_info) => {    
+                    _ = spawn!(sleep_system);
                 }
                 _ => {
                     // We don't care atm about these other commands. 

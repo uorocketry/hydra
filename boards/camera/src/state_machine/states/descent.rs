@@ -2,7 +2,7 @@ use super::Ascent;
 use crate::state_machine::{TerminalDescent, RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
 use rtic::mutex::Mutex;
-use defmt::{write, Format, Formatter, info};
+use defmt::{write, Format, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct Descent {}

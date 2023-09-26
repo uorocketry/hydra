@@ -1,20 +1,14 @@
 use super::TerminalDescent;
-use crate::app::monotonics;
+use crate::no_transition;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
-use crate::types::COM_ID;
-use crate::{no_transition, transition};
-use rtic::mutex::Mutex;
-use defmt::{write, Format, Formatter, info};
-use messages::command::{Command, CommandData, PowerDown, RadioRateChange, RadioRate};
-use messages::Message;
-use messages::sender::Sender::SensorBoard;
+use defmt::{write, Format, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct WaitForRecovery {}
 
 impl State for WaitForRecovery {
-    fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
-        no_transition!() // this is our final resting place. We should also powerdown this board. 
+    fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
+        no_transition!() // this is our final resting place. We should also powerdown this board.
     }
 }
 

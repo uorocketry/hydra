@@ -18,12 +18,10 @@ use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
 // use communication::radio_dma;
 
-use defmt::{flush, info};
 use hal::gpio::Pins;
 use hal::gpio::{Alternate, Pin, PushPull, PushPullOutput, C, PA05, PB12, PB13, PB14, PB15};
 use hal::prelude::*;
 use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
-use heapless::Vec;
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
 use messages::sensor::Sensor;

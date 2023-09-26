@@ -2,13 +2,10 @@ use crate::state_machine::states::descent::Descent;
 use crate::state_machine::states::wait_for_takeoff::WaitForTakeoff;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
-use messages::command::{Command, CommandData, PowerDown, RadioRateChange, RadioRate};
-use messages::Message;
+
 use defmt::{write, Format, Formatter};
 use rtic::mutex::Mutex;
-use crate::types::COM_ID;
-use crate::app::monotonics;
-use systick_monotonic::ExtU64;
+
 use crate::app::toggle_cams;
 use common_arm::spawn;
 
@@ -16,20 +13,17 @@ use common_arm::spawn;
 pub struct Ascent {}
 
 impl State for Ascent {
-    fn enter(&self, context: &mut StateMachineContext) {
-        spawn!(toggle_cams);
+    fn enter(&self, _context: &mut StateMachineContext) {
+        spawn!(toggle_cams).ok();
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
-        context
-            .shared_resources
-            .data_manager
-            .lock(|data| {
-                if data.is_falling() {
-                    transition!(self, Descent)
-                } else {
-                    no_transition!()
-                }
-            })
+        context.shared_resources.data_manager.lock(|data| {
+            if data.is_falling() {
+                transition!(self, Descent)
+            } else {
+                no_transition!()
+            }
+        })
     }
 }
 

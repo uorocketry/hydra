@@ -3,15 +3,15 @@ use crate::app::fire_drogue;
 use crate::state_machine::{TerminalDescent, RocketStates, State, StateMachineContext, TransitionInto};
 use crate::{no_transition, transition};
 use rtic::mutex::Mutex;
-use defmt::{write, Format, Formatter, info};
+use defmt::{write, Format, Formatter};
 use common_arm::spawn;
 
 #[derive(Debug, Clone)]
 pub struct Descent {}
 
 impl State for Descent {
-    fn enter(&self, context: &mut StateMachineContext) {
-        spawn!(fire_drogue);
+    fn enter(&self, _context: &mut StateMachineContext) {
+        spawn!(fire_drogue).ok();
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         context.shared_resources.data_manager.lock(|data| {

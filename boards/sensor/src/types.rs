@@ -1,10 +1,8 @@
-use crate::sd_manager::TimeSink;
 use atsamd_hal as hal;
 use atsamd_hal::gpio::*;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::Uart;
 use atsamd_hal::sercom::{spi, uart, Sercom5, IoSet6};
-use embedded_sdmmc as sd;
 use hal::dmac;
 use hal::dmac::BufferPair;
 use hal::sercom::IoSet2;
@@ -41,7 +39,5 @@ pub type SdPads = spi::Pads<
     Pin<PB08, Alternate<D>>,
     Pin<PB09, Alternate<D>>,
 >;
-pub type SdController = sd::Controller<
-    sd::SdMmcSpi<spi::Spi<spi::Config<SdPads>, spi::Duplex>, Pin<PB10, Output<PushPull>>>,
-    TimeSink,
->;
+
+pub type SdSpi = spi::Spi<spi::Config<SdPads>, spi::Duplex>;

@@ -123,7 +123,7 @@ impl CanDevice0 {
             gclk0,
         )
     }
-    pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
+    pub fn _send_message(&mut self, m: Message) -> Result<(), HydraError> {
         let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
         self.can.tx.transmit_queued(
             tx::MessageBuilder {
@@ -139,7 +139,7 @@ impl CanDevice0 {
         )?;
         Ok(())
     }
-    pub fn process_data(&mut self, data_manager: &mut DataManager) {
+    pub fn _process_data(&mut self, data_manager: &mut DataManager) {
         let line_interrupts = &self.line_interrupts;
         for interrupt in line_interrupts.iter_flagged() {
             match interrupt {
