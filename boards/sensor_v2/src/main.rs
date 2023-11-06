@@ -1,16 +1,15 @@
 #![no_std]
 #![no_main]
 
-// #[macro_use]
-// mod utilities;
+use stm32h7xx_hal::gpio::gpioc::{PC13, PC3};
+use stm32h7xx_hal::gpio::{Edge, ExtiPin, Input};
+use stm32h7xx_hal::gpio::{Output, PushPull};
+use stm32h7xx_hal::prelude::*;
+
+use panic_halt as _;
 
 #[rtic::app(device = stm32h7xx_hal::stm32, peripherals = true)]
 mod app {
-    use stm32h7xx_hal::gpio::gpioc::{PC13, PC3};
-    use stm32h7xx_hal::gpio::{Edge, ExtiPin, Input};
-    use stm32h7xx_hal::gpio::{Output, PushPull};
-    use stm32h7xx_hal::prelude::*;
-
     use super::*;
 
     #[shared]
@@ -25,10 +24,11 @@ mod app {
     fn init(
         mut ctx: init::Context,
     ) -> (SharedResources, LocalResources, init::Monotonics) {
-        utilities::logger::init();
         let pwr = ctx.device.PWR.constrain();
-        let pwrcfg = example_power!(pwr).freeze();
-
+        // We could use smps, but the board is not designed for it
+        // let pwrcfg = example_power!(pwr).freeze();
+        let pwrcfg = pwr.freeze();
+            
         // RCC
         let rcc = ctx.device.RCC.constrain();
         let ccdr = rcc.sys_ck(100.MHz()).freeze(pwrcfg, &ctx.device.SYSCFG);

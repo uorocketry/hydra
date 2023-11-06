@@ -1,6 +1,5 @@
 use core::{marker::PhantomData, fmt::Debug};
 use defmt::{info, warn};
-use atsamd_hal::gpio::{Output, Pin, PushPull, PB14};
 use embedded_sdmmc as sd;
 use embedded_hal as hal;
 use cortex_m;
