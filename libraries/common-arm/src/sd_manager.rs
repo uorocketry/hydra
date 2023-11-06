@@ -1,5 +1,5 @@
 use core::{marker::PhantomData, fmt::Debug};
-use defmt::{info};
+use defmt::{info, warn};
 use embedded_sdmmc as sd;
 use embedded_hal as hal;
 use hal::spi::FullDuplex;
