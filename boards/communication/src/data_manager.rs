@@ -1,13 +1,14 @@
 use defmt::info;
-use messages::command::{RadioRate};
+use messages::command::RadioRate;
 use messages::sensor::{
     Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime,
 };
-use messages::state::{StateData};
+use messages::state::StateData;
 use messages::Message;
 
 #[derive(Clone)]
 pub struct DataManager {
+    pub component_id: Option<u8>,
     pub air: Option<Air>,
     pub ekf_nav: (Option<EkfNav1>, Option<EkfNav2>),
     pub ekf_quat: Option<EkfQuat>,
@@ -22,6 +23,7 @@ pub struct DataManager {
 impl DataManager {
     pub fn new() -> Self {
         Self {
+            component_id: None,
             air: None,
             ekf_nav: (None, None),
             ekf_quat: None,
@@ -46,6 +48,7 @@ impl DataManager {
 
     pub fn clone_sensors(&self) -> [Option<SensorData>; 10] {
         [
+            self.component_id.clone().map(|x| x.into()),
             self.air.clone().map(|x| x.into()),
             self.ekf_nav.0.clone().map(|x| x.into()),
             self.ekf_nav.1.clone().map(|x| x.into()),
@@ -63,41 +66,50 @@ impl DataManager {
     }
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
-            messages::Data::Sensor(sensor) => match sensor.data {
-                messages::sensor::SensorData::Air(air_data) => {
-                    self.air = Some(air_data);
+            messages::Data::Sensor(sensor) => {
+                match sensor.data {
+                    messages::sensor::SensorData::Air(air_data) => {
+                        self.air = Some(air_data);
+                    }
+                    messages::sensor::SensorData::EkfNav1(nav1_data) => {
+                        self.ekf_nav.0 = Some(nav1_data);
+                    }
+                    messages::sensor::SensorData::EkfNav2(nav2_data) => {
+                        self.ekf_nav.1 = Some(nav2_data);
+                    }
+                    messages::sensor::SensorData::EkfQuat(quat_data) => {
+                        self.ekf_quat = Some(quat_data);
+                    }
+                    messages::sensor::SensorData::GpsVel(gps_vel_data) => {
+                        self.gps_vel = Some(gps_vel_data);
+                    }
+                    messages::sensor::SensorData::Imu1(imu1_data) => {
+                        self.imu.0 = Some(imu1_data);
+                    }
+                    messages::sensor::SensorData::Imu2(imu2_data) => {
+                        self.imu.1 = Some(imu2_data);
+                    }
+                    messages::sensor::SensorData::UtcTime(utc_time_data) => {
+                        self.utc_time = Some(utc_time_data);
+                    }
+                    messages::sensor::SensorData::GpsPos1(gps) => {
+                        self.gps_pos.0 = Some(gps);
+                    }
+                    messages::sensor::SensorData::GpsPos2(gps) => {
+                        self.gps_pos.1 = Some(gps);
+                    }
+                    _ => {
+                        info!("impl power related");
+                    }
                 }
-                messages::sensor::SensorData::EkfNav1(nav1_data) => {
-                    self.ekf_nav.0 = Some(nav1_data);
+
+                match sensor.component_id {
+                    Some(component_id) => self.component_id = Some(component_id),
+                    _ => {
+                        info!("No component id")
+                    }
                 }
-                messages::sensor::SensorData::EkfNav2(nav2_data) => {
-                    self.ekf_nav.1 = Some(nav2_data);
-                }
-                messages::sensor::SensorData::EkfQuat(quat_data) => {
-                    self.ekf_quat = Some(quat_data);
-                }
-                messages::sensor::SensorData::GpsVel(gps_vel_data) => {
-                    self.gps_vel = Some(gps_vel_data);
-                }
-                messages::sensor::SensorData::Imu1(imu1_data) => {
-                    self.imu.0 = Some(imu1_data);
-                }
-                messages::sensor::SensorData::Imu2(imu2_data) => {
-                    self.imu.1 = Some(imu2_data);
-                }
-                messages::sensor::SensorData::UtcTime(utc_time_data) => {
-                    self.utc_time = Some(utc_time_data);
-                }
-                messages::sensor::SensorData::GpsPos1(gps) => {
-                    self.gps_pos.0 = Some(gps);
-                }
-                messages::sensor::SensorData::GpsPos2(gps) => {
-                    self.gps_pos.1 = Some(gps);
-                }
-                _ => {
-                    info!("impl power related");
-                }
-            },
+            }
             messages::Data::State(state) => {
                 self.state = Some(state.data);
             }

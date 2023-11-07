@@ -14,7 +14,7 @@ use ts_rs::TS;
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Sensor {
     /// Used to differentiate between multiple components on the same sender. Unused right now.
-    pub component_id: u8,
+    pub component_id: Option<u8>,
     pub data: SensorData,
 }
 
@@ -258,7 +258,7 @@ pub struct GpsVel {
 impl Sensor {
     pub fn new(data: impl Into<SensorData>) -> Self {
         Sensor {
-            component_id: 0,
+            component_id: Some(0),
             data: data.into(),
         }
     }
