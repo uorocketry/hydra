@@ -1,4 +1,4 @@
-use defmt::{write, Format, Formatter, info};
+use defmt::{write, Format, Formatter};
 
 use crate::{no_transition, transition};
 use crate::state_machine::{WaitForRecovery, RocketStates, State, StateMachineContext, TransitionInto};

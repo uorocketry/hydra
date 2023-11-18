@@ -7,7 +7,7 @@ pub struct GPIOManager {
 }
 
 impl GPIOManager {
-    pub fn new(mut cam1: Pin<PA09, PushPullOutput>, mut cam2: Pin<PA06, PushPullOutput>) -> Self {
+    pub fn new(cam1: Pin<PA09, PushPullOutput>, cam2: Pin<PA06, PushPullOutput>) -> Self {
         Self {
             cam1,
             cam2
