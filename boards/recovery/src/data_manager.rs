@@ -4,7 +4,7 @@ use common_arm::spawn;
 use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
-use defmt::{info};
+use defmt::info;
 
 const MAIN_HEIGHT: f32 = 876.0; // meters ASL
 const HEIGHT_MIN: f32 = 600.0; // meters ASL

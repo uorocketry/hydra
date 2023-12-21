@@ -10,6 +10,8 @@ pub use black_magic::*;
 pub use states::Initializing;
 use core::fmt::Debug;
 use defmt::Format;
+use common_arm::ErrorManager;
+use common_arm::HydraError;
 use enum_dispatch::enum_dispatch;
 use rtic::Mutex;
 
@@ -17,6 +19,7 @@ pub trait StateMachineSharedResources {
     fn lock_can(&mut self, f: &dyn Fn(&mut CanDevice0));
     fn lock_data_manager(&mut self, f: &dyn Fn(&mut DataManager));
     fn lock_gpio(&mut self, f: &dyn Fn(&mut GPIOManager));
+    fn run_em(&mut self, f: &dyn Fn() -> Result<(), HydraError>);
 }
 
 impl<'a> StateMachineSharedResources for crate::app::__rtic_internal_run_smSharedResources<'a> {
@@ -28,6 +31,9 @@ impl<'a> StateMachineSharedResources for crate::app::__rtic_internal_run_smShare
     }
     fn lock_gpio(&mut self, fun: &dyn Fn(&mut GPIOManager)) {
         self.gpio_manager.lock(fun)
+    }
+    fn run_em(&mut self, fun: &dyn Fn() -> Result<(), HydraError>) {
+        self.em.run(fun);
     }
 }
 
