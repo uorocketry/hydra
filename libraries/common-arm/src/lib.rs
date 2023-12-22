@@ -11,6 +11,7 @@ pub use mcan;
 mod error;
 mod logging;
 mod sd_manager;
+mod health;
 
 pub use crate::error::error_manager::ErrorManager;
 pub use crate::error::hydra_error::{ErrorContextTrait, HydraError, SpawnError};

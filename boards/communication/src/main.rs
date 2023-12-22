@@ -6,10 +6,10 @@ mod data_manager;
 mod types;
 
 use atsamd_hal as hal;
-use atsamd_hal::clock::v2::pclk::Pclk;
-use atsamd_hal::clock::v2::Source;
-use atsamd_hal::dmac;
-use atsamd_hal::dmac::DmaController;
+use hal::clock::v2::pclk::Pclk;
+use hal::clock::v2::Source;
+use hal::dmac;
+use hal::dmac::DmaController;
 use common_arm::mcan;
 use common_arm::SdManager;
 use common_arm::*;
@@ -18,9 +18,8 @@ use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
 // use communication::radio_dma;
 
-
 use hal::gpio::Pins;
-use hal::gpio::{Alternate, Pin, PushPull, PushPullOutput, C, PA05, PB12, PB13, PB14, PB15};
+use hal::gpio::{Alternate, Pin, PushPull, PushPullOutput, B, C, PA05, PB12, PB13, PB14, PB15, PB02, Output};
 use hal::prelude::*;
 use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
 
@@ -33,9 +32,16 @@ use panic_halt as _;
 use systick_monotonic::*;
 use types::*;
 
+
+// ADC stuff 
+use hal::adc::Adc;
+use atsamd_hal::pac::ADC0;
+
+
+
+
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
-    use hal::gpio::Output;
 
     use super::*;
 
@@ -48,6 +54,8 @@ mod app {
 
     #[local]
     struct Local {
+        // adc0: Adc<ADC0>,
+        // v_sense: Pin<PB02, Alternate<B>>,
         led: Pin<PA05, PushPullOutput>,
         radio: RadioDevice,
         sd_manager: SdManager<
@@ -98,7 +106,7 @@ mod app {
 
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
-        let (_, _, _, mclk) = unsafe { clocks.pac.steal() };
+        let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
@@ -140,6 +148,14 @@ mod app {
             .enable();
         let sd_manager = SdManager::new(sdmmc_spi, pins.pb14.into_push_pull_output());
 
+
+        /* Setup ADC */
+        // let mut adc = Adc::adc0(peripherals.ADC0, &mut mclk);
+        // let mut v_sense = pins.pb02.into();
+
+        // let _temp: u16 = adc.read(&mut v_sense).unwrap();
+
+
         /* Status LED */
         let led = pins.pa05.into_push_pull_output();
 
@@ -158,6 +174,8 @@ mod app {
                 can0,
             },
             Local {
+                // adc0: adc,
+                // v_sense,
                 led,
                 radio,
                 sd_manager,
