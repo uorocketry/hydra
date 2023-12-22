@@ -3,10 +3,10 @@ use atsamd_hal::clock::v2::ahb::AhbClk;
 use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 
-use atsamd_hal::clock::v2::types::{Can0, Can1};
+use atsamd_hal::clock::v2::types::{Can0};
 use atsamd_hal::clock::v2::Source;
-use atsamd_hal::gpio::{Alternate, AlternateI, AlternateH, Pin, I, H, PA22, PA23, PB15, PB14};
-use atsamd_hal::pac::{CAN0, CAN1};
+use atsamd_hal::gpio::{Alternate, AlternateI, Pin, I, PA22, PA23};
+use atsamd_hal::pac::{CAN0};
 
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
@@ -31,7 +31,7 @@ use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
 use typenum::{U0, U128, U32, U64};
 
-use crate::data_manager::{DataManager, self};
+use crate::data_manager::{DataManager};
 
 pub struct Capacities;
 

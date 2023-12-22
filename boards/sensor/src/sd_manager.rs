@@ -5,7 +5,7 @@ use atsamd_hal::gpio::{Output, Pin, PushPull, PB10, PB09, PB11, PB08};
 use atsamd_hal::pac;
 use atsamd_hal::sercom::{spi, Sercom4, IoSet2};
 use atsamd_hal::time::Hertz;
-use defmt::{info, warn};
+use defmt::{info};
 use embedded_sdmmc as sd;
 
 /// Time source for `[SdInterface]`. It doesn't return any useful information for now, and will

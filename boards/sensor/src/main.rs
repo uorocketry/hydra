@@ -36,8 +36,6 @@ use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
-    use defmt::flush;
-
     use super::*;
 
     #[shared]
@@ -168,13 +166,14 @@ mod app {
         // close out sd files. 
         cx.shared.sd_manager.lock(|sd| {
             cx.shared.em.run(|| {
-                sd.close_current_file();
+                sd.close_current_file()?;
+                // sd.close(); // we can also close the root directory and volume.
+                // power down sbg
+                cx.local.sbg_power_pin.set_low()?; // define hydra error for this error type. 
+                // Call core.SCB.set_deepsleep for even less power consumption. 
                 Ok(())
             });
         });
-        // power down sbg
-        cx.local.sbg_power_pin.set_low(); // define hydra error for this error type. 
-        // Call core.SCB.set_deepsleep for even less power consumption. 
     }
 
     #[task(priority = 3, binds = CAN0, shared = [can, data_manager])]

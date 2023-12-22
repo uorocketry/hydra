@@ -24,7 +24,6 @@ use panic_halt as _;
 use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
 use types::COM_ID;
-use defmt::info;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -125,34 +124,40 @@ mod app {
         loop {}
     }
 
-    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
     fn fire_drogue(mut cx: fire_drogue::Context) {
-        if !(*cx.local.fired) {
-            cx.shared.gpio.lock(|gpio| {
-                gpio.fire_drogue();
-                *cx.local.fired = true; 
-            });
-            spawn_after!(fire_drogue, ExtU64::secs(5));
-        } else {
-            cx.shared.gpio.lock(|gpio| {
-                gpio.close_drogue();
-            });
-        }
+        cx.shared.em.run(|| {
+            if !(*cx.local.fired) {
+                cx.shared.gpio.lock(|gpio| {
+                    gpio.fire_drogue();
+                    *cx.local.fired = true; 
+                });
+                spawn_after!(fire_drogue, ExtU64::secs(5))?; // this becomes redundant with a proper error manager
+            } else {
+                cx.shared.gpio.lock(|gpio| {
+                    gpio.close_drogue();
+                });
+            }
+            Ok(())
+        });
     }
 
-    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
     fn fire_main(mut cx: fire_main::Context) {
-        if !(*cx.local.fired) {
-            cx.shared.gpio.lock(|gpio| {
-                gpio.fire_main();
-                *cx.local.fired = true;
-            });
-            spawn_after!(fire_main, ExtU64::secs(5));
-        } else {
-            cx.shared.gpio.lock(|gpio| {
-                gpio.close_main();
-            });
-        }
+        cx.shared.em.run(||{
+            if !(*cx.local.fired) {
+                cx.shared.gpio.lock(|gpio| {
+                    gpio.fire_main();
+                    *cx.local.fired = true;
+                });
+                spawn_after!(fire_main, ExtU64::secs(5))?; // this becomes redundant with a proper error manager
+            } else {
+                cx.shared.gpio.lock(|gpio| {
+                    gpio.close_main();
+                });
+            }
+            Ok(())
+        });
     }
 
     /// Runs the state machine.
@@ -206,9 +211,9 @@ mod app {
             };
             let message = Message::new(&monotonics::now(), COM_ID, board_state);
             spawn!(send_internal, message)?;
+            spawn_after!(state_send, ExtU64::secs(2))?; // I think this is fine here. 
             Ok(())
         });
-        spawn_after!(state_send, ExtU64::secs(2));
     }
 
     /// Simple blink task to test the system.

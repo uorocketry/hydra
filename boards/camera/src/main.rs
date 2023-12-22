@@ -126,12 +126,13 @@ mod app {
                 gpio.toggle_cam1();
                 gpio.toggle_cam2();
             });
+            if *cx.local.num < 3 {
+                *cx.local.num += 1;
+                
+                spawn_after!(toggle_cams, ExtU64::millis(150))?;
+            }
             Ok(())
         });
-        if *cx.local.num < 3 {
-            *cx.local.num += 1;
-            spawn_after!(toggle_cams, ExtU64::millis(150));
-        }
     }
 
     /// Runs the state machine.

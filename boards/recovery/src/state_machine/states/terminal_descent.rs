@@ -1,4 +1,4 @@
-use defmt::{write, Format, Formatter, info};
+use defmt::{write, Format, Formatter};
 use crate::app::fire_main;
 use crate::{no_transition, transition};
 use crate::state_machine::{WaitForRecovery, RocketStates, State, StateMachineContext, TransitionInto};
@@ -11,7 +11,10 @@ pub struct TerminalDescent {}
 
 impl State for TerminalDescent {
     fn enter(&self,context: &mut StateMachineContext) {
-        spawn!(fire_main);
+        context.shared_resources.em.run(||{
+            spawn!(fire_main)?;
+            Ok(())
+        });
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         context

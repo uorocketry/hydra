@@ -10,7 +10,6 @@ pub use black_magic::*;
 pub use states::Initializing;
 use core::fmt::Debug;
 use defmt::Format;
-use common_arm::ErrorManager;
 use common_arm::HydraError;
 use enum_dispatch::enum_dispatch;
 use rtic::Mutex;

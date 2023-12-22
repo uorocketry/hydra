@@ -159,10 +159,10 @@ impl DataManager {
                 }
             },
             messages::Data::Command(command) => match command.data {
-                messages::command::CommandData::DeployDrogue(drogue) => {
-                    spawn!(fire_drogue);
+                messages::command::CommandData::DeployDrogue(_) => {
+                    spawn!(fire_drogue); // need someway to capture this error. 
                 },
-                messages::command::CommandData::DeployMain(main) => {
+                messages::command::CommandData::DeployMain(_) => {
                     spawn!(fire_main);
                 },
                 messages::command::CommandData::PowerDown(_) => {

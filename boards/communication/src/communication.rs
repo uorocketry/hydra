@@ -1,4 +1,4 @@
-use crate::app::send_internal;
+
 use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
@@ -14,18 +14,18 @@ use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM5;
 use atsamd_hal::sercom;
-use atsamd_hal::sercom::uart::{Duplex, Uart};
-use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
+use atsamd_hal::sercom::uart::{Uart};
+use atsamd_hal::sercom::uart::{TxDuplex};
 use atsamd_hal::sercom::Sercom;
 use atsamd_hal::sercom::{uart, Sercom5};
-use atsamd_hal::time::*;
+
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
-use common_arm::spawn;
+
 use common_arm::HydraError;
-use defmt::flush;
+
 use defmt::info;
 use heapless::Vec;
 use mcan::bus::Can;

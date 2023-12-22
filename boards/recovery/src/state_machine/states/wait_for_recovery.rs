@@ -2,10 +2,10 @@ use super::TerminalDescent;
 use crate::app::monotonics;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::types::COM_ID;
-use crate::{no_transition, transition};
+use crate::{no_transition};
 use rtic::mutex::Mutex;
-use defmt::{write, Format, Formatter, info};
-use messages::command::{Command, CommandData, PowerDown, RadioRateChange, RadioRate};
+use defmt::{write, Format, Formatter};
+use messages::command::{Command, PowerDown, RadioRateChange, RadioRate};
 use messages::Message;
 use messages::sender::Sender::SensorBoard;
 
@@ -16,7 +16,7 @@ impl State for WaitForRecovery {
     fn enter(&self, context: &mut StateMachineContext) {
         // This should change to a ack and not be sent 10 times
         // send a command over CAN to shut down non-critical systems for recovery. 
-        for i in 0..10 {
+        for _i in 0..10 {
             let sensor_power_down = PowerDown {
                 board: SensorBoard
             };
@@ -34,7 +34,7 @@ impl State for WaitForRecovery {
             });  
         }
     }
-    fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
+    fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
         no_transition!() // this is our final resting place. We should also powerdown this board. 
     }
 }
