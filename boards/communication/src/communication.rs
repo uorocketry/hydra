@@ -1,3 +1,4 @@
+
 use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
@@ -19,11 +20,14 @@ use atsamd_hal::sercom::uart::{Uart};
 use atsamd_hal::sercom::uart::{TxDuplex};
 use atsamd_hal::sercom::Sercom;
 use atsamd_hal::sercom::{uart, Sercom5};
+
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
+
 use common_arm::HydraError;
+
 use defmt::info;
 use heapless::Vec;
 use mcan::bus::Can;

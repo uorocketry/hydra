@@ -18,6 +18,7 @@ use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
 use defmt::{flush, warn};
+use defmt::{flush, warn};
 use embedded_hal::serial::Write;
 use hal::gpio::{PB16, PB17, PB03, PB02};
 use hal::sercom::uart::Duplex;
@@ -283,6 +284,7 @@ impl SBG {
         _pInterface: *mut _SbgInterface,
         pBuffer: *mut c_void,
         pBytesRead: *mut usize,
+        bytesToRead: usize,
         bytesToRead: usize,
     ) -> _SbgErrorCode {
         if pBuffer.is_null() {

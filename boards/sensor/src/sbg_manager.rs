@@ -5,6 +5,7 @@ use atsamd_hal::dmac;
 use atsamd_hal::dmac::Transfer;
 use atsamd_hal::sercom::{IoSet6};
 use atsamd_hal::gpio::{Pin, Reset, PB03, PB02};
+use atsamd_hal::gpio::{Pin, Reset, PB03, PB02};
 use atsamd_hal::pac::{MCLK, RTC};
 // use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;

@@ -4,6 +4,7 @@ use crate::state_machine::{TerminalDescent, RocketStates, State, StateMachineCon
 use crate::{no_transition, transition};
 use rtic::mutex::Mutex;
 use defmt::{write, Format, Formatter};
+use defmt::{write, Format, Formatter};
 use common_arm::spawn;
 
 #[derive(Debug, Clone)]

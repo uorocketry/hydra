@@ -28,6 +28,7 @@ use hal::gpio::{
 };
 use hal::prelude::*;
 use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
+
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
 use messages::state::State;
