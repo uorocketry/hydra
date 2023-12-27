@@ -1,11 +1,12 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
+# This runner needs to be parametric so we can pass in the chip name
 runner = "probe-run --chip STM32H733VGTx --protocol swd"
 
-# Why is it fine without this? It should not be fine. Removed because STM32H7 build was failing. 
+# These were moved to the build.rs file 
 # rustflags = [
-#  "-C", "link-arg=-Tlink.x",
-#  "-C", "link-arg=-Tdefmt.x",
-#]
+#   "-C", "link-arg=-Tlink.x",
+#   "-C", "link-arg=-Tdefmt.x",
+# ]
 
 [env]
 DEFMT_LOG="info"
