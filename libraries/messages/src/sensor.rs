@@ -80,6 +80,8 @@ pub struct GpsPos2 {
     pub differential_age: u16,
 }
 
+/* Replace with new health monitor */
+
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
@@ -114,6 +116,8 @@ pub struct Temperature {
     pub temperature: f32,
     pub rolling_avg: f32,
 }
+
+/* Replace with new health monitor */
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(test, derive(Arbitrary))]

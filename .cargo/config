@@ -1,9 +1,11 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
-runner = "probe-run --chip ATSAME51J18A --protocol swd"
-rustflags = [
-  "-C", "link-arg=-Tlink.x",
-  "-C", "link-arg=-Tdefmt.x",
-]
+runner = "probe-run --chip STM32H733VGTx --protocol swd"
+
+# Why is it fine without this? It should not be fine. Removed because STM32H7 build was failing. 
+# rustflags = [
+#  "-C", "link-arg=-Tlink.x",
+#  "-C", "link-arg=-Tdefmt.x",
+#]
 
 [env]
 DEFMT_LOG="info"

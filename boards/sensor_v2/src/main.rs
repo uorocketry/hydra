@@ -8,7 +8,7 @@ use stm32h7xx_hal::prelude::*;
 
 use panic_halt as _;
 
-#[rtic::app(device = stm32h7xx_hal::stm32, peripherals = true)]
+#[rtic::app(device = stm32h7xx_hal::stm32, dispatchers = [EXTI0, EXTI1])]
 mod app {
     use super::*;
 
@@ -38,10 +38,6 @@ mod app {
 
         // Button
         let mut button = gpioc.pc13.into_floating_input();
-        button.make_interrupt_source(&mut ctx.device.SYSCFG);
-        button.trigger_on_edge(&mut ctx.device.EXTI, Edge::Rising);
-        button.enable_interrupt(&mut ctx.device.EXTI);
-
         (
             SharedResources {},
             LocalResources {
@@ -52,9 +48,12 @@ mod app {
         )
     }
 
-    #[task(binds = EXTI15_10, local = [button, led])]
-    fn button_click(ctx: button_click::Context) {
-        ctx.local.button.clear_interrupt_pending_bit();
-        ctx.local.led.toggle();
+
+    #[idle(local = [led])]
+    fn idle(mut ctx: idle::Context) -> ! {
+        loop {
+            ctx.local.led.toggle();
+            cortex_m::asm::delay(100_000_000);
+        }
     }
 }

@@ -14,6 +14,7 @@ systick-monotonic = "1.0.1"
 defmt = "0.3.2"
 postcard = "1.0.2"
 heapless = "0.7.16"
+common-arm-atsame = { path = "../../libraries/common-arm-atsame" }
 common-arm = { path = "../../libraries/common-arm" }
 atsamd-hal = { workspace = true }
 messages = { path = "../../libraries/messages" }

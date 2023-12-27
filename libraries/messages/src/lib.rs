@@ -27,6 +27,7 @@ pub mod sender;
 pub mod sensor;
 pub mod command;
 pub mod state;
+pub mod health;
 
 pub const MAX_SIZE: usize = 64;
 

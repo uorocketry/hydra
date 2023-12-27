@@ -10,8 +10,8 @@ use atsamd_hal::pac::{CAN0};
 
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
-use common_arm::mcan::message::{rx, Raw};
-use common_arm::mcan::tx_buffers::DynTx;
+use mcan::message::{rx, Raw};
+use mcan::tx_buffers::DynTx;
 use common_arm::HydraError;
 use defmt::info;
 use heapless::Vec;
