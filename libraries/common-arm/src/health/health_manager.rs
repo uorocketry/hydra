@@ -1,6 +1,34 @@
 use crate::health::health_monitor::{HealthMonitor, HealthMonitorChannels};
-use defmt::warn;
 use messages::health::HealthState;
+
+
+// The idea was to not have to write the same code over and over again. 
+// but I can't seem to create macros 
+macro_rules! get_status {
+    ($data:expr, $low:expr, $nominal:expr, $over:expr) => {
+        match $data {
+            Some(x) => match x {
+                $low..=$nominal => {
+                    warn!("Value under warning");
+                    HealthState::Warning
+                }
+                $nominal => HealthState::Nominal,
+                $nomial..=$over => {
+                    warn!("Value over warning");
+                    HealthState::Warning
+                },
+                _ => {
+                    warn!("Value error");
+                    HealthState::Error
+                }
+            },
+            None => {
+                warn!("No data");
+                return HealthState::Warning
+            }
+        }
+    };
+}
 
 /// Manages and reports the health of the system.
 /// I think OutputPin trait is the right one that should be good for atsame and stm32.
@@ -32,57 +60,13 @@ where
         // Do we assume all this nominal or everything is in error and prove otherwise?
         let mut status_array: [HealthState; 4] = [HealthState::Nominal,HealthState::Nominal,HealthState::Nominal,HealthState::Nominal];
 
-        status_array[0] = match data.v3_3 {
-            Some(x) => match x {
-                45..=47 => {
-                    warn!("3v3 warning");
-                    HealthState::Warning
-                }
-                47..=53 => HealthState::Nominal,
-                53..=55 => HealthState::Warning,
-                _ => {
-                    // we could invoke the error manager here.
-                    HealthState::Error
-                }
-            },
-            // return a warning because we cannot verify the state of the system.
-            None => return HealthState::Warning
-        };
+        // These range values are not correct and need to be changed. 
+        // status_array[0] = HealthManager::<T>::get_status(data.v3_3, 3, 4, 5); 
+        // status_array[1] = HealthManager::<T>::get_status(data.pyro_sense, 3, 4, 5);
+        // status_array[2] = HealthManager::<T>::get_status(data.vcc_sense, 3, 4, 5);
+        // status_array[3] = HealthManager::<T>::get_status(data.failover_sense, 3, 4, 5);
 
-        // I think this properly covers the range of values that we can get from the ADC.
-        // if we are between 3 and 2.5 then we are in a warning state.
-        // if we are between 3.5 and 3.7 then we are in a warning state.
-        // between 3 and 3.5 is nominal.
-        // otherwise we are in an error state. (either over or under voltage)
-        status_array[1] = match data.v3_3 {
-            Some(x) => match x {
-                25..=30 => HealthState::Warning,
-                30..=35 => HealthState::Nominal,
-                35..=37 => HealthState::Warning,
-                _ => HealthState::Error,
-            },
-            None => return HealthState::Warning
-        };
-
-        status_array[2] = match data.pyro_sense {
-            Some(x) => match x {                
-                25..=30 => HealthState::Warning,
-                30..=35 => HealthState::Nominal,
-                35..=37 => HealthState::Warning,
-                _ => HealthState::Error,
-            },
-            None => return HealthState::Warning
-        };
-
-        status_array[3] = match data.vcc_sense {
-            Some(x) => match x {
-                25..=30 => HealthState::Warning,
-                30..=35 => HealthState::Nominal,
-                35..=37 => HealthState::Warning,
-                _ => HealthState::Error,
-            },
-            None => return HealthState::Warning
-        };
+        // status_array[0] = get_status!(data.v3_3, 3, 4, 5);
 
         // There are more to add
         // int_v5, int_3v3, ext_v5, ext_3v3, failover_sense
@@ -102,4 +86,29 @@ where
 
         HealthState::Nominal
     }
+
+    // fn get_status(data: Option<u16>, low: u16, nominal: u16, over: u16) -> HealthState {
+    //     match data {
+    //         Some(x) => match x {
+    //             low..=nominal => {
+    //                 warn!("Value under warning");
+    //                 HealthState::Warning
+    //             }
+    //             nominal => HealthState::Nominal,
+    //             nominal..=over => {
+    //                 warn!("Value over warning");
+    //                 HealthState::Warning
+    //             },
+    //             _ => {
+    //                 warn!("Value error");
+    //                 HealthState::Error
+    //             }
+    //         },
+    //         None => {
+    //             warn!("No data");
+    //             return HealthState::Warning
+    //         }
+    //     }
+    // }
+
 }

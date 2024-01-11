@@ -6,39 +6,32 @@ mod data_manager;
 mod types;
 
 use atsamd_hal as hal;
-use hal::clock::v2::pclk::Pclk;
-use hal::clock::v2::Source;
-use hal::dmac;
-use hal::dmac::DmaController;
 use common_arm::mcan;
 use common_arm::SdManager;
 use common_arm::*;
 use communication::Capacities;
 use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
+use hal::clock::v2::pclk::Pclk;
+use hal::clock::v2::Source;
+use hal::dmac;
+use hal::dmac::DmaController;
 // use communication::radio_dma;
 
 use hal::gpio::Pins;
-use hal::gpio::{Alternate, Pin, PushPull, PushPullOutput, B, C, PA05, PB12, PB13, PB14, PB15, PB02, Output};
+use hal::gpio::{
+    Alternate, Output, Pin, PushPull, PushPullOutput, C, PA05, PB12, PB13, PB14, PB15,
+};
 use hal::prelude::*;
 use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
 
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
-use messages::sensor::Sensor;
 use messages::state::State;
 use messages::*;
 use panic_halt as _;
 use systick_monotonic::*;
 use types::*;
-
-
-// ADC stuff 
-use hal::adc::Adc;
-use atsamd_hal::pac::ADC0;
-
-
-
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -148,13 +141,11 @@ mod app {
             .enable();
         let sd_manager = SdManager::new(sdmmc_spi, pins.pb14.into_push_pull_output());
 
-
         /* Setup ADC */
         // let mut adc = Adc::adc0(peripherals.ADC0, &mut mclk);
         // let mut v_sense = pins.pb02.into();
 
         // let _temp: u16 = adc.read(&mut v_sense).unwrap();
-
 
         /* Status LED */
         let led = pins.pa05.into_push_pull_output();
@@ -251,24 +242,27 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (sensor_data, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
-            (
-                data_manager.clone_sensors(),
-                data_manager.get_logging_rate(),
-            )
-        });
+        let logging_rate = cx
+            .shared
+            .data_manager
+            .lock(|data_manager| data_manager.get_logging_rate());
 
-        let messages = sensor_data
-            .into_iter()
-            .flatten()
-            .map(|x| Message::new(&monotonics::now(), COM_ID, Sensor::new(x)));
-
-        cx.shared.em.run(|| {
-            for msg in messages {
-                spawn!(send_gs, msg.clone())?;
-                spawn!(sd_dump, msg)?;
-            }
-            Ok(())
+        cx.shared.data_manager.lock(|data_manger| {
+            cx.shared.em.run(|| {
+                let sensors = data_manger.sensors.oldest_ordered();
+                for msg in sensors {
+                    match msg {
+                        Some(x) => {
+                            spawn!(send_gs, x.clone())?;
+                            spawn!(sd_dump, x.clone())?;
+                        }
+                        None => {
+                            continue;
+                        }
+                    }
+                }
+                Ok(())
+            });
         });
         match logging_rate {
             RadioRate::Fast => {

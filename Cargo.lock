@@ -1197,7 +1197,9 @@ dependencies = [
  "cortex-m",
  "cortex-m-rt",
  "cortex-m-rtic",
+ "messages",
  "panic-halt",
+ "postcard",
  "stm32h7xx-hal",
 ]
 

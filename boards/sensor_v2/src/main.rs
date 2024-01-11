@@ -1,6 +1,10 @@
 #![no_std]
 #![no_main]
 
+mod data_manager;
+
+use data_manager::DataManager;
+
 use stm32h7xx_hal::gpio::gpioc::{PC13, PC3};
 use stm32h7xx_hal::gpio::{Edge, ExtiPin, Input};
 use stm32h7xx_hal::gpio::{Output, PushPull};
@@ -13,7 +17,9 @@ mod app {
     use super::*;
 
     #[shared]
-    struct SharedResources {}
+    struct SharedResources {
+        data_manager: DataManager,
+    }
     #[local]
     struct LocalResources {
         button: PC13<Input>,
@@ -39,7 +45,9 @@ mod app {
         // Button
         let mut button = gpioc.pc13.into_floating_input();
         (
-            SharedResources {},
+            SharedResources {
+                data_manager: DataManager::new(),
+            },
             LocalResources {
                 button,
                 led: gpioc.pc3.into_push_pull_output(),
@@ -48,12 +56,13 @@ mod app {
         )
     }
 
-
-    #[idle(local = [led])]
+    #[idle]
     fn idle(mut ctx: idle::Context) -> ! {
-        loop {
-            ctx.local.led.toggle();
-            cortex_m::asm::delay(100_000_000);
-        }
+        loop {}
+    }
+
+    #[task(local = [button, led])]
+    fn sleep_system(mut cx: sleep_system::Context) {
+        // Turn off the SBG and CAN
     }
 }
