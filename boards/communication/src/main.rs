@@ -242,27 +242,26 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let logging_rate = cx
-            .shared
-            .data_manager
-            .lock(|data_manager| data_manager.get_logging_rate());
+        let (sensors, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
+            (
+                data_manager.clone_sensors(),
+                data_manager.get_logging_rate(),
+            )
+        });
 
-        cx.shared.data_manager.lock(|data_manger| {
-            cx.shared.em.run(|| {
-                let sensors = data_manger.sensors.oldest_ordered();
-                for msg in sensors {
-                    match msg {
-                        Some(x) => {
-                            spawn!(send_gs, x.clone())?;
-                            spawn!(sd_dump, x.clone())?;
-                        }
-                        None => {
-                            continue;
-                        }
+        cx.shared.em.run(|| {
+            for msg in sensors {
+                match msg {
+                    Some(x) => {
+                        spawn!(send_gs, x.clone())?;
+                        spawn!(sd_dump, x)?;
+                    }
+                    None => {
+                        continue;
                     }
                 }
-                Ok(())
-            });
+            }
+            Ok(())
         });
         match logging_rate {
             RadioRate::Fast => {

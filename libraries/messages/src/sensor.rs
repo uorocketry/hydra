@@ -33,10 +33,6 @@ pub enum SensorData {
     GpsVel(GpsVel),
     GpsPos1(GpsPos1),
     GpsPos2(GpsPos2),
-    Current(Current),
-    Voltage(Voltage),
-    Regulator(Regulator),
-    Temperature(Temperature),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
