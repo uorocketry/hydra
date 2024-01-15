@@ -111,7 +111,15 @@ impl DataManager {
                 messages::command::CommandData::RadioRateChange(command_data) => {
                     self.logging_rate = Some(command_data.rate);
                 }
-                _ => {}
+                messages::command::CommandData::DeployDrogue(_) => {
+                    info!("drogue");
+                }
+                messages::command::CommandData::DeployMain(_) => {
+                    info!("main");
+                }
+                messages::command::CommandData::PowerDown(_) => {
+                    info!("power down");
+                }
             },
             _ => {
                 info!("unkown");

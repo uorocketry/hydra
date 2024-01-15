@@ -1,6 +1,9 @@
 use crate::health::health_monitor::{HealthMonitor, HealthMonitorChannels};
 use messages::health::HealthState;
-
+use core::ops::RangeInclusive;
+use core::ops::RangeToInclusive;
+use core::ops::RangeFrom;
+use defmt::warn;
 
 // The idea was to not have to write the same code over and over again. 
 // but I can't seem to create macros 
@@ -8,12 +11,12 @@ macro_rules! get_status {
     ($data:expr, $low:expr, $nominal:expr, $over:expr) => {
         match $data {
             Some(x) => match x {
-                $low..=$nominal => {
+                $low => {
                     warn!("Value under warning");
                     HealthState::Warning
                 }
                 $nominal => HealthState::Nominal,
-                $nomial..=$over => {
+                $over => {
                     warn!("Value over warning");
                     HealthState::Warning
                 },
@@ -60,8 +63,11 @@ where
         // Do we assume all this nominal or everything is in error and prove otherwise?
         let mut status_array: [HealthState; 4] = [HealthState::Nominal,HealthState::Nominal,HealthState::Nominal,HealthState::Nominal];
 
+
+        // get_status!(data.v3_3, 2..=4, 4..=6, 6..=8);
+        // let x = 4..6;
         // These range values are not correct and need to be changed. 
-        // status_array[0] = HealthManager::<T>::get_status(data.v3_3, 3, 4, 5); 
+        // status_array[0] = HealthManager::<T>::get_status(data.v3_3, 3..=4, 4..=5, 5..=6); 
         // status_array[1] = HealthManager::<T>::get_status(data.pyro_sense, 3, 4, 5);
         // status_array[2] = HealthManager::<T>::get_status(data.vcc_sense, 3, 4, 5);
         // status_array[3] = HealthManager::<T>::get_status(data.failover_sense, 3, 4, 5);
@@ -87,28 +93,28 @@ where
         HealthState::Nominal
     }
 
-    // fn get_status(data: Option<u16>, low: u16, nominal: u16, over: u16) -> HealthState {
-    //     match data {
-    //         Some(x) => match x {
-    //             low..=nominal => {
-    //                 warn!("Value under warning");
-    //                 HealthState::Warning
-    //             }
-    //             nominal => HealthState::Nominal,
-    //             nominal..=over => {
-    //                 warn!("Value over warning");
-    //                 HealthState::Warning
-    //             },
-    //             _ => {
-    //                 warn!("Value error");
-    //                 HealthState::Error
-    //             }
-    //         },
-    //         None => {
-    //             warn!("No data");
-    //             return HealthState::Warning
-    //         }
-    //     }
-    // }
+    fn get_status(data: Option<u16>, low: RangeToInclusive<u16>, nominal: RangeInclusive<u16>, over: RangeFrom<u16>) -> HealthState {
+        match data {
+            Some(x) => match x {
+                low => {
+                    warn!("Value under warning");
+                    HealthState::Warning
+                }
+                nominal => HealthState::Nominal,
+                over => {
+                    warn!("Value over warning");
+                    HealthState::Warning
+                },
+                _ => {
+                    warn!("Value error");
+                    HealthState::Error
+                }
+            },
+            None => {
+                warn!("No data");
+                return HealthState::Warning
+            }
+        }
+    }
 
 }
