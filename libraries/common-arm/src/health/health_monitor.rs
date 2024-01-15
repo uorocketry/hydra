@@ -7,15 +7,15 @@ use messages::health::HealthStatus;
 
 /// Add a note about what each means and what the range is.
 pub trait HealthMonitorChannels {
-    fn get_5v(&self) -> Option<u16>;
-    fn get_3v3(&self) -> Option<u16>;
-    fn get_pyro(&self) -> Option<u16>;
-    fn get_vcc(&self) -> Option<u16>;
-    fn get_int_5v(&self) -> Option<u16>;
-    fn get_int_3v3(&self) -> Option<u16>;
-    fn get_ext_5v(&self) -> Option<u16>;
-    fn get_ext_3v3(&self) -> Option<u16>;
-    fn get_failover(&self) -> Option<u16>;
+    fn get_5v(&mut self) -> Option<u16>;
+    fn get_3v3(&mut self) -> Option<u16>;
+    fn get_pyro(&mut self) -> Option<u16>;
+    fn get_vcc(&mut self) -> Option<u16>;
+    fn get_int_5v(&mut self) -> Option<u16>;
+    fn get_int_3v3(&mut self) -> Option<u16>;
+    fn get_ext_5v(&mut self) -> Option<u16>;
+    fn get_ext_3v3(&mut self) -> Option<u16>;
+    fn get_failover(&mut self) -> Option<u16>;
 }
 
 pub struct HealthMonitor<T: HealthMonitorChannels> {

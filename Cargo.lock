@@ -219,7 +219,9 @@ dependencies = [
 name = "common-arm-atsame"
 version = "0.1.0"
 dependencies = [
+ "atsamd-hal",
  "common-arm",
+ "embedded-hal",
 ]
 
 [[package]]

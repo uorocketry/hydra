@@ -4,6 +4,7 @@
 mod communication;
 mod data_manager;
 mod types;
+mod health;
 
 use atsamd_hal as hal;
 use common_arm::mcan;
@@ -244,7 +245,7 @@ mod app {
     fn sensor_send(mut cx: sensor_send::Context) {
         let (sensors, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
             (
-                data_manager.clone_sensors(),
+                data_manager.take_sensors(),
                 data_manager.get_logging_rate(),
             )
         });

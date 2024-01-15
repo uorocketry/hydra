@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 common-arm = { path = "../common-arm" }
+atsamd-hal = { workspace = true }
+embedded-hal = {workspace = true }

@@ -2,9 +2,7 @@ use defmt::info;
 use messages::command::RadioRate;
 use messages::state::StateData;
 use messages::Message;
-use messages::sensor::{
-    Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime,
-};
+
 
 #[derive(Clone)]
 pub struct DataManager {
@@ -52,18 +50,19 @@ impl DataManager {
         return RadioRate::Slow;
     }
 
-    pub fn clone_sensors(&self) -> [Option<Message>; 10] {
+    /// Do not clone instead take to reduce CPU load. 
+    pub fn take_sensors(&mut self) -> [Option<Message>; 10] {
         [
-            self.air.clone(),
-            self.ekf_nav_1.clone(),
-            self.ekf_nav_2.clone(),
-            self.ekf_quat.clone(),
-            self.imu_1.clone(),
-            self.imu_2.clone(),
-            self.utc_time.clone(),
-            self.gps_vel.clone(),
-            self.gps_pos_1.clone(),
-            self.gps_pos_2.clone(),
+            self.air.take(),
+            self.ekf_nav_1.take(),
+            self.ekf_nav_2.take(),
+            self.ekf_quat.take(),
+            self.imu_1.take(),
+            self.imu_2.take(),
+            self.utc_time.take(),
+            self.gps_vel.take(),
+            self.gps_pos_1.take(),
+            self.gps_pos_2.take(),
         ]
     }
 

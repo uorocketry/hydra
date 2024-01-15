@@ -13,6 +13,9 @@ default-members = [
     "examples/*"
 ]
 
+[workspace.dependencies.embedded-hal]
+version="0.2.7"
+
 [workspace.dependencies.stm32h7xx-hal]
 git = "https://github.com/stm32-rs/stm32h7xx-hal"  
 # We use 35 even though we have the 33. 
