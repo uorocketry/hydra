@@ -6,9 +6,12 @@ mod data_manager;
 mod types;
 mod health;
 
+use health::HealthMonitorChannelsCommunication;
 use atsamd_hal as hal;
 use common_arm::mcan;
 use common_arm::SdManager;
+use common_arm::HealthMonitor;
+use common_arm::HealthManager;
 use common_arm::*;
 use communication::Capacities;
 use communication::{RadioDevice, RadioManager};
@@ -18,7 +21,7 @@ use hal::clock::v2::Source;
 use hal::dmac;
 use hal::dmac::DmaController;
 // use communication::radio_dma;
-
+use hal::adc::Adc;
 use hal::gpio::Pins;
 use hal::gpio::{
     Alternate, Output, Pin, PushPull, PushPullOutput, C, PA05, PB12, PB13, PB14, PB15,
@@ -43,6 +46,7 @@ mod app {
     struct Shared {
         em: ErrorManager,
         data_manager: DataManager,
+        health_manager: HealthManager<HealthMonitorChannelsCommunication>,
         can0: communication::CanDevice0,
     }
 
@@ -143,10 +147,26 @@ mod app {
         let sd_manager = SdManager::new(sdmmc_spi, pins.pb14.into_push_pull_output());
 
         /* Setup ADC */
-        // let mut adc = Adc::adc0(peripherals.ADC0, &mut mclk);
-        // let mut v_sense = pins.pb02.into();
+        let mut adc0 = Adc::adc0(peripherals.ADC0, &mut mclk);
+        let mut adc1 = Adc::adc1(peripherals.ADC1, &mut mclk);
 
-        // let _temp: u16 = adc.read(&mut v_sense).unwrap();
+        /* Setup Health Monitor */
+        let mut health_monitor_channels = HealthMonitorChannelsCommunication::new(
+            adc0,
+            adc1,
+            pins.pb01.into(),
+            pins.pb02.into(),
+            pins.pb03.into(),
+            pins.pb00.into(),
+            pins.pb06.into(),
+            pins.pb07.into(),
+            pins.pb08.into(),
+            pins.pb09.into(),
+            pins.pb05.into(),
+        );
+
+        let mut health_monitor = HealthMonitor::new(health_monitor_channels, 10000, 5000, 1023);
+        let mut health_manager = HealthManager::new(health_monitor);
 
         /* Status LED */
         let led = pins.pa05.into_push_pull_output();
@@ -163,6 +183,7 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
+                health_manager,
                 can0,
             },
             Local {

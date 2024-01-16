@@ -1,37 +1,11 @@
 use crate::health::health_monitor::{HealthMonitor, HealthMonitorChannels};
-use messages::health::HealthState;
+use core::any::Any;
+use core::any::TypeId;
+use core::ops::RangeFrom;
 use core::ops::RangeInclusive;
 use core::ops::RangeToInclusive;
-use core::ops::RangeFrom;
 use defmt::warn;
-
-// The idea was to not have to write the same code over and over again. 
-// but I can't seem to create macros 
-macro_rules! get_status {
-    ($data:expr, $low:expr, $nominal:expr, $over:expr) => {
-        match $data {
-            Some(x) => match x {
-                $low => {
-                    warn!("Value under warning");
-                    HealthState::Warning
-                }
-                $nominal => HealthState::Nominal,
-                $over => {
-                    warn!("Value over warning");
-                    HealthState::Warning
-                },
-                _ => {
-                    warn!("Value error");
-                    HealthState::Error
-                }
-            },
-            None => {
-                warn!("No data");
-                return HealthState::Warning
-            }
-        }
-    };
-}
+use messages::health::HealthState;
 
 /// Manages and reports the health of the system.
 /// I think OutputPin trait is the right one that should be good for atsame and stm32.
@@ -43,6 +17,8 @@ impl<T> HealthManager<T>
 where
     T: HealthMonitorChannels,
 {
+    /// Create a new health manager.
+    /// Divider is the ohmage of the resistor and resolution is the resolution of the ADC.
     pub fn new(monitor: HealthMonitor<T>) -> Self {
         Self { monitor }
     }
@@ -52,69 +28,53 @@ where
     /// All values must be nominal for the system to be in a nominal state.
     /// could be nice to send out a log message if something fails, tell the system what failed.
     pub fn evaluate(&mut self) -> HealthState {
-        // what does a unhealthy state look like?
-        // we can penalize the health status based on the readings that we get from the monitor
         self.monitor.update(); // We need new values before we can evaluate the health status.
-        // let data = match self.monitor.data {
-        //     messages::health::HealthData::HealthStatus(x) => x,
-        // };
         let data = self.monitor.data.clone();
+        // This is ugly...
+        let v5_status = get_status(data.v5, &self.monitor.range_5v);
+        let v3_3_status = get_status(data.v3_3, &self.monitor.range_3v3);
+        let ext_3v3 = get_status(data.ext_3v3, &self.monitor.range_ext_3v3);
+        let ext_v5_status = get_status(data.ext_v5, &self.monitor.range_ext_5v);
+        let int_v3_3_status = get_status(data.int_v3_3, &self.monitor.range_int_3v3);
+        let int_5v_status = get_status(data.int_v5, &self.monitor.range_int_5v);
+        let pyro_status = get_status(data.pyro_sense, &self.monitor.range_pyro);
+        let vcc_status = get_status(data.vcc_sense, &self.monitor.range_vcc);
+        let failover_status = get_status(data.failover_sense, &self.monitor.range_failover);
 
-        // Do we assume all this nominal or everything is in error and prove otherwise?
-        let mut status_array: [HealthState; 4] = [HealthState::Nominal,HealthState::Nominal,HealthState::Nominal,HealthState::Nominal];
-
-
-        // get_status!(data.v3_3, 2..=4, 4..=6, 6..=8);
-        // let x = 4..6;
-        // These range values are not correct and need to be changed. 
-        // status_array[0] = HealthManager::<T>::get_status(data.v3_3, 3..=4, 4..=5, 5..=6); 
-        // status_array[1] = HealthManager::<T>::get_status(data.pyro_sense, 3, 4, 5);
-        // status_array[2] = HealthManager::<T>::get_status(data.vcc_sense, 3, 4, 5);
-        // status_array[3] = HealthManager::<T>::get_status(data.failover_sense, 3, 4, 5);
-
-        // status_array[0] = get_status!(data.v3_3, 3, 4, 5);
-
-        // There are more to add
-        // int_v5, int_3v3, ext_v5, ext_3v3, failover_sense
-
-        let mut warning_flag = false;
-        for x in status_array {
-            match x {
-                HealthState::Warning => warning_flag = true,
+        for status in [
+            v5_status,
+            v3_3_status,
+            ext_3v3,
+            ext_v5_status,
+            int_v3_3_status,
+            int_5v_status,
+            pyro_status,
+            vcc_status,
+            failover_status,
+        ] {
+            match status {
                 HealthState::Error => return HealthState::Error,
-                HealthState::Nominal => continue,
+                HealthState::Warning => return HealthState::Warning,
+                _ => continue,
             }
-        }
-
-        if warning_flag {
-            return HealthState::Warning;
         }
 
         HealthState::Nominal
     }
+}
 
-    fn get_status(data: Option<u16>, low: RangeToInclusive<u16>, nominal: RangeInclusive<u16>, over: RangeFrom<u16>) -> HealthState {
-        match data {
-            Some(x) => match x {
-                low => {
-                    warn!("Value under warning");
-                    HealthState::Warning
-                }
-                nominal => HealthState::Nominal,
-                over => {
-                    warn!("Value over warning");
-                    HealthState::Warning
-                },
-                _ => {
-                    warn!("Value error");
-                    HealthState::Error
-                }
-            },
-            None => {
-                warn!("No data");
-                return HealthState::Warning
+fn get_status(data: Option<u16>, nominal: &RangeInclusive<u16>) -> HealthState {
+    match data {
+        Some(x) => match x {
+            nominal => HealthState::Nominal,
+            _ => {
+                warn!("Unsafe Voltage");
+                HealthState::Error
             }
+        },
+        None => {
+            warn!("No data");
+            return HealthState::Warning;
         }
     }
-
 }

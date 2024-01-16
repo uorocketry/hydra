@@ -17,6 +17,7 @@ pub use crate::error::error_manager::ErrorManager;
 pub use crate::error::hydra_error::{ErrorContextTrait, HydraError, SpawnError};
 pub use crate::logging::HydraLogging;
 pub use crate::sd_manager::SdManager;
-pub use crate::health::health_monitor::HealthMonitorChannels;
+pub use crate::health::health_monitor::{HealthMonitorChannels, HealthMonitor};
+pub use crate::health::health_manager::HealthManager;
 
 use defmt_rtt as _; // global logger

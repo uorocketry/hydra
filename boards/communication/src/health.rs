@@ -2,21 +2,26 @@
 //! Would've liked to have this live in common-arm-atsame but the pins and adc are not standardised
 //! for all boards which poses the problem of giving an adc to a wrong pin in a generic way.
 
-use atsamd_hal::gpio::{Alternate, Pin, B, PA02, PB01, PB02, PB03, PB00};
+use atsamd_hal::gpio::{Alternate, Pin, B, PA02, PB00, PB01, PB02, PB03, PB06, PB07, PB08, PB09, PB05};
 use atsamd_hal::{adc::Adc, ehal::adc::OneShot, pac::ADC0, pac::ADC1};
 use common_arm::HealthMonitorChannels;
 
 // make sure to define the ADC types in types.rs
 
 // I don't think this should own the ADC object, but rather when a call to evaluate is invoke it should be taken control
-// and then released when the function returns.
-struct HealthMonitorChannelsCommunication {
+// and then released when the function returns. Refactor this later. 
+pub struct HealthMonitorChannelsCommunication {
     reader: Adc<ADC0>,
     reader1: Adc<ADC1>,
     pin_3v3: Pin<PB01, Alternate<B>>,
     pin_5v: Pin<PB02, Alternate<B>>,
     pin_pyro: Pin<PB03, Alternate<B>>,
     pin_vcc: Pin<PB00, Alternate<B>>,
+    pin_ext_3v3: Pin<PB06, Alternate<B>>,
+    pin_ext_5v: Pin<PB07, Alternate<B>>,
+    pin_int_5v: Pin<PB08, Alternate<B>>,
+    pin_int_3v3: Pin<PB09, Alternate<B>>,
+    pin_failover: Pin<PB05, Alternate<B>>,
 }
 
 impl HealthMonitorChannels for HealthMonitorChannelsCommunication {
@@ -33,30 +38,35 @@ impl HealthMonitorChannels for HealthMonitorChannelsCommunication {
         self.reader.read(&mut self.pin_vcc).ok()
     }
     fn get_int_5v(&mut self) -> Option<u16> {
-        Some(0)
+        self.reader.read(&mut self.pin_int_5v).ok()
     }
     fn get_int_3v3(&mut self) -> Option<u16> {
-        Some(0)
+        self.reader.read(&mut self.pin_int_3v3).ok()
     }
     fn get_ext_5v(&mut self) -> Option<u16> {
-        Some(0)
+        self.reader1.read(&mut self.pin_ext_5v).ok()
     }
     fn get_ext_3v3(&mut self) -> Option<u16> {
-        Some(0)
+        self.reader1.read(&mut self.pin_ext_3v3).ok()
     }
     fn get_failover(&mut self) -> Option<u16> {
-        Some(0)
+        self.reader1.read(&mut self.pin_failover).ok()
     }
 }
 
 impl HealthMonitorChannelsCommunication {
-    fn new(
+    pub fn new(
         reader: Adc<ADC0>,
         reader1: Adc<ADC1>,
         pin_3v3: Pin<PB01, Alternate<B>>,
         pin_5v: Pin<PB02, Alternate<B>>,
         pin_pyro: Pin<PB03, Alternate<B>>,
         pin_vcc: Pin<PB00, Alternate<B>>,
+        pin_ext_3v3: Pin<PB06, Alternate<B>>,
+        pin_ext_5v: Pin<PB07, Alternate<B>>,
+        pin_int_5v: Pin<PB08, Alternate<B>>,
+        pin_int_3v3: Pin<PB09, Alternate<B>>,
+        pin_failover: Pin<PB05, Alternate<B>>,
     ) -> Self {
         HealthMonitorChannelsCommunication {
             reader,
@@ -65,6 +75,11 @@ impl HealthMonitorChannelsCommunication {
             pin_5v,
             pin_pyro,
             pin_vcc,
+            pin_ext_3v3,
+            pin_ext_5v,
+            pin_int_5v,
+            pin_int_3v3,
+            pin_failover,
         }
     }
 }
