@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            // "preLaunchTask": "Build Release Communication",
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Debug Recovery",
+            "chip": "ATSAME51J20A",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/recovery",
+                }
+            ]
+        },
+        {
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "openocd",
