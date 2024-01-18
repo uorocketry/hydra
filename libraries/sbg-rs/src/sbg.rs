@@ -286,6 +286,7 @@ impl SBG {
         pBytesRead: *mut usize,
         bytesToRead: usize,
         bytesToRead: usize,
+
     ) -> _SbgErrorCode {
         if pBuffer.is_null() {
             return _SbgErrorCode_SBG_NULL_POINTER;
@@ -297,7 +298,6 @@ impl SBG {
         // This is safe because we ensure pBuffer is valid, pBuffer is not accessed during the lifetime of this function,
         // and the SBGECom library ensures the buffer given is of the correct size.
         let array: &mut [u8] = unsafe { from_raw_parts_mut(pBuffer as *mut u8, bytesToRead) };
- 
         let mut readBytes = 0;
         for i in 0..(bytesToRead) {
             if let Some(front) = DEQ.pop_front() {

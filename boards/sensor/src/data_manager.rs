@@ -47,6 +47,7 @@ impl DataManager {
             messages::Data::Command(command) => match command.data {
                 messages::command::CommandData::PowerDown(_) => {    
                     spawn!(sleep_system); // need proper error handling. could just expect, but that is mal practice. 
+
                 }
                 _ => {
                     // We don't care atm about these other commands. 

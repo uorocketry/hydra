@@ -6,9 +6,6 @@ use crate::{no_transition};
 
 use defmt::{write, Format, Formatter};
 
-
-
-
 #[derive(Debug, Clone)]
 pub struct WaitForRecovery {}
 

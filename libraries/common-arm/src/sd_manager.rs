@@ -2,7 +2,6 @@ use core::{marker::PhantomData, fmt::Debug};
 use defmt::{info};
 use embedded_sdmmc as sd;
 use embedded_hal as hal;
-
 use hal::spi::FullDuplex;
 
 /// Time source for `[SdInterface]`. It doesn't return any useful information for now, and will
