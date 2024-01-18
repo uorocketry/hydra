@@ -52,8 +52,6 @@ mod app {
 
     #[local]
     struct Local {
-        // adc0: Adc<ADC0>,
-        // v_sense: Pin<PB02, Alternate<B>>,
         led: Pin<PA05, PushPullOutput>,
         radio: RadioDevice,
         sd_manager: SdManager<
@@ -187,8 +185,6 @@ mod app {
                 can0,
             },
             Local {
-                // adc0: adc,
-                // v_sense,
                 led,
                 radio,
                 sd_manager,

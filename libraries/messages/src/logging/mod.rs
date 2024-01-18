@@ -21,12 +21,14 @@ pub use log::{Log, LogLevel};
 #[cfg_attr(test, derive(Arbitrary))]
 pub enum Event {
     Initialized(),
+    MainDeploy(),
     Error(ErrorContext),
 }
 
 display_event!(
     [Initialized, "Initialized"],
-    [Error, "Encountered error: {}", e]
+    [Error, "Encountered error: {}", e],
+    [MainDeploy, "Main parachute deployed"]
 );
 
 /// This is optionally used to add extra context to any errors. This information can then be sent

@@ -8,6 +8,8 @@ mod state_machine;
 mod types;
 
 use atsamd_hal as hal;
+use messages::Event::MainDeploy;
+use common_arm::hinfo;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac::DmaController;
@@ -148,6 +150,7 @@ mod app {
             if !(*cx.local.fired) {
                 cx.shared.gpio.lock(|gpio| {
                     gpio.fire_main();
+                    hinfo!(MainDeploy);
                     *cx.local.fired = true;
                 });
                 spawn_after!(fire_main, ExtU64::secs(5))?; // this becomes redundant with a proper error manager

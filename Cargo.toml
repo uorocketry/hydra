@@ -46,20 +46,21 @@ opt-level = "s"
 opt-level = 0
 debug = true
 
+# Try to remove this 
 [profile.dev.build-override]
-opt-level = 0
+#opt-level = 0 Commenting this may cause issues. 
 debug = true
 
 [profile.release]
 # symbols are nice and they don't increase the size on Flash
-debug = true
-lto = true
+#debug = true
+#lto = true There is an issue with this where it says the interrupts symbol is defined multiple times. Only happens for the STM32H7XX.
 opt-level = 1
 
 [profile.release.package.sbg-rs]
 debug = true
 opt-level = 0
 
+#Try to remove this
 [profile.release.build-override]
-opt-level = 0
-debug = true
+#opt-level = 0

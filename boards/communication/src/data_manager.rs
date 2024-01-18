@@ -111,17 +111,14 @@ impl DataManager {
                     self.logging_rate = Some(command_data.rate);
                 }
                 messages::command::CommandData::DeployDrogue(_) => {
-                    info!("drogue");
+                    
                 }
                 messages::command::CommandData::DeployMain(_) => {
-                    info!("main");
                 }
                 messages::command::CommandData::PowerDown(_) => {
-                    info!("power down");
                 }
             },
             _ => {
-                info!("unkown");
             }
         }
     }
