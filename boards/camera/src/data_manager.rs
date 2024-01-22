@@ -1,11 +1,11 @@
-use messages::sensor::{Air};
+use messages::sensor::Air;
 use messages::Message;
 
 use defmt::info;
 use heapless::HistoryBuffer;
 
-const MAIN_HEIGHT: f32 = 876.0; // meters 
-const HEIGHT_MIN: f32 = 600.0; // meters 
+const MAIN_HEIGHT: f32 = 876.0; // meters
+const HEIGHT_MIN: f32 = 600.0; // meters
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -20,7 +20,7 @@ impl DataManager {
             historical_barometer_altitude,
         }
     }
-    /// Returns true if the rocket is descending 
+    /// Returns true if the rocket is descending
     pub fn is_falling(&self) -> bool {
         if self.historical_barometer_altitude.len() < 8 {
             return false;
@@ -35,16 +35,17 @@ impl DataManager {
                     if time_diff == 0.0 {
                         continue;
                     }
-                    let slope = (i.0 - prev.0)/time_diff; 
+                    let slope = (i.0 - prev.0) / time_diff;
                     if slope < -100.0 {
-                        return false; 
+                        return false;
                     }
-                    avg_sum += slope; 
+                    avg_sum += slope;
                     prev = i;
                 }
-                match avg_sum / 7.0 { // 7 because we have 8 points.  
-                    // exclusive range  
-                    x if !(-100.0..=-5.0).contains(&x) => { 
+                match avg_sum / 7.0 {
+                    // 7 because we have 8 points.
+                    // exclusive range
+                    x if !(-100.0..=-5.0).contains(&x) => {
                         return false;
                     }
                     _ => {
@@ -78,16 +79,16 @@ impl DataManager {
                     if time_diff == 0.0 {
                         continue;
                     }
-                    avg_sum += (i.0 - prev.0)/time_diff; 
+                    avg_sum += (i.0 - prev.0) / time_diff;
                     prev = i;
                 }
                 match avg_sum / 7.0 {
-                    // inclusive range    
-                    x if (-0.25..=0.25).contains(&x)  => { 
+                    // inclusive range
+                    x if (-0.25..=0.25).contains(&x) => {
                         return true;
                     }
                     _ => {
-                        // continue 
+                        // continue
                     }
                 }
             }
@@ -109,11 +110,9 @@ impl DataManager {
                 messages::sensor::SensorData::Air(air_data) => {
                     self.air = Some(air_data);
                 }
-                _ => {
-                }
+                _ => {}
             },
-            _ => {
-            }
+            _ => {}
         }
     }
 }

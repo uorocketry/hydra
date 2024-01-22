@@ -5,19 +5,19 @@ mod communication;
 mod data_manager;
 mod types;
 
+use crate::data_manager::DataManager;
 use atsamd_hal as hal;
+use common_arm::mcan;
+use common_arm::*;
+use communication::CanDevice0;
+use communication::Capacities;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
+use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
-use hal::gpio::{PB16, PushPullOutput, Pin, PB17, Pins};
-use common_arm::*;
-use common_arm::mcan;
 use mcan::messageram::SharedMemory;
-use communication::Capacities;
-use communication::CanDevice0;
-use systick_monotonic::*;
 use panic_halt as _;
-use crate::data_manager::DataManager;
+use systick_monotonic::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -37,7 +37,7 @@ mod app {
     }
 
     #[monotonic(binds = SysTick, default = true)]
-    type SysMono = Systick<100>; // 100 Hz / 10 ms granularity 
+    type SysMono = Systick<100>; // 100 Hz / 10 ms granularity
 
     #[init(local = [
         #[link_section = ".can"]
@@ -71,19 +71,14 @@ mod app {
             false,
         );
 
-
-
         // let (pclk_adc0, gclk0) = Pclk::enable(tokens.pclks.adc0, gclk0);
-        
 
         // // SAFETY: Misusing the PAC API can break the system.
         // // This is safe because we only steal the MCLK.
         // let (_, _, gclk, mut mclk) = unsafe { clocks.pac.steal() };
 
-
-        // // setup ADC 
+        // // setup ADC
         // let mut adc_test = hal::adc::Adc::adc0(peripherals.ADC0, &mut mclk);
-    
 
         // LEDs
         let led_green = pins.pb16.into_push_pull_output();
@@ -101,9 +96,7 @@ mod app {
                 data_manager: DataManager::new(),
                 can0,
             },
-            Local {
-                led_green, led_red,
-            },
+            Local { led_green, led_red },
             init::Monotonics(mono),
         )
     }
@@ -113,10 +106,10 @@ mod app {
     fn idle(_: idle::Context) -> ! {
         loop {}
     }
-    
+
     // #[task(local = [adc_test, adc_pin], shared = [&em])]
     // fn adc(cx: adc::Context) {
-    //     // test adc for 5v PWR sense 
+    //     // test adc for 5v PWR sense
     //     info!("try adc");
     //     cx.shared.em.run(||{
     //         let val = cx.local.adc_test.read(cx.local.adc_pin);

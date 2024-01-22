@@ -1,8 +1,7 @@
 use crate::bindings::{
-    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING,
-    _SbgEComLog_SBG_ECOM_LOG_AIR_DATA, _SbgEComLog_SBG_ECOM_LOG_EKF_NAV,
+    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
+    _SbgEComLog_SBG_ECOM_LOG_EKF_NAV, _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
     _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL, _SbgEComLog_SBG_ECOM_LOG_UTC_TIME,
-    _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
     _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgErrorCode_SBG_NO_ERROR,
     _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
     sbgEComCmdOutputSetConf, sbgEComHandle,
@@ -13,18 +12,18 @@ use crate::bindings::{
     _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol, _SbgErrorCode, _SbgInterface,
 };
 use atsamd_hal as hal;
-use core::ffi::{c_void};
+use core::ffi::c_void;
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
 use defmt::{flush, warn};
 use embedded_hal::serial::Write;
-use hal::gpio::{PB16, PB17, PB03, PB02};
+use hal::gpio::{PB02, PB03, PB16, PB17};
 use hal::sercom::uart::Duplex;
 use hal::sercom::uart::{self, EightBit, Uart};
 use hal::sercom::{IoSet1, IoSet6, Sercom5};
-use messages::sensor::*;
 use heapless::Deque;
+use messages::sensor::*;
 
 type Pads = uart::PadsFromIds<Sercom5, IoSet6, PB03, PB02>;
 type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
@@ -156,7 +155,7 @@ impl SBG {
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
         // unsafe { BUF = buffer };
         for i in buffer {
-            _ = unsafe{DEQ.push_back(*i)};
+            _ = unsafe { DEQ.push_back(*i) };
         }
         // SAFETY: We are assigning a static variable.
         // This is safe because are the only thread reading since SBG is locked.
@@ -303,7 +302,7 @@ impl SBG {
             }
         }
         // info!("Bytes Read {}", readBytes);
-        unsafe {*pBytesRead = readBytes}; 
+        unsafe { *pBytesRead = readBytes };
         return _SbgErrorCode_SBG_NO_ERROR;
     }
 

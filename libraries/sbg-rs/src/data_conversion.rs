@@ -1,7 +1,10 @@
 use crate::bindings::{
-    SbgLogAirData, SbgLogEkfNavData, SbgLogEkfQuatData, SbgLogGpsVel, SbgLogImuData, SbgLogUtcData, SbgLogGpsPos,
+    SbgLogAirData, SbgLogEkfNavData, SbgLogEkfQuatData, SbgLogGpsPos, SbgLogGpsVel, SbgLogImuData,
+    SbgLogUtcData,
 };
-use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime, GpsPos1, GpsPos2};
+use messages::sensor::{
+    Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, UtcTime,
+};
 
 impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2) {
     fn from(value: SbgLogGpsPos) -> Self {

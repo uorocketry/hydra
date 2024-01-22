@@ -1,9 +1,9 @@
 use defmt::info;
-use messages::command::{RadioRate};
+use messages::command::RadioRate;
 use messages::sensor::{
     Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime,
 };
-use messages::state::{StateData};
+use messages::state::StateData;
 use messages::Message;
 
 #[derive(Clone)]

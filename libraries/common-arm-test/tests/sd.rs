@@ -47,9 +47,7 @@ mod tests {
             pins.pa16.into_push_pull_output(),
         );
 
-        State {
-            sd_interface: sd,
-        }
+        State { sd_interface: sd }
     }
 
     #[test]
