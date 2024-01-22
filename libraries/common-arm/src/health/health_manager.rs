@@ -10,7 +10,7 @@ use messages::health::HealthState;
 /// Manages and reports the health of the system.
 /// I think OutputPin trait is the right one that should be good for atsame and stm32.
 pub struct HealthManager<T: HealthMonitorChannels> {
-    monitor: HealthMonitor<T>,
+    pub monitor: HealthMonitor<T>,
 }
 
 impl<T> HealthManager<T>

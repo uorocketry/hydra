@@ -22,7 +22,7 @@ git = "https://github.com/stm32-rs/stm32h7xx-hal"
 features = ["defmt", "rt", "stm32h735"  ]
 
 [workspace.dependencies.atsamd-hal]
-git = "https://github.com/atsamd-rs/atsamd"
+git = "https://github.com/uorocketry/atsamd"
 features = ["same51j", "same51j-rt", "dma", "can"]
 
 [workspace.dependencies.serde]

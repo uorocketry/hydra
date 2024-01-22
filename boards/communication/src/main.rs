@@ -32,6 +32,7 @@ use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
 use messages::state::State;
 use messages::*;
+use defmt::info;
 use panic_halt as _;
 use systick_monotonic::*;
 use types::*;
@@ -143,6 +144,9 @@ mod app {
             .enable();
         let sd_manager = SdManager::new(sdmmc_spi, pins.pb14.into_push_pull_output());
 
+        /* Setup ADC clocks */
+        let (pclk_adc0, gclk0) = Pclk::enable(tokens.pclks.adc0, gclk0);
+        let (pclk_adc1, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
         /* Setup ADC */
         let mut adc0 = Adc::adc0(peripherals.ADC0, &mut mclk);
         let mut adc1 = Adc::adc1(peripherals.ADC1, &mut mclk);
@@ -172,6 +176,7 @@ mod app {
         sensor_send::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
+        report_health::spawn().ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -304,6 +309,26 @@ mod app {
             Ok(())
         });
         spawn_after!(state_send, ExtU64::secs(5)).ok();
+    }
+
+    /**
+     * Simple health report 
+     */
+    #[task(shared = [&em, health_manager])]
+    fn report_health(mut cx: report_health::Context) {
+        cx.shared.em.run(|| {
+            cx.shared.health_manager.lock(|health_manager| {
+                health_manager.evaluate();
+                let temp = health_manager.monitor.data.v5;
+                match temp {
+                    Some(x) => info!("5v: {}", x),
+                    None => info!("5v: None"),
+                }
+            });
+
+            spawn_after!(report_health, ExtU64::secs(1))?;
+            Ok(())
+        });
     }
 
     /**
