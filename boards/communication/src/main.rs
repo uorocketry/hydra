@@ -17,11 +17,7 @@ use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
-use hal::dmac;
-use hal::dmac::DmaController;
 use health::HealthMonitorChannelsCommunication;
-// use communication::radio_dma;
-use defmt::info;
 use hal::adc::Adc;
 use hal::gpio::Pins;
 use hal::gpio::{
@@ -84,8 +80,8 @@ mod app {
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
 
-        let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
-        let dmaChannels = dmac.split();
+        // let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
+        // let dmaChannels = dmac.split();
 
         /* Logging Setup */
         HydraLogging::set_ground_station_callback(queue_gs_message);
@@ -118,7 +114,6 @@ mod app {
         );
 
         /* Radio config */
-        let dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
         let (radio, gclk0) = RadioDevice::new(
             tokens.pclks.sercom5,
             &mclk,
@@ -126,7 +121,6 @@ mod app {
             pins.pb17,
             pins.pb16,
             gclk0,
-            dmaCh0,
         );
 
         let radio_manager = RadioManager::new(radio);
@@ -145,14 +139,14 @@ mod app {
         let sd_manager = SdManager::new(sdmmc_spi, pins.pb14.into_push_pull_output());
 
         /* Setup ADC clocks */
-        let (pclk_adc0, gclk0) = Pclk::enable(tokens.pclks.adc0, gclk0);
-        let (pclk_adc1, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
+        let (_pclk_adc0, gclk0) = Pclk::enable(tokens.pclks.adc0, gclk0);
+        let (_pclk_adc1, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
         /* Setup ADC */
-        let mut adc0 = Adc::adc0(peripherals.ADC0, &mut mclk);
-        let mut adc1 = Adc::adc1(peripherals.ADC1, &mut mclk);
+        let adc0 = Adc::adc0(peripherals.ADC0, &mut mclk);
+        let adc1 = Adc::adc1(peripherals.ADC1, &mut mclk);
 
         /* Setup Health Monitor */
-        let mut health_monitor_channels = HealthMonitorChannelsCommunication::new(
+        let health_monitor_channels = HealthMonitorChannelsCommunication::new(
             adc0,
             adc1,
             pins.pb01.into(),
@@ -166,8 +160,8 @@ mod app {
             pins.pb05.into(),
         );
 
-        let mut health_monitor = HealthMonitor::new(health_monitor_channels, 10000, 5000, 1023);
-        let mut health_manager = HealthManager::new(health_monitor);
+        let health_monitor = HealthMonitor::new(health_monitor_channels, 10000, 5000, 1023);
+        let health_manager = HealthManager::new(health_monitor);
 
         /* Status LED */
         let led = pins.pa05.into_push_pull_output();

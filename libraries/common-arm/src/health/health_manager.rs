@@ -1,9 +1,5 @@
 use crate::health::health_monitor::{HealthMonitor, HealthMonitorChannels};
-use core::any::Any;
-use core::any::TypeId;
-use core::ops::RangeFrom;
 use core::ops::RangeInclusive;
-use core::ops::RangeToInclusive;
 use defmt::warn;
 use messages::health::HealthState;
 
@@ -65,9 +61,11 @@ where
 
 fn get_status(data: Option<u16>, nominal: &RangeInclusive<u16>) -> HealthState {
     match data {
-        Some(x) => match x {
-            nominal => HealthState::Nominal,
-            _ => {
+        Some(x) => {
+            if nominal.contains(&x) {
+                return HealthState::Nominal;
+            }
+            else {
                 warn!("Unsafe Voltage");
                 HealthState::Error
             }

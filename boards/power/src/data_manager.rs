@@ -1,5 +1,4 @@
 // import messages
-use messages::sensor::{Current, Regulator, SensorData, Temperature, Voltage};
 use messages::Message;
 
 pub struct DataManager {}

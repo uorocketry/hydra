@@ -1,6 +1,6 @@
 use crate::app::{fire_drogue, fire_main};
 use crate::state_machine::RocketStates;
-use common_arm::spawn;
+use common_arm::{spawn, HydraError};
 use defmt::info;
 use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
@@ -121,7 +121,7 @@ impl DataManager {
     pub fn set_state(&mut self, state: RocketStates) {
         self.current_state = Some(state);
     }
-    pub fn handle_data(&mut self, data: Message) {
+    pub fn handle_data(&mut self, data: Message) -> Result<(), HydraError> {
         match data.data {
             messages::Data::Sensor(sensor) => match sensor.data {
                 messages::sensor::SensorData::Air(air_data) => {
@@ -160,10 +160,10 @@ impl DataManager {
             },
             messages::Data::Command(command) => match command.data {
                 messages::command::CommandData::DeployDrogue(_) => {
-                    spawn!(fire_drogue); // need someway to capture this error.
+                    spawn!(fire_drogue)?; // need someway to capture this error.
                 }
                 messages::command::CommandData::DeployMain(_) => {
-                    spawn!(fire_main);
+                    spawn!(fire_main)?;
                 }
                 messages::command::CommandData::PowerDown(_) => {
                     // don't handle for now.
@@ -172,6 +172,7 @@ impl DataManager {
             },
             _ => {}
         }
+        Ok(())
     }
 }
 

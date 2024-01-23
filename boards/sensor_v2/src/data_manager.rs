@@ -1,5 +1,5 @@
 use crate::app::sleep_system;
-use common_arm::spawn;
+use common_arm::{spawn, HydraError};
 use messages::sensor::{
     Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime,
 };
@@ -44,11 +44,11 @@ impl DataManager {
         ]
     }
 
-    pub fn handle_data(&mut self, data: Message) {
+    pub fn handle_data(&mut self, data: Message) -> Result<(), HydraError> {
         match data.data {
             messages::Data::Command(command) => match command.data {
                 messages::command::CommandData::PowerDown(_) => {
-                    spawn!(sleep_system); // need proper error handling. could just expect, but that is mal practice.
+                    spawn!(sleep_system)?; // need proper error handling. could just expect, but that is mal practice.
                 }
                 _ => {
                     // We don't care atm about these other commands.
@@ -58,6 +58,7 @@ impl DataManager {
                 // we can disregard all other messages for now.
             }
         }
+        Ok(())
     }
 }
 

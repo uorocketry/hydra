@@ -152,7 +152,7 @@ impl CanDevice0 {
         )?;
         Ok(())
     }
-    pub fn process_data(&mut self, data_manager: &mut DataManager) {
+    pub fn process_data(&mut self, data_manager: &mut DataManager) -> Result<(), HydraError> {
         let line_interrupts = &self.line_interrupts;
         for interrupt in line_interrupts.iter_flagged() {
             match interrupt {
@@ -160,7 +160,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                data_manager.handle_data(data);
+                                data_manager.handle_data(data)?;
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
@@ -172,7 +172,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                data_manager.handle_data(data);
+                                data_manager.handle_data(data)?;
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
@@ -183,5 +183,6 @@ impl CanDevice0 {
                 _ => (),
             }
         }
+        Ok(())
     }
 }

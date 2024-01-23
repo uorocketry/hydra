@@ -137,7 +137,7 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
                 xfer.block_transfer_interrupt();
                 sbg.xfer = Some(xfer);
                 cx.shared.em.run(|| {
-                    spawn!(sbg_sd(buf_clone)); // this warning isn't right but it's fine
+                    spawn!(sbg_sd, buf_clone)?; // this warning isn't right but it's fine
                     Ok(())
                 });
             }

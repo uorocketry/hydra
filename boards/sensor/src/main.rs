@@ -179,12 +179,17 @@ mod app {
         });
     }
 
-    #[task(priority = 3, binds = CAN0, shared = [can, data_manager])]
+    #[task(priority = 3, binds = CAN0, shared = [can, data_manager, &em])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can.lock(|can| {
             cx.shared
                 .data_manager
-                .lock(|manager| can.process_data(manager))
+                .lock(|manager| {
+                    cx.shared.em.run(|| {
+                        can.process_data(manager)?;
+                        Ok(())
+                    });
+                });
         });
     }
 

@@ -1,5 +1,3 @@
-use core::convert::Infallible;
-
 use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
@@ -9,8 +7,6 @@ use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::Can0;
 use atsamd_hal::clock::v2::Source;
-use atsamd_hal::dmac;
-use atsamd_hal::dmac::Transfer;
 use atsamd_hal::gpio::{Alternate, AlternateI, Disabled, Floating, Pin, I, PA22, PA23, PB16, PB17};
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
@@ -19,15 +15,14 @@ use atsamd_hal::prelude::_embedded_hal_serial_Read;
 use atsamd_hal::sercom;
 use atsamd_hal::sercom::uart::Uart;
 use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
-use atsamd_hal::sercom::Sercom;
-use atsamd_hal::sercom::{uart, Sercom5};
+use atsamd_hal::sercom::uart;
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
 use common_arm::{herror, HydraError};
-use heapless::HistoryBuffer;
 use heapless::Vec;
+use heapless::HistoryBuffer;
 use mavlink::embedded::Read;
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
@@ -41,7 +36,6 @@ use mcan::{
 };
 use messages::mavlink;
 use messages::ErrorContext;
-use messages::Event::Error;
 use messages::Message;
 use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
@@ -193,8 +187,8 @@ impl CanDevice0 {
                             Ok(data) => {
                                 data_manager.handle_data(data);
                             }
-                            Err(e) => {
-                                herror!(Error(ErrorContext::UnkownCanMessage));
+                            Err(_) => {
+                                herror!(Error, ErrorContext::UnkownCanMessage);
                             }
                         }
                     }
@@ -205,8 +199,8 @@ impl CanDevice0 {
                             Ok(data) => {
                                 data_manager.handle_data(data);
                             }
-                            Err(e) => {
-                                herror!(Error(ErrorContext::UnkownCanMessage));
+                            Err(_) => {
+                                herror!(Error, ErrorContext::UnkownCanMessage);
                             }
                         }
                     }
@@ -216,8 +210,6 @@ impl CanDevice0 {
         }
     }
 }
-
-pub static mut BUF_DST: RadioBuffer = &mut [0; 255];
 
 pub struct RadioDevice {
     transmitter: Uart<GroundStationUartConfig, TxDuplex>,
@@ -232,7 +224,6 @@ impl RadioDevice {
         rx_pin: Pin<PB17, Disabled<Floating>>,
         tx_pin: Pin<PB16, Disabled<Floating>>,
         gclk0: S,
-        mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
     ) -> (Self, S::Inc)
     where
         S: Source<Id = Gclk0Id> + Increment,
@@ -250,12 +241,6 @@ impl RadioDevice {
         let (mut rx, tx) = uart.split();
         // setup interrupts
         rx.enable_interrupts(uart::Flags::RXC);
-        // dma_channel
-        //     .as_mut()
-        //     .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        // let xfer = Transfer::new(dma_channel, rx, unsafe { &mut *BUF_DST }, false)
-        //     .expect("DMA Radio RX")
-        //     .begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
         (
             RadioDevice {
                 transmitter: tx,
@@ -264,37 +249,17 @@ impl RadioDevice {
             gclk0,
         )
     }
-    // pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
-    //     let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
-
-    //     let mav_header = mavlink::MavHeader {
-    //         system_id: 1,
-    //         component_id: 1,
-    //         sequence: self.increment_mav_sequence(),
-    //     };
-
-    //     let mav_message = mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(
-    //         mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: payload },
-    //     );
-    //     mavlink::write_versioned_msg(
-    //         &mut self.transmitter,
-    //         mavlink::MavlinkVersion::V2,
-    //         mav_header,
-    //         &mav_message,
-    //     )?;
-    //     Ok(())
-    // }
 }
 
 pub struct RadioManager {
-    buf: Vec<u8, 280>,
+    buf: HistoryBuffer<u8, 280>,
     radio: RadioDevice,
     mav_sequence: u8,
 }
 
 impl RadioManager {
     pub fn new(radio: RadioDevice) -> Self {
-        let mut buf = Vec::new();
+        let buf = HistoryBuffer::new();
         RadioManager {
             buf,
             radio,
@@ -328,17 +293,17 @@ impl RadioManager {
     pub fn receive_message(&mut self) -> Result<Message, HydraError> {
         if let Ok(data) = self.radio.receiver.read() {
             // lets add this data to the buffer and see if we can parse it
-            self.buf.push(data);
-            let (header, msg) =
+            self.buf.write(data);
+            let (_header, msg) =
                 mavlink::read_versioned_msg(&mut self.radio.receiver, mavlink::MavlinkVersion::V2)?;
-
+            // Do we need the header? 
             match msg {
                 mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(msg) => {
                     return Ok(postcard::from_bytes::<Message>(&msg.message)?);
                     // weird Ok syntax to coerce to hydra error type.
                 }
                 _ => {
-                    herror!(Error(ErrorContext::UnkownPostcardMessage));
+                    herror!(Error,ErrorContext::UnkownPostcardMessage);
                     return Err(mavlink::error::MessageReadError::Io.into());
                 }
             }

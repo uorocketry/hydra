@@ -6,7 +6,7 @@ mod data_manager;
 use data_manager::DataManager;
 
 use stm32h7xx_hal::gpio::gpioc::{PC13, PC3};
-use stm32h7xx_hal::gpio::{Edge, ExtiPin, Input};
+use stm32h7xx_hal::gpio::Input;
 use stm32h7xx_hal::gpio::{Output, PushPull};
 use stm32h7xx_hal::prelude::*;
 

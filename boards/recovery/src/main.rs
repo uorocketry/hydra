@@ -20,7 +20,6 @@ use gpio_manager::GPIOManager;
 use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
-use messages::Event::MainDeploy;
 use messages::*;
 use panic_halt as _;
 use state_machine::{StateMachine, StateMachineContext};
@@ -182,12 +181,17 @@ mod app {
     }
 
     /// Handles the CAN0 interrupt.
-    #[task(binds = CAN0, shared = [can0, data_manager])]
+    #[task(binds = CAN0, shared = [can0, data_manager, &em])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
             cx.shared
                 .data_manager
-                .lock(|data_manager| can.process_data(data_manager));
+                .lock(|data_manager| {
+                    cx.shared.em.run(|| {
+                        can.process_data(data_manager)?;
+                        Ok(())
+                    });
+                });
         });
     }
 
