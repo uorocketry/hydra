@@ -31,6 +31,7 @@ use hal::prelude::*;
 use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
+use messages::health::Health;
 use messages::state::State;
 use messages::*;
 use panic_halt as _;
@@ -47,13 +48,13 @@ mod app {
         em: ErrorManager,
         data_manager: DataManager,
         health_manager: HealthManager<HealthMonitorChannelsCommunication>,
+        radio_manager: RadioManager,
         can0: communication::CanDevice0,
     }
 
     #[local]
     struct Local {
         led: Pin<PA05, PushPullOutput>,
-        radio: RadioDevice,
         sd_manager: SdManager<
             Spi<
                 Config<
@@ -69,7 +70,6 @@ mod app {
             >,
             Pin<PB14, Output<PushPull>>,
         >,
-        radio_manager: RadioManager,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -119,7 +119,7 @@ mod app {
 
         /* Radio config */
         let dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
-        let (radio, gclk0, xfer) = RadioDevice::new(
+        let (radio, gclk0) = RadioDevice::new(
             tokens.pclks.sercom5,
             &mclk,
             peripherals.SERCOM5,
@@ -129,7 +129,7 @@ mod app {
             dmaCh0,
         );
 
-        let radio_manager = RadioManager::new(xfer);
+        let radio_manager = RadioManager::new(radio);
 
         /* SD config */
         let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
@@ -186,14 +186,10 @@ mod app {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
                 health_manager,
+                radio_manager,
                 can0,
             },
-            Local {
-                led,
-                radio,
-                sd_manager,
-                radio_manager,
-            },
+            Local { led, sd_manager },
             init::Monotonics(mono),
         )
     }
@@ -224,7 +220,7 @@ mod app {
         });
     }
 
-    /// Probably should use this ( ﾉ^ω^)ﾉ
+    /// Receives a log message from the custom logger so that it can be sent over the radio.
     pub fn queue_gs_message(d: impl Into<Data>) {
         let message = Message::new(&monotonics::now(), COM_ID, d.into());
 
@@ -234,11 +230,13 @@ mod app {
     /**
      * Sends a message to the radio over UART.
      */
-    #[task(capacity = 10, local = [radio], shared = [&em])]
-    fn send_gs(cx: send_gs::Context, m: Message) {
-        cx.shared.em.run(|| {
-            cx.local.radio.send_message(m)?;
-            Ok(())
+    #[task(capacity = 10, shared = [&em, radio_manager])]
+    fn send_gs(mut cx: send_gs::Context, m: Message) {
+        cx.shared.radio_manager.lock(|radio_manager| {
+            cx.shared.em.run(|| {
+                radio_manager.send_message(m)?;
+                Ok(())
+            })
         });
     }
 
@@ -315,17 +313,28 @@ mod app {
     #[task(shared = [&em, health_manager])]
     fn report_health(mut cx: report_health::Context) {
         cx.shared.em.run(|| {
-            cx.shared.health_manager.lock(|health_manager| {
-                health_manager.evaluate();
-                let temp = health_manager.monitor.data.v5;
-                match temp {
-                    Some(x) => info!("5v: {}", x),
-                    None => info!("5v: None"),
-                }
+            let msg = cx.shared.health_manager.lock(|health_manager| {
+                let state = health_manager.evaluate();
+                Message::new(
+                    &monotonics::now(),
+                    COM_ID,
+                    Health::new(health_manager.monitor.data.clone(), state),
+                )
             });
-
-            spawn_after!(report_health, ExtU64::secs(1))?;
+            spawn!(send_gs, msg)?;
+            spawn_after!(report_health, ExtU64::secs(5))?;
             Ok(())
+        });
+    }
+
+    #[task(binds = SERCOM5_2, shared = [&em, radio_manager])]
+    fn radio_rx(mut cx: radio_rx::Context) {
+        cx.shared.radio_manager.lock(|radio_manager| {
+            cx.shared.em.run(|| {
+                let msg = radio_manager.receive_message()?;
+                spawn!(send_internal, msg)?; // just broadcast the message throughout the system for now.
+                Ok(())
+            });
         });
     }
 

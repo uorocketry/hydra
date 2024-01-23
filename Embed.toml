@@ -1,21 +1,14 @@
 # Configuration for cargo-embed. This command can be used to flash and start a gdb-server.
-#[v1.general]
-#chip = "ATSAME51J20A"
 
-#[v1.probe]
-#protocol = "Swd"
+[v2.general]
+chip = "STM32H733VGTx"
 
-#[v1.gdb]
-#enabled = true
+[v2.probe]
+protocol = "Swd"
 
-#[v2.general]
-#chip = "STM32H733VGTx"
+[v2.gdb]
+enabled = true
 
-#[v2.probe]
-#protocol = "Swd"
-
-#[v2.gdb]
-#enabled = true
 [default.general]
 chip = "ATSAME51J20A"
 

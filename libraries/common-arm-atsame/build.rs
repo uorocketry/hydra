@@ -29,9 +29,9 @@ fn main() {
     // `memory.x` is changed.
     println!("cargo:rerun-if-changed=memory.x");
 
-    // // set the linker script to the one provided by cortex-m-rt
-    // println!("cargo:rustc-link-arg=-Tlink.x");
+    // set the linker script to the one provided by cortex-m-rt
+    println!("cargo:rustc-link-arg=-Tlink.x");
 
-    // // we can also set our defmt script
-    // println!("cargo:rustc-link-arg=-Tdefmt.x");
+    // we can also set our defmt script
+    println!("cargo:rustc-link-arg=-Tdefmt.x");
 }

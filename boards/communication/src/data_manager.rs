@@ -1,12 +1,9 @@
-use defmt::info;
 use messages::command::RadioRate;
 use messages::state::StateData;
 use messages::Message;
 
 #[derive(Clone)]
 pub struct DataManager {
-    // I'd prefer a history buffer here, but clone trait not implemented.
-    // pub sensors: HistoryBuffer<Option<Message>, 10>, // due the the match this will always be a sensor message.
     pub air: Option<Message>,
     pub ekf_nav_1: Option<Message>,
     pub ekf_nav_2: Option<Message>,

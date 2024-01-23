@@ -1,3 +1,5 @@
+use core::convert::Infallible;
+
 use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
@@ -8,22 +10,25 @@ use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::Can0;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac;
+use atsamd_hal::dmac::Transfer;
 use atsamd_hal::gpio::{Alternate, AlternateI, Disabled, Floating, Pin, I, PA22, PA23, PB16, PB17};
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM5;
+use atsamd_hal::prelude::_embedded_hal_serial_Read;
 use atsamd_hal::sercom;
-use atsamd_hal::sercom::uart::TxDuplex;
 use atsamd_hal::sercom::uart::Uart;
+use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
 use atsamd_hal::sercom::Sercom;
 use atsamd_hal::sercom::{uart, Sercom5};
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
-use common_arm::HydraError;
-use defmt::info;
+use common_arm::{herror, HydraError};
+use heapless::HistoryBuffer;
 use heapless::Vec;
+use mavlink::embedded::Read;
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
 use mcan::interrupt::state::EnabledLine0;
@@ -35,12 +40,12 @@ use mcan::{
     filter::{Action, Filter},
 };
 use messages::mavlink;
+use messages::ErrorContext;
+use messages::Event::Error;
 use messages::Message;
 use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
 use typenum::{U0, U128, U32, U64};
-
-use atsamd_hal::dmac::Transfer;
 
 pub struct Capacities;
 
@@ -189,7 +194,7 @@ impl CanDevice0 {
                                 data_manager.handle_data(data);
                             }
                             Err(e) => {
-                                info!("Error: {:?}", e)
+                                herror!(Error(ErrorContext::UnkownCanMessage));
                             }
                         }
                     }
@@ -201,7 +206,7 @@ impl CanDevice0 {
                                 data_manager.handle_data(data);
                             }
                             Err(e) => {
-                                info!("Error: {:?}", e)
+                                herror!(Error(ErrorContext::UnkownCanMessage));
                             }
                         }
                     }
@@ -215,8 +220,8 @@ impl CanDevice0 {
 pub static mut BUF_DST: RadioBuffer = &mut [0; 255];
 
 pub struct RadioDevice {
-    uart: Uart<GroundStationUartConfig, TxDuplex>,
-    mav_sequence: u8,
+    transmitter: Uart<GroundStationUartConfig, TxDuplex>,
+    receiver: Uart<GroundStationUartConfig, RxDuplex>,
 }
 
 impl RadioDevice {
@@ -228,7 +233,7 @@ impl RadioDevice {
         tx_pin: Pin<PB16, Disabled<Floating>>,
         gclk0: S,
         mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
-    ) -> (Self, S::Inc, RadioTransfer)
+    ) -> (Self, S::Inc)
     where
         S: Source<Id = Gclk0Id> + Increment,
     {
@@ -242,21 +247,59 @@ impl RadioDevice {
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
             )
             .enable();
-        let (rx, tx) = uart.split(); // tx sends rx uses dma to receive so we need to setup dma here.
-        dma_channel
-            .as_mut()
-            .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        let xfer = Transfer::new(dma_channel, rx, unsafe { &mut *BUF_DST }, false)
-            .expect("DMA Radio RX")
-            .begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+        let (mut rx, tx) = uart.split();
+        // setup interrupts
+        rx.enable_interrupts(uart::Flags::RXC);
+        // dma_channel
+        //     .as_mut()
+        //     .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
+        // let xfer = Transfer::new(dma_channel, rx, unsafe { &mut *BUF_DST }, false)
+        //     .expect("DMA Radio RX")
+        //     .begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
         (
             RadioDevice {
-                uart: tx,
-                mav_sequence: 0,
+                transmitter: tx,
+                receiver: rx,
             },
             gclk0,
-            xfer,
         )
+    }
+    // pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
+    //     let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
+
+    //     let mav_header = mavlink::MavHeader {
+    //         system_id: 1,
+    //         component_id: 1,
+    //         sequence: self.increment_mav_sequence(),
+    //     };
+
+    //     let mav_message = mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(
+    //         mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: payload },
+    //     );
+    //     mavlink::write_versioned_msg(
+    //         &mut self.transmitter,
+    //         mavlink::MavlinkVersion::V2,
+    //         mav_header,
+    //         &mav_message,
+    //     )?;
+    //     Ok(())
+    // }
+}
+
+pub struct RadioManager {
+    buf: Vec<u8, 280>,
+    radio: RadioDevice,
+    mav_sequence: u8,
+}
+
+impl RadioManager {
+    pub fn new(radio: RadioDevice) -> Self {
+        let mut buf = Vec::new();
+        RadioManager {
+            buf,
+            radio,
+            mav_sequence: 0,
+        }
     }
     pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
         let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
@@ -271,7 +314,7 @@ impl RadioDevice {
             mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: payload },
         );
         mavlink::write_versioned_msg(
-            &mut self.uart,
+            &mut self.radio.transmitter,
             mavlink::MavlinkVersion::V2,
             mav_header,
             &mav_message,
@@ -282,49 +325,40 @@ impl RadioDevice {
         self.mav_sequence = self.mav_sequence.wrapping_add(1);
         self.mav_sequence
     }
-}
+    pub fn receive_message(&mut self) -> Result<Message, HydraError> {
+        if let Ok(data) = self.radio.receiver.read() {
+            // lets add this data to the buffer and see if we can parse it
+            self.buf.push(data);
+            let (header, msg) =
+                mavlink::read_versioned_msg(&mut self.radio.receiver, mavlink::MavlinkVersion::V2)?;
 
-pub struct RadioManager {
-    xfer: Option<RadioTransfer>,
-    buf_select: bool,
-}
-
-impl RadioManager {
-    pub fn new(xfer: RadioTransfer) -> Self {
-        RadioManager {
-            xfer: Some(xfer),
-            buf_select: false,
-        }
-    }
-    pub fn _process_message(&mut self, buf: RadioBuffer) {
-        match from_bytes::<Message>(buf) {
-            Ok(msg) => {
-                info!("Radio: {}", msg);
-                // spawn!(send_internal, msg); // dump to the Can Bus
+            match msg {
+                mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(msg) => {
+                    return Ok(postcard::from_bytes::<Message>(&msg.message)?);
+                    // weird Ok syntax to coerce to hydra error type.
+                }
+                _ => {
+                    herror!(Error(ErrorContext::UnkownPostcardMessage));
+                    return Err(mavlink::error::MessageReadError::Io.into());
+                }
             }
-            Err(_) => {
-                info!("Radio unknown msg");
-                return;
-            }
+        } else {
+            return Err(mavlink::error::MessageReadError::Io.into());
         }
     }
 }
 
-// pub fn radio_dma(cx: crate::app::radio_dma::Context) {
-//     let manager = cx.local.radio_manager;
-//     match &mut manager.xfer {
-//         Some(xfer) => {
-//             if xfer.complete() {
-//                 let (chan0, source, buf) = manager.xfer.take().unwrap().stop();
-//                 let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).expect("f").begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
-//                 manager.process_message(buf);
-//                 unsafe{BUF_DST.copy_from_slice(&[0;255])};
-//                 xfer.block_transfer_interrupt();
-//                 manager.xfer = Some(xfer);
-//             }
-//         }
-//         None => {
-//             info!("none");
-//         }
-//     }
-// }
+impl Read for RadioManager {
+    fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), mavlink::error::MessageReadError> {
+        let len = buf.len().min(self.buf.len());
+        buf[..len].copy_from_slice(&self.buf[..len]);
+        Ok(())
+    }
+    fn read_u8(&mut self) -> Result<u8, mavlink::error::MessageReadError> {
+        if !self.buf.is_empty() {
+            Ok(self.buf[0])
+        } else {
+            Err(mavlink::error::MessageReadError::Io)
+        }
+    }
+}

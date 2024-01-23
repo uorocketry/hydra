@@ -42,15 +42,6 @@ pub enum HealthData {
     HealthStatus(HealthStatus),
 }
 
-// #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-// #[cfg_attr(test, derive(Arbitrary))]
-// #[cfg_attr(feature = "ts", derive(TS))]
-// #[cfg_attr(feature = "ts", ts(export))]
-// pub struct RegulatorStatus {
-//     pub v5_reg: bool,
-//     pub v3_reg: bool,
-// }
-
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
 #[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
@@ -65,4 +56,13 @@ pub struct HealthStatus {
     pub ext_v5: Option<u16>,
     pub ext_3v3: Option<u16>,
     pub failover_sense: Option<u16>,
+}
+
+impl Health {
+    pub fn new(data: impl Into<HealthData>, status: impl Into<HealthState>) -> Self {
+        Health {
+            data: data.into(),
+            status: status.into(),
+        }
+    }
 }

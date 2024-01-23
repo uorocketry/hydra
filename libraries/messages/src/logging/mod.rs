@@ -39,6 +39,16 @@ display_event!(
 #[cfg_attr(test, derive(Arbitrary))]
 pub enum ErrorContext {
     GroundStation,
+    UnkownCanMessage,
+    UnknownRadioMessage,
+    UnkownPostcardMessage,
+    NoRadioTransfer,
 }
 
-display_context!([GroundStation, "Error sending ground station message"]);
+display_context!(
+    [GroundStation, "Error sending ground station message"],
+    [UnkownCanMessage, "Unknown CAN message received"],
+    [UnknownRadioMessage, "Unknown radio message received"],
+    [NoRadioTransfer, "No radio transfer available"],
+    [UnkownPostcardMessage, "Unknown postcard message received"]
+);

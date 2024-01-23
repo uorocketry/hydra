@@ -2,7 +2,6 @@
 # This runner needs to be parametric so we can pass in the chip name
 runner = "probe-run --chip ATSAME51J20A --protocol swd"
 
-# These were moved to the build.rs file 
 rustflags = [
   "-C", "link-arg=-Tlink.x",
   "-C", "link-arg=-Tdefmt.x",

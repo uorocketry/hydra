@@ -6,6 +6,7 @@
 //! and ground-station communication.
 
 use crate::command::Command;
+use crate::health::Health;
 use crate::sender::Sender;
 use crate::sensor::Sensor;
 use crate::state::State;
@@ -61,6 +62,7 @@ pub enum Data {
     Sensor(Sensor),
     Log(Log),
     Command(Command),
+    Health(Health),
 }
 
 impl Message {
