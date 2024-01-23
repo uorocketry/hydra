@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 cortex-m = { workspace = true }
 postcard = { version = "1.0.2", features = ["use-defmt"] }
-atsamd-hal = {workspace = true}
+#atsamd-hal = {workspace = true}
 defmt = "0.3.2"
 defmt-rtt = "0.4.0"
 heapless = "0.7.16"
