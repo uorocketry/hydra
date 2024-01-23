@@ -1,7 +1,7 @@
-use core::{marker::PhantomData, fmt::Debug};
-use defmt::{info};
-use embedded_sdmmc as sd;
+use core::{fmt::Debug, marker::PhantomData};
+use defmt::info;
 use embedded_hal as hal;
+use embedded_sdmmc as sd;
 use hal::spi::FullDuplex;
 
 /// Time source for `[SdInterface]`. It doesn't return any useful information for now, and will
@@ -33,8 +33,9 @@ impl sd::TimeSource for TimeSink {
 
 /// Wrapper for the SD Card. For now, the pins are hard-coded.
 pub struct SdManager<SPI, CS>
-where 
-    SPI: hal::spi::FullDuplex<u8>, <SPI as FullDuplex<u8>>::Error: Debug,
+where
+    SPI: hal::spi::FullDuplex<u8>,
+    <SPI as FullDuplex<u8>>::Error: Debug,
     CS: hal::digital::v2::OutputPin,
 {
     pub sd_controller: sd::Controller<sd::SdMmcSpi<SPI, CS>, TimeSink>,
@@ -45,14 +46,11 @@ where
 
 impl<SPI, CS> SdManager<SPI, CS>
 where
-    SPI: hal::spi::FullDuplex<u8>,  <SPI as FullDuplex<u8>>::Error: Debug,
+    SPI: hal::spi::FullDuplex<u8>,
+    <SPI as FullDuplex<u8>>::Error: Debug,
     CS: hal::digital::v2::OutputPin,
-{    
-    pub fn new(
-        spi: SPI,
-        cs: CS
-    ) -> Self 
-    {
+{
+    pub fn new(spi: SPI, cs: CS) -> Self {
         let time_sink: TimeSink = TimeSink::new(); // Need to give this a DateTime object for actual timing.
         let mut sd_cont = sd::Controller::new(sd::SdMmcSpi::new(spi, cs), time_sink);
         match sd_cont.device().init() {
@@ -136,8 +134,10 @@ where
     }
 }
 
-unsafe impl<SPI, CS> Send for SdManager<SPI, CS> 
-where 
-    SPI: hal::spi::FullDuplex<u8>, <SPI as FullDuplex<u8>>::Error: Debug,
+unsafe impl<SPI, CS> Send for SdManager<SPI, CS>
+where
+    SPI: hal::spi::FullDuplex<u8>,
+    <SPI as FullDuplex<u8>>::Error: Debug,
     CS: hal::digital::v2::OutputPin,
-{}
+{
+}

@@ -3,15 +3,14 @@
 
 mod communication;
 mod data_manager;
-mod types;
 mod health;
+mod types;
 
-use health::HealthMonitorChannelsCommunication;
 use atsamd_hal as hal;
 use common_arm::mcan;
-use common_arm::SdManager;
-use common_arm::HealthMonitor;
 use common_arm::HealthManager;
+use common_arm::HealthMonitor;
+use common_arm::SdManager;
 use common_arm::*;
 use communication::Capacities;
 use communication::{RadioDevice, RadioManager};
@@ -20,7 +19,9 @@ use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
 use hal::dmac;
 use hal::dmac::DmaController;
+use health::HealthMonitorChannelsCommunication;
 // use communication::radio_dma;
+use defmt::info;
 use hal::adc::Adc;
 use hal::gpio::Pins;
 use hal::gpio::{
@@ -32,7 +33,6 @@ use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
 use messages::state::State;
 use messages::*;
-use defmt::info;
 use panic_halt as _;
 use systick_monotonic::*;
 use types::*;
@@ -264,12 +264,10 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (sensors, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
-            (
-                data_manager.take_sensors(),
-                data_manager.get_logging_rate(),
-            )
-        });
+        let (sensors, logging_rate) = cx
+            .shared
+            .data_manager
+            .lock(|data_manager| (data_manager.take_sensors(), data_manager.get_logging_rate()));
 
         cx.shared.em.run(|| {
             for msg in sensors {
@@ -312,7 +310,7 @@ mod app {
     }
 
     /**
-     * Simple health report 
+     * Simple health report
      */
     #[task(shared = [&em, health_manager])]
     fn report_health(mut cx: report_health::Context) {

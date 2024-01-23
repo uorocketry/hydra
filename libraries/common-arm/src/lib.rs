@@ -9,15 +9,15 @@
 pub use mcan;
 
 mod error;
+mod health;
 mod logging;
 mod sd_manager;
-mod health;
 
 pub use crate::error::error_manager::ErrorManager;
 pub use crate::error::hydra_error::{ErrorContextTrait, HydraError, SpawnError};
+pub use crate::health::health_manager::HealthManager;
+pub use crate::health::health_monitor::{HealthMonitor, HealthMonitorChannels};
 pub use crate::logging::HydraLogging;
 pub use crate::sd_manager::SdManager;
-pub use crate::health::health_monitor::{HealthMonitorChannels, HealthMonitor};
-pub use crate::health::health_manager::HealthManager;
 
 use defmt_rtt as _; // global logger

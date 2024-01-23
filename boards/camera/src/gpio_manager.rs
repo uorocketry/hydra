@@ -1,4 +1,4 @@
-use atsamd_hal::gpio::{Pin, PushPullOutput, PA09, PA06};
+use atsamd_hal::gpio::{Pin, PushPullOutput, PA06, PA09};
 use atsamd_hal::prelude::*;
 
 pub struct GPIOManager {
@@ -8,10 +8,7 @@ pub struct GPIOManager {
 
 impl GPIOManager {
     pub fn new(cam1: Pin<PA09, PushPullOutput>, cam2: Pin<PA06, PushPullOutput>) -> Self {
-        Self {
-            cam1,
-            cam2
-        }
+        Self { cam1, cam2 }
     }
     pub fn toggle_cam1(&mut self) {
         self.cam1.toggle().ok();

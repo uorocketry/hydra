@@ -3,9 +3,9 @@ use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::dmac;
 use atsamd_hal::dmac::Transfer;
-use atsamd_hal::sercom::{IoSet6};
-use atsamd_hal::gpio::{Pin, Reset, PB03, PB02};
+use atsamd_hal::gpio::{Pin, Reset, PB02, PB03};
 use atsamd_hal::pac::{MCLK, RTC};
+use atsamd_hal::sercom::IoSet6;
 // use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;
 use core::alloc::{GlobalAlloc, Layout};
@@ -13,17 +13,16 @@ use core::ffi::c_void;
 use core::mem::size_of;
 use core::ptr;
 // use atsamd_hal::time::*;
-use atsamd_hal::prelude::*;
-use defmt::info;
-use common_arm::spawn;
+use crate::app::sbg_handle_data;
 use crate::app::sbg_sd_task as sbg_sd;
-use crate::app::{sbg_handle_data};
+use atsamd_hal::prelude::*;
 use atsamd_hal::sercom::{uart, Sercom, Sercom5};
+use common_arm::spawn;
+use defmt::info;
 use embedded_alloc::Heap;
 use rtic::Mutex;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
-
 
 pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 
@@ -52,7 +51,7 @@ impl SBGManager {
             static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
             unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
         }
-        
+
         let pads_sbg = uart::Pads::<Sercom5, IoSet6>::default().rx(rx).tx(tx);
         let uart_sbg = ConfigSBG::new(mclk, sercom5, pads_sbg, pclk_sercom5.freq())
             .baud(
@@ -115,7 +114,7 @@ pub fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context, data: [u8; SBG_BUFF
                 Ok(())
             });
             manager.file = Some(file);
-        } 
+        }
     });
 }
 /**
@@ -129,10 +128,12 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
         Some(xfer) => {
             if xfer.complete() {
                 let (chan0, source, buf) = sbg.xfer.take().unwrap().stop();
-                let mut xfer = dmac::Transfer::new(chan0, source, unsafe{&mut *BUF_DST}, false).unwrap().begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+                let mut xfer = dmac::Transfer::new(chan0, source, unsafe { &mut *BUF_DST }, false)
+                    .unwrap()
+                    .begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
                 let buf_clone = buf.clone();
                 sbg.sbg_device.read_data(buf);
-                unsafe{BUF_DST.copy_from_slice(&[0;SBG_BUFFER_SIZE])};
+                unsafe { BUF_DST.copy_from_slice(&[0; SBG_BUFFER_SIZE]) };
                 xfer.block_transfer_interrupt();
                 sbg.xfer = Some(xfer);
                 cx.shared.em.run(|| {
@@ -141,7 +142,8 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
                 });
             }
         }
-        None => { // it should be impossible to reach here. 
+        None => {
+            // it should be impossible to reach here.
             info!("None");
         }
     }

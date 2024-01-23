@@ -8,11 +8,10 @@ mod state_machine;
 mod types;
 
 use atsamd_hal as hal;
-use messages::Event::MainDeploy;
-use common_arm::hinfo;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac::DmaController;
+use common_arm::hinfo;
 use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
@@ -21,6 +20,7 @@ use gpio_manager::GPIOManager;
 use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
+use messages::Event::MainDeploy;
 use messages::*;
 use panic_halt as _;
 use state_machine::{StateMachine, StateMachineContext};
@@ -91,7 +91,8 @@ mod app {
         /* GPIO config */
         let led_green = pins.pb16.into_push_pull_output();
         let led_red = pins.pb17.into_push_pull_output();
-        let gpio = GPIOManager::new( // pins switched from schematic 
+        let gpio = GPIOManager::new(
+            // pins switched from schematic
             pins.pa09.into_push_pull_output(),
             pins.pa06.into_push_pull_output(),
         );
@@ -115,7 +116,11 @@ mod app {
                 can0,
                 gpio,
             },
-            Local {led_green, led_red, state_machine},
+            Local {
+                led_green,
+                led_red,
+                state_machine,
+            },
             init::Monotonics(mono),
         )
     }
@@ -132,7 +137,7 @@ mod app {
             if !(*cx.local.fired) {
                 cx.shared.gpio.lock(|gpio| {
                     gpio.fire_drogue();
-                    *cx.local.fired = true; 
+                    *cx.local.fired = true;
                 });
                 spawn_after!(fire_drogue, ExtU64::secs(5))?; // this becomes redundant with a proper error manager
             } else {
@@ -146,7 +151,7 @@ mod app {
 
     #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
     fn fire_main(mut cx: fire_main::Context) {
-        cx.shared.em.run(||{
+        cx.shared.em.run(|| {
             if !(*cx.local.fired) {
                 cx.shared.gpio.lock(|gpio| {
                     gpio.fire_main();
@@ -206,15 +211,13 @@ mod app {
             let state = if let Some(rocket_state) = rocket_state {
                 rocket_state
             } else {
-                // This isn't really an error, we just don't have data yet. 
-                return Ok(())
+                // This isn't really an error, we just don't have data yet.
+                return Ok(());
             };
-            let board_state = messages::state::State {
-                data: state.into(),
-            };
+            let board_state = messages::state::State { data: state.into() };
             let message = Message::new(&monotonics::now(), COM_ID, board_state);
             spawn!(send_internal, message)?;
-            spawn_after!(state_send, ExtU64::secs(2))?; // I think this is fine here. 
+            spawn_after!(state_send, ExtU64::secs(2))?; // I think this is fine here.
             Ok(())
         });
     }

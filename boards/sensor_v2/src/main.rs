@@ -27,14 +27,12 @@ mod app {
     }
 
     #[init]
-    fn init(
-        mut ctx: init::Context,
-    ) -> (SharedResources, LocalResources, init::Monotonics) {
+    fn init(mut ctx: init::Context) -> (SharedResources, LocalResources, init::Monotonics) {
         let pwr = ctx.device.PWR.constrain();
         // We could use smps, but the board is not designed for it
         // let pwrcfg = example_power!(pwr).freeze();
         let pwrcfg = pwr.freeze();
-            
+
         // RCC
         let rcc = ctx.device.RCC.constrain();
         let ccdr = rcc.sys_ck(100.MHz()).freeze(pwrcfg, &ctx.device.SYSCFG);

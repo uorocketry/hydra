@@ -56,7 +56,6 @@ pub struct GpsPos1 {
     pub undulation: f32,
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]

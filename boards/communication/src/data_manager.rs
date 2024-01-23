@@ -3,20 +3,19 @@ use messages::command::RadioRate;
 use messages::state::StateData;
 use messages::Message;
 
-
 #[derive(Clone)]
 pub struct DataManager {
-    // I'd prefer a history buffer here, but clone trait not implemented. 
-    // pub sensors: HistoryBuffer<Option<Message>, 10>, // due the the match this will always be a sensor message. 
+    // I'd prefer a history buffer here, but clone trait not implemented.
+    // pub sensors: HistoryBuffer<Option<Message>, 10>, // due the the match this will always be a sensor message.
     pub air: Option<Message>,
     pub ekf_nav_1: Option<Message>,
     pub ekf_nav_2: Option<Message>,
     pub ekf_quat: Option<Message>,
-    pub imu_1: Option<Message>, 
+    pub imu_1: Option<Message>,
     pub imu_2: Option<Message>,
     pub utc_time: Option<Message>,
     pub gps_vel: Option<Message>,
-    pub gps_pos_1: Option<Message>, 
+    pub gps_pos_1: Option<Message>,
     pub gps_pos_2: Option<Message>,
     pub state: Option<StateData>,
     pub logging_rate: Option<RadioRate>,
@@ -50,7 +49,7 @@ impl DataManager {
         return RadioRate::Slow;
     }
 
-    /// Do not clone instead take to reduce CPU load. 
+    /// Do not clone instead take to reduce CPU load.
     pub fn take_sensors(&mut self) -> [Option<Message>; 10] {
         [
             self.air.take(),
@@ -110,16 +109,11 @@ impl DataManager {
                 messages::command::CommandData::RadioRateChange(command_data) => {
                     self.logging_rate = Some(command_data.rate);
                 }
-                messages::command::CommandData::DeployDrogue(_) => {
-                    
-                }
-                messages::command::CommandData::DeployMain(_) => {
-                }
-                messages::command::CommandData::PowerDown(_) => {
-                }
+                messages::command::CommandData::DeployDrogue(_) => {}
+                messages::command::CommandData::DeployMain(_) => {}
+                messages::command::CommandData::PowerDown(_) => {}
             },
-            _ => {
-            }
+            _ => {}
         }
     }
 }

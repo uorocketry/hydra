@@ -2,11 +2,10 @@ use atsamd_hal as hal;
 use atsamd_hal::gpio::*;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::uart::Uart;
-use atsamd_hal::sercom::{spi, uart, Sercom5, IoSet6};
+use atsamd_hal::sercom::{spi, uart, IoSet6, Sercom5};
 use hal::dmac;
 use hal::dmac::BufferPair;
 use hal::sercom::IoSet2;
-
 
 use hal::sercom::Sercom4;
 use messages::sender::Sender;

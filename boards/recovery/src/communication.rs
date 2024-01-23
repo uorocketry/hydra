@@ -9,8 +9,6 @@ use atsamd_hal::gpio::{Alternate, AlternateI, Pin, I, PA22, PA23};
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
-use mcan::message::{rx, Raw};
-use mcan::tx_buffers::DynTx;
 use common_arm::HydraError;
 use defmt::info;
 use heapless::Vec;
@@ -19,7 +17,9 @@ use mcan::embedded_can as ecan;
 use mcan::interrupt::state::EnabledLine0;
 use mcan::interrupt::{Interrupt, OwnedInterruptSet};
 use mcan::message::tx;
+use mcan::message::{rx, Raw};
 use mcan::messageram::SharedMemory;
+use mcan::tx_buffers::DynTx;
 use mcan::{
     config::{BitTiming, Mode},
     filter::{Action, Filter},

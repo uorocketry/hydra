@@ -40,33 +40,27 @@ where
     T: HealthMonitorChannels,
 {
     pub fn new(channels: T, divider1: u16, divider2: u16, resolution: u16) -> Self {
-        let range_5v = ((resolution as f32 / calculate_voltage(divider1, divider2, 4.9))
-            as u16)
+        let range_5v = ((resolution as f32 / calculate_voltage(divider1, divider2, 4.9)) as u16)
             ..=((resolution as f32 / calculate_voltage(divider1, divider2, 5.1)) as u16);
-        let range_3v3 = ((resolution as f32 / calculate_voltage(divider1, divider2, 3.2))
-            as u16)
+        let range_3v3 = ((resolution as f32 / calculate_voltage(divider1, divider2, 3.2)) as u16)
             ..=((resolution as f32 / calculate_voltage(divider1, divider2, 3.4)) as u16);
-        let range_pyro = ((resolution as f32 / calculate_voltage(divider1, divider2, 8.9))
-            as u16)
+        let range_pyro = ((resolution as f32 / calculate_voltage(divider1, divider2, 8.9)) as u16)
             ..=((resolution as f32 / calculate_voltage(divider1, divider2, 9.1)) as u16);
-        let range_vcc = ((resolution as f32 / calculate_voltage(divider1, divider2, 11.9))
-            as u16)
+        let range_vcc = ((resolution as f32 / calculate_voltage(divider1, divider2, 11.9)) as u16)
             ..=((resolution as f32 / calculate_voltage(divider1, divider2, 12.1)) as u16);
-        let range_int_5v = ((resolution as f32 / calculate_voltage(divider1, divider2, 4.9))
-            as u16)
+        let range_int_5v = ((resolution as f32 / calculate_voltage(divider1, divider2, 4.9)) as u16)
             ..=((resolution as f32 / calculate_voltage(divider1, divider2, 5.1)) as u16);
         let range_int_3v3 = ((resolution as f32 / calculate_voltage(divider1, divider2, 3.2))
-             as u16)
-            ..=((resolution as f32 / calculate_voltage(divider1, divider2, 3.4)) as u16);
-        let range_ext_5v = ((resolution as f32 / calculate_voltage(divider1, divider2, 4.9))
             as u16)
+            ..=((resolution as f32 / calculate_voltage(divider1, divider2, 3.4)) as u16);
+        let range_ext_5v = ((resolution as f32 / calculate_voltage(divider1, divider2, 4.9)) as u16)
             ..=((resolution as f32 / calculate_voltage(divider1, divider2, 5.1)) as u16);
         let range_ext_3v3 = ((resolution as f32 / calculate_voltage(divider1, divider2, 3.2))
-             as u16)
+            as u16)
             ..=((resolution as f32 / calculate_voltage(divider1, divider2, 3.4)) as u16);
         // I'm not certain that failover is actually 3.3v
         let range_failover = ((resolution as f32 / calculate_voltage(divider1, divider2, 3.2))
-             as u16)
+            as u16)
             ..=((resolution as f32 / calculate_voltage(divider1, divider2, 3.4)) as u16);
         Self {
             channels,

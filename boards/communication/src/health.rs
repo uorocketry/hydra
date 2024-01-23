@@ -2,14 +2,16 @@
 //! Would've liked to have this live in common-arm-atsame but the pins and adc are not standardised
 //! for all boards which poses the problem of giving an adc to a wrong pin in a generic way.
 
-use atsamd_hal::gpio::{Alternate, Pin, B, PA02, PB00, PB01, PB02, PB03, PB06, PB07, PB08, PB09, PB05};
+use atsamd_hal::gpio::{
+    Alternate, Pin, B, PA02, PB00, PB01, PB02, PB03, PB05, PB06, PB07, PB08, PB09,
+};
 use atsamd_hal::{adc::Adc, ehal::adc::OneShot, pac::ADC0, pac::ADC1};
 use common_arm::HealthMonitorChannels;
 
 // make sure to define the ADC types in types.rs
 
 // I don't think this should own the ADC object, but rather when a call to evaluate is invoke it should be taken control
-// and then released when the function returns. Refactor this later. 
+// and then released when the function returns. Refactor this later.
 pub struct HealthMonitorChannelsCommunication {
     reader: Adc<ADC0>,
     reader1: Adc<ADC1>,

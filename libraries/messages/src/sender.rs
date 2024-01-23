@@ -7,7 +7,7 @@ use proptest_derive::Arbitrary;
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
-// I don't agree with the naming, We can use these as Ids to sent commands to that specific board. 
+// I don't agree with the naming, We can use these as Ids to sent commands to that specific board.
 #[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
 #[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
@@ -29,7 +29,7 @@ impl From<Sender> for u16 {
             Sender::RecoveryBoard => 2,
             Sender::CommunicationBoard => 3,
             Sender::PowerBoard => 4,
-            Sender::CameraBoard => 5, 
+            Sender::CameraBoard => 5,
         }
     }
 }

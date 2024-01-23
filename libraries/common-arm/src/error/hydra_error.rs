@@ -7,7 +7,6 @@ use messages::ErrorContext;
 
 /// Open up atsamd hal errors without including the whole crate.
 
-
 /// Contains all the various error types that can be encountered in the Hydra codebase. Extra errors
 /// types should be added to this list whenever needed.
 #[derive(From)]

@@ -4,26 +4,25 @@
 mod communication;
 mod data_manager;
 mod gpio_manager;
-mod types;
 mod state_machine;
+mod types;
 
-use communication::Capacities;
-use crate::state_machine::{StateMachine, StateMachineContext};
 use crate::data_manager::DataManager;
 use crate::gpio_manager::GPIOManager;
-use common_arm::ErrorManager;
+use crate::state_machine::{StateMachine, StateMachineContext};
 use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
 use common_arm::mcan;
+use common_arm::ErrorManager;
+use common_arm::*;
+use communication::Capacities;
 use hal::gpio::Pins;
+use hal::gpio::{Pin, PushPullOutput, PB16, PB17};
+use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use panic_halt as _;
 use systick_monotonic::*;
-use common_arm::*;
-use hal::gpio::{PB17, PushPullOutput, Pin, PB16};
-use hal::prelude::*;
-
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
@@ -86,7 +85,7 @@ mod app {
 
         /* Status LED */
         let led_red = pins.pb17.into_push_pull_output();
-        let led_green = pins.pb16.into_push_pull_output(); 
+        let led_green = pins.pb16.into_push_pull_output();
         let gpio = GPIOManager::new(
             pins.pa09.into_push_pull_output(),
             pins.pa06.into_push_pull_output(),
@@ -94,13 +93,26 @@ mod app {
 
         let state_machine = StateMachine::new();
 
-        /* Spawn tasks */                
+        /* Spawn tasks */
         run_sm::spawn().ok();
         blink::spawn().ok();
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
-        (Shared {em: ErrorManager::new(), data_manager: DataManager::new(), can0, gpio_manager: gpio}, Local {state_machine, led_red , led_green}, init::Monotonics(mono))
+        (
+            Shared {
+                em: ErrorManager::new(),
+                data_manager: DataManager::new(),
+                can0,
+                gpio_manager: gpio,
+            },
+            Local {
+                state_machine,
+                led_red,
+                led_green,
+            },
+            init::Monotonics(mono),
+        )
     }
 
     /// Idle task for when no other tasks are running.
@@ -128,7 +140,7 @@ mod app {
             });
             if *cx.local.num < 3 {
                 *cx.local.num += 1;
-                
+
                 spawn_after!(toggle_cams, ExtU64::millis(150))?;
             }
             Ok(())
@@ -145,7 +157,6 @@ mod app {
         spawn_after!(run_sm, ExtU64::millis(500)).ok();
     }
 
-
     /// Simple blink task to test the system.
     /// Acts as a heartbeat for the system.
     #[task(local = [led_green, led_red], shared = [&em])]
@@ -160,5 +171,5 @@ mod app {
             }
             Ok(())
         });
-    }    
+    }
 }
