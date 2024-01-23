@@ -9,8 +9,6 @@ use atsamd_hal::gpio::{Alternate, AlternateI, Pin, I, PA22, PA23};
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
-use common_arm::mcan::message::{rx, Raw};
-use common_arm::mcan::tx_buffers::DynTx;
 use common_arm::HydraError;
 use defmt::info;
 use heapless::Vec;
@@ -19,7 +17,9 @@ use mcan::embedded_can as ecan;
 use mcan::interrupt::state::EnabledLine0;
 use mcan::interrupt::{Interrupt, OwnedInterruptSet};
 use mcan::message::tx;
+use mcan::message::{rx, Raw};
 use mcan::messageram::SharedMemory;
+use mcan::tx_buffers::DynTx;
 use mcan::{
     config::{BitTiming, Mode},
     filter::{Action, Filter},
@@ -152,7 +152,7 @@ impl CanDevice0 {
         )?;
         Ok(())
     }
-    pub fn process_data(&mut self, data_manager: &mut DataManager) {
+    pub fn process_data(&mut self, data_manager: &mut DataManager) -> Result<(), HydraError> {
         let line_interrupts = &self.line_interrupts;
         for interrupt in line_interrupts.iter_flagged() {
             match interrupt {
@@ -160,7 +160,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                data_manager.handle_data(data);
+                                data_manager.handle_data(data)?;
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
@@ -172,7 +172,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                data_manager.handle_data(data);
+                                data_manager.handle_data(data)?;
                             }
                             Err(e) => {
                                 info!("Error: {:?}", e)
@@ -183,5 +183,6 @@ impl CanDevice0 {
                 _ => (),
             }
         }
+        Ok(())
     }
 }

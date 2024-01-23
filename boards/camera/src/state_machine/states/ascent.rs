@@ -13,8 +13,11 @@ use common_arm::spawn;
 pub struct Ascent {}
 
 impl State for Ascent {
-    fn enter(&self, _context: &mut StateMachineContext) {
-        spawn!(toggle_cams).ok();
+    fn enter(&self, context: &mut StateMachineContext) {
+        context.shared_resources.em.run(|| {
+            spawn!(toggle_cams)?;
+            Ok(())
+        });
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         context.shared_resources.data_manager.lock(|data| {

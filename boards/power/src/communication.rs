@@ -1,34 +1,34 @@
+use crate::data_manager::DataManager;
 use atsamd_hal as hal;
+use common_arm::mcan;
+use common_arm::HydraError;
+use defmt::info;
 use hal::can::Dependencies;
-use hal::pac::CAN0;
 use hal::clock::v2::ahb::AhbClk;
 use hal::clock::v2::gclk::Gclk0Id;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::types::Can0;
 use hal::clock::v2::Source;
 use hal::gpio::{Alternate, AlternateI, Pin, I, PA22, PA23};
+use hal::pac::CAN0;
 use hal::typelevel::Increment;
-use common_arm::mcan;
-use mcan::message::{rx, Raw};
-use mcan::tx_buffers::DynTx;
+use heapless::Vec;
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
 use mcan::interrupt::state::EnabledLine0; // line 0 and 1 are connected
 use mcan::interrupt::{Interrupt, OwnedInterruptSet};
 use mcan::message::tx;
+use mcan::message::{rx, Raw};
 use mcan::messageram::SharedMemory;
+use mcan::tx_buffers::DynTx;
 use mcan::{
     config::{BitTiming, Mode},
     filter::{Action, Filter},
 };
-use common_arm::HydraError;
 use messages::Message;
-use heapless::Vec;
-use defmt::info;
-use crate::data_manager::DataManager;
+use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
 use typenum::{U0, U128, U32, U64};
-use postcard::from_bytes;
 pub struct Capacities;
 
 impl mcan::messageram::Capacities for Capacities {

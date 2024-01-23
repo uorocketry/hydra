@@ -12,17 +12,17 @@ use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac::DmaController;
 use common_arm::mcan;
 use common_arm::SdManager;
-use hal::gpio::Output;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
-use hal::dmac;
 use defmt::info;
+use hal::dmac;
+use hal::gpio::Output;
 use hal::gpio::Pins;
-use hal::gpio::{PB16, PB17, PB10, PB01, PushPull};
 use hal::gpio::{Pin, PushPullOutput};
+use hal::gpio::{PushPull, PB01, PB10, PB16, PB17};
 use hal::prelude::*;
-use hal::sercom::{spi, Sercom4, IoSet2};
+use hal::sercom::{spi, IoSet2, Sercom4};
 use mcan::messageram::SharedMemory;
 use messages::sensor::Sensor;
 use messages::*;
@@ -44,10 +44,7 @@ mod app {
         em: ErrorManager,
         data_manager: DataManager,
         can: communication::CanDevice0,
-        sd_manager: SdManager<
-            SdSpi,
-            Pin<PB10, Output<PushPull>>,
-        >,
+        sd_manager: SdManager<SdSpi, Pin<PB10, Output<PushPull>>>,
     }
 
     #[local]
@@ -55,7 +52,7 @@ mod app {
         led_green: Pin<PB16, PushPullOutput>,
         led_red: Pin<PB17, PushPullOutput>,
         sbg_manager: SBGManager,
-        sbg_power_pin: Pin<PB01, PushPullOutput>, // this is here so we do not need to lock sbg_manager.! put into a gpio controller with leds. 
+        sbg_power_pin: Pin<PB01, PushPullOutput>, // this is here so we do not need to lock sbg_manager.! put into a gpio controller with leds.
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -130,7 +127,7 @@ mod app {
             dmaCh0,
         );
 
-        // Buzzer should go here. There is complexity using the new clock system with the atsamdhal pwm implementation. 
+        // Buzzer should go here. There is complexity using the new clock system with the atsamdhal pwm implementation.
 
         /* Status LED */
         let led_green = pins.pb16.into_push_pull_output();
@@ -169,22 +166,30 @@ mod app {
     #[task(local = [sbg_power_pin], shared = [sd_manager, &em])]
     fn sleep_system(mut cx: sleep_system::Context) {
         info!("Power Down");
-        // close out sd files. 
+        // close out sd files.
         cx.shared.sd_manager.lock(|sd| {
             cx.shared.em.run(|| {
-                _ = sd.close_current_file();
+                sd.close_current_file()?;
+                // sd.close(); // we can also close the root directory and volume.
+                // power down sbg
+                cx.local.sbg_power_pin.set_low()?; // define hydra error for this error type.
+                                                   // Call core.SCB.set_deepsleep for even less power consumption.
                 Ok(())
             });
         });
-        // power down sbg
-        _ = cx.local.sbg_power_pin.set_low(); // define hydra error for this error type. 
-        // Call core.SCB.set_deepsleep for even less power consumption. 
     }
 
-    #[task(priority = 3, binds = CAN0, shared = [can, data_manager])]
+    #[task(priority = 3, binds = CAN0, shared = [can, data_manager, &em])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can.lock(|can| {
-            cx.shared.data_manager.lock(|manager| can.process_data(manager))
+            cx.shared
+                .data_manager
+                .lock(|manager| {
+                    cx.shared.em.run(|| {
+                        can.process_data(manager)?;
+                        Ok(())
+                    });
+                });
         });
     }
 

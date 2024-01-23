@@ -13,8 +13,16 @@ default-members = [
     "examples/*"
 ]
 
+[workspace.dependencies.embedded-hal]
+version="0.2.7"
+
+[workspace.dependencies.stm32h7xx-hal]
+git = "https://github.com/stm32-rs/stm32h7xx-hal"  
+# We use 35 even though we have the 33. 
+features = ["defmt", "rt", "stm32h735"  ]
+
 [workspace.dependencies.atsamd-hal]
-git = "https://github.com/atsamd-rs/atsamd"
+git = "https://github.com/uorocketry/atsamd"
 features = ["same51j", "same51j-rt", "dma", "can"]
 
 [workspace.dependencies.serde]
@@ -38,20 +46,21 @@ opt-level = "s"
 opt-level = 0
 debug = true
 
+# Try to remove this 
 [profile.dev.build-override]
-opt-level = 0
+#opt-level = 0 Commenting this may cause issues. 
 debug = true
 
 [profile.release]
 # symbols are nice and they don't increase the size on Flash
-debug = true
-lto = true
+#debug = true
+#lto = true There is an issue with this where it says the interrupts symbol is defined multiple times. Only happens for the STM32H7XX.
 opt-level = 1
 
 [profile.release.package.sbg-rs]
 debug = true
 opt-level = 0
 
+#Try to remove this
 [profile.release.build-override]
-opt-level = 0
-debug = true
+#opt-level = 0

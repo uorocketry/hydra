@@ -1,7 +1,7 @@
-use derive_more::From;
-use defmt::Format;
-use serde::{Deserialize, Serialize};
 use crate::sender::Sender;
+use defmt::Format;
+use derive_more::From;
+use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
 use proptest_derive::Arbitrary;
@@ -42,7 +42,7 @@ pub struct DeployDrogue {
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct DeployMain {
     pub val: bool,
-    // Auth? 
+    // Auth?
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
@@ -72,8 +72,6 @@ pub enum RadioRate {
 
 impl Command {
     pub fn new(data: impl Into<CommandData>) -> Self {
-        Command {
-            data: data.into(),
-        }
+        Command { data: data.into() }
     }
 }

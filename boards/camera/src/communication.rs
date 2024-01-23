@@ -1,32 +1,16 @@
 use crate::data_manager::DataManager;
-
 use atsamd_hal::can::Dependencies;
 use atsamd_hal::clock::v2::ahb::AhbClk;
 use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
-
 use atsamd_hal::clock::v2::types::Can0;
 use atsamd_hal::clock::v2::Source;
-
 use atsamd_hal::gpio::{Alternate, AlternateI, Pin, I, PA22, PA23};
 use atsamd_hal::pac::CAN0;
-
-
-
-
-
-
-
-
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
-
-
-
 use defmt::info;
-
-
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
 use mcan::interrupt::state::EnabledLine0;
@@ -42,8 +26,6 @@ use messages::Message;
 use postcard::from_bytes;
 use systick_monotonic::fugit::RateExtU32;
 use typenum::{U0, U128, U32, U64};
-
-
 
 pub struct Capacities;
 

@@ -31,8 +31,6 @@ pub enum StateData {
 
 impl State {
     pub fn new(data: impl Into<StateData>) -> Self {
-        State {
-            data: data.into(),
-        }
+        State { data: data.into() }
     }
 }

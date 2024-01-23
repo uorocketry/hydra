@@ -33,10 +33,6 @@ pub enum SensorData {
     GpsVel(GpsVel),
     GpsPos1(GpsPos1),
     GpsPos2(GpsPos2),
-    Current(Current),
-    Voltage(Voltage),
-    Regulator(Regulator),
-    Temperature(Temperature),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
@@ -60,7 +56,6 @@ pub struct GpsPos1 {
     pub undulation: f32,
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(test, derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
@@ -79,6 +74,8 @@ pub struct GpsPos2 {
     #[doc = "< Differential correction age in 0.01 seconds. Set to 0XFFFF if differential corrections are not used (since version 1.4)."]
     pub differential_age: u16,
 }
+
+/* Replace with new health monitor */
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(test, derive(Arbitrary))]
@@ -114,6 +111,8 @@ pub struct Temperature {
     pub temperature: f32,
     pub rolling_avg: f32,
 }
+
+/* Replace with new health monitor */
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(test, derive(Arbitrary))]

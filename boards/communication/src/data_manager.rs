@@ -1,20 +1,19 @@
-use defmt::info;
-use messages::command::{RadioRate};
-use messages::sensor::{
-    Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime,
-};
-use messages::state::{StateData};
+use messages::command::RadioRate;
+use messages::state::StateData;
 use messages::Message;
 
 #[derive(Clone)]
 pub struct DataManager {
-    pub air: Option<Air>,
-    pub ekf_nav: (Option<EkfNav1>, Option<EkfNav2>),
-    pub ekf_quat: Option<EkfQuat>,
-    pub imu: (Option<Imu1>, Option<Imu2>),
-    pub utc_time: Option<UtcTime>,
-    pub gps_vel: Option<GpsVel>,
-    pub gps_pos: (Option<GpsPos1>, Option<GpsPos2>),
+    pub air: Option<Message>,
+    pub ekf_nav_1: Option<Message>,
+    pub ekf_nav_2: Option<Message>,
+    pub ekf_quat: Option<Message>,
+    pub imu_1: Option<Message>,
+    pub imu_2: Option<Message>,
+    pub utc_time: Option<Message>,
+    pub gps_vel: Option<Message>,
+    pub gps_pos_1: Option<Message>,
+    pub gps_pos_2: Option<Message>,
     pub state: Option<StateData>,
     pub logging_rate: Option<RadioRate>,
 }
@@ -23,12 +22,15 @@ impl DataManager {
     pub fn new() -> Self {
         Self {
             air: None,
-            ekf_nav: (None, None),
+            ekf_nav_1: None,
+            ekf_nav_2: None,
             ekf_quat: None,
-            imu: (None, None),
+            imu_1: None,
+            imu_2: None,
             utc_time: None,
             gps_vel: None,
-            gps_pos: (None, None),
+            gps_pos_1: None,
+            gps_pos_2: None,
             state: None,
             logging_rate: Some(RadioRate::Slow), // start slow.
         }
@@ -44,58 +46,57 @@ impl DataManager {
         return RadioRate::Slow;
     }
 
-    pub fn clone_sensors(&self) -> [Option<SensorData>; 10] {
+    /// Do not clone instead take to reduce CPU load.
+    pub fn take_sensors(&mut self) -> [Option<Message>; 10] {
         [
-            self.air.clone().map(|x| x.into()),
-            self.ekf_nav.0.clone().map(|x| x.into()),
-            self.ekf_nav.1.clone().map(|x| x.into()),
-            self.ekf_quat.clone().map(|x| x.into()),
-            self.imu.0.clone().map(|x| x.into()),
-            self.imu.1.clone().map(|x| x.into()),
-            self.utc_time.clone().map(|x| x.into()),
-            self.gps_vel.clone().map(|x| x.into()),
-            self.gps_pos.0.clone().map(|x| x.into()),
-            self.gps_pos.1.clone().map(|x| x.into()),
+            self.air.take(),
+            self.ekf_nav_1.take(),
+            self.ekf_nav_2.take(),
+            self.ekf_quat.take(),
+            self.imu_1.take(),
+            self.imu_2.take(),
+            self.utc_time.take(),
+            self.gps_vel.take(),
+            self.gps_pos_1.take(),
+            self.gps_pos_2.take(),
         ]
     }
+
     pub fn clone_states(&self) -> [Option<StateData>; 1] {
         [self.state.clone()]
     }
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
-            messages::Data::Sensor(sensor) => match sensor.data {
-                messages::sensor::SensorData::Air(air_data) => {
-                    self.air = Some(air_data);
+            messages::Data::Sensor(ref sensor) => match sensor.data {
+                messages::sensor::SensorData::Air(_) => {
+                    self.air = Some(data);
                 }
-                messages::sensor::SensorData::EkfNav1(nav1_data) => {
-                    self.ekf_nav.0 = Some(nav1_data);
+                messages::sensor::SensorData::EkfNav1(_) => {
+                    self.ekf_nav_1 = Some(data);
                 }
-                messages::sensor::SensorData::EkfNav2(nav2_data) => {
-                    self.ekf_nav.1 = Some(nav2_data);
+                messages::sensor::SensorData::EkfNav2(_) => {
+                    self.ekf_nav_2 = Some(data);
                 }
-                messages::sensor::SensorData::EkfQuat(quat_data) => {
-                    self.ekf_quat = Some(quat_data);
+                messages::sensor::SensorData::EkfQuat(_) => {
+                    self.ekf_quat = Some(data);
                 }
-                messages::sensor::SensorData::GpsVel(gps_vel_data) => {
-                    self.gps_vel = Some(gps_vel_data);
+                messages::sensor::SensorData::GpsVel(_) => {
+                    self.gps_vel = Some(data);
                 }
-                messages::sensor::SensorData::Imu1(imu1_data) => {
-                    self.imu.0 = Some(imu1_data);
+                messages::sensor::SensorData::Imu1(_) => {
+                    self.imu_1 = Some(data);
                 }
-                messages::sensor::SensorData::Imu2(imu2_data) => {
-                    self.imu.1 = Some(imu2_data);
+                messages::sensor::SensorData::Imu2(_) => {
+                    self.imu_2 = Some(data);
                 }
-                messages::sensor::SensorData::UtcTime(utc_time_data) => {
-                    self.utc_time = Some(utc_time_data);
+                messages::sensor::SensorData::UtcTime(_) => {
+                    self.utc_time = Some(data);
                 }
-                messages::sensor::SensorData::GpsPos1(gps) => {
-                    self.gps_pos.0 = Some(gps);
+                messages::sensor::SensorData::GpsPos1(_) => {
+                    self.gps_pos_1 = Some(data);
                 }
-                messages::sensor::SensorData::GpsPos2(gps) => {
-                    self.gps_pos.1 = Some(gps);
-                }
-                _ => {
-                    info!("impl power related");
+                messages::sensor::SensorData::GpsPos2(_) => {
+                    self.gps_pos_2 = Some(data);
                 }
             },
             messages::Data::State(state) => {
@@ -105,11 +106,11 @@ impl DataManager {
                 messages::command::CommandData::RadioRateChange(command_data) => {
                     self.logging_rate = Some(command_data.rate);
                 }
-                _ => {}
+                messages::command::CommandData::DeployDrogue(_) => {}
+                messages::command::CommandData::DeployMain(_) => {}
+                messages::command::CommandData::PowerDown(_) => {}
             },
-            _ => {
-                info!("unkown");
-            }
+            _ => {}
         }
     }
 }

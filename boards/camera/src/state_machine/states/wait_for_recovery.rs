@@ -1,6 +1,9 @@
 use super::TerminalDescent;
-use crate::no_transition;
+
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
+
+use crate::no_transition;
+
 use defmt::{write, Format, Formatter};
 
 #[derive(Debug, Clone)]

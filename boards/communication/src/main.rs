@@ -3,28 +3,31 @@
 
 mod communication;
 mod data_manager;
+mod health;
 mod types;
 
 use atsamd_hal as hal;
-use atsamd_hal::clock::v2::pclk::Pclk;
-use atsamd_hal::clock::v2::Source;
-use atsamd_hal::dmac;
-use atsamd_hal::dmac::DmaController;
 use common_arm::mcan;
+use common_arm::HealthManager;
+use common_arm::HealthMonitor;
 use common_arm::SdManager;
 use common_arm::*;
 use communication::Capacities;
 use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
-// use communication::radio_dma;
-
+use hal::clock::v2::pclk::Pclk;
+use hal::clock::v2::Source;
+use health::HealthMonitorChannelsCommunication;
+use hal::adc::Adc;
 use hal::gpio::Pins;
-use hal::gpio::{Alternate, Pin, PushPull, PushPullOutput, C, PA05, PB12, PB13, PB14, PB15};
+use hal::gpio::{
+    Alternate, Output, Pin, PushPull, PushPullOutput, C, PA05, PB12, PB13, PB14, PB15,
+};
 use hal::prelude::*;
 use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
-use messages::sensor::Sensor;
+use messages::health::Health;
 use messages::state::State;
 use messages::*;
 use panic_halt as _;
@@ -33,7 +36,6 @@ use types::*;
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
-    use hal::gpio::Output;
 
     use super::*;
 
@@ -41,13 +43,14 @@ mod app {
     struct Shared {
         em: ErrorManager,
         data_manager: DataManager,
+        health_manager: HealthManager<HealthMonitorChannelsCommunication>,
+        radio_manager: RadioManager,
         can0: communication::CanDevice0,
     }
 
     #[local]
     struct Local {
         led: Pin<PA05, PushPullOutput>,
-        radio: RadioDevice,
         sd_manager: SdManager<
             Spi<
                 Config<
@@ -63,7 +66,6 @@ mod app {
             >,
             Pin<PB14, Output<PushPull>>,
         >,
-        radio_manager: RadioManager,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -78,8 +80,8 @@ mod app {
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
 
-        let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
-        let dmaChannels = dmac.split();
+        // let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
+        // let dmaChannels = dmac.split();
 
         /* Logging Setup */
         HydraLogging::set_ground_station_callback(queue_gs_message);
@@ -96,7 +98,7 @@ mod app {
 
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
-        let (_, _, _, mclk) = unsafe { clocks.pac.steal() };
+        let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
@@ -112,18 +114,16 @@ mod app {
         );
 
         /* Radio config */
-        let dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
-        let (radio, gclk0, xfer) = RadioDevice::new(
+        let (radio, gclk0) = RadioDevice::new(
             tokens.pclks.sercom5,
             &mclk,
             peripherals.SERCOM5,
             pins.pb17,
             pins.pb16,
             gclk0,
-            dmaCh0,
         );
 
-        let radio_manager = RadioManager::new(xfer);
+        let radio_manager = RadioManager::new(radio);
 
         /* SD config */
         let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
@@ -138,6 +138,31 @@ mod app {
             .enable();
         let sd_manager = SdManager::new(sdmmc_spi, pins.pb14.into_push_pull_output());
 
+        /* Setup ADC clocks */
+        let (_pclk_adc0, gclk0) = Pclk::enable(tokens.pclks.adc0, gclk0);
+        let (_pclk_adc1, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
+        /* Setup ADC */
+        let adc0 = Adc::adc0(peripherals.ADC0, &mut mclk);
+        let adc1 = Adc::adc1(peripherals.ADC1, &mut mclk);
+
+        /* Setup Health Monitor */
+        let health_monitor_channels = HealthMonitorChannelsCommunication::new(
+            adc0,
+            adc1,
+            pins.pb01.into(),
+            pins.pb02.into(),
+            pins.pb03.into(),
+            pins.pb00.into(),
+            pins.pb06.into(),
+            pins.pb07.into(),
+            pins.pb08.into(),
+            pins.pb09.into(),
+            pins.pb05.into(),
+        );
+
+        let health_monitor = HealthMonitor::new(health_monitor_channels, 10000, 5000, 1023);
+        let health_manager = HealthManager::new(health_monitor);
+
         /* Status LED */
         let led = pins.pa05.into_push_pull_output();
 
@@ -145,6 +170,7 @@ mod app {
         sensor_send::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
+        report_health::spawn().ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -153,14 +179,11 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
+                health_manager,
+                radio_manager,
                 can0,
             },
-            Local {
-                led,
-                radio,
-                sd_manager,
-                radio_manager,
-            },
+            Local { led, sd_manager },
             init::Monotonics(mono),
         )
     }
@@ -191,7 +214,7 @@ mod app {
         });
     }
 
-    /// Probably should use this ( ﾉ^ω^)ﾉ
+    /// Receives a log message from the custom logger so that it can be sent over the radio.
     pub fn queue_gs_message(d: impl Into<Data>) {
         let message = Message::new(&monotonics::now(), COM_ID, d.into());
 
@@ -201,11 +224,13 @@ mod app {
     /**
      * Sends a message to the radio over UART.
      */
-    #[task(capacity = 10, local = [radio], shared = [&em])]
-    fn send_gs(cx: send_gs::Context, m: Message) {
-        cx.shared.em.run(|| {
-            cx.local.radio.send_message(m)?;
-            Ok(())
+    #[task(capacity = 10, shared = [&em, radio_manager])]
+    fn send_gs(mut cx: send_gs::Context, m: Message) {
+        cx.shared.radio_manager.lock(|radio_manager| {
+            cx.shared.em.run(|| {
+                radio_manager.send_message(m)?;
+                Ok(())
+            })
         });
     }
 
@@ -231,22 +256,22 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (sensor_data, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
-            (
-                data_manager.clone_sensors(),
-                data_manager.get_logging_rate(),
-            )
-        });
-
-        let messages = sensor_data
-            .into_iter()
-            .flatten()
-            .map(|x| Message::new(&monotonics::now(), COM_ID, Sensor::new(x)));
+        let (sensors, logging_rate) = cx
+            .shared
+            .data_manager
+            .lock(|data_manager| (data_manager.take_sensors(), data_manager.get_logging_rate()));
 
         cx.shared.em.run(|| {
-            for msg in messages {
-                spawn!(send_gs, msg.clone())?;
-                spawn!(sd_dump, msg)?;
+            for msg in sensors {
+                match msg {
+                    Some(x) => {
+                        spawn!(send_gs, x.clone())?;
+                        spawn!(sd_dump, x)?;
+                    }
+                    None => {
+                        continue;
+                    }
+                }
             }
             Ok(())
         });
@@ -274,6 +299,37 @@ mod app {
             Ok(())
         });
         spawn_after!(state_send, ExtU64::secs(5)).ok();
+    }
+
+    /**
+     * Simple health report
+     */
+    #[task(shared = [&em, health_manager])]
+    fn report_health(mut cx: report_health::Context) {
+        cx.shared.em.run(|| {
+            let msg = cx.shared.health_manager.lock(|health_manager| {
+                let state = health_manager.evaluate();
+                Message::new(
+                    &monotonics::now(),
+                    COM_ID,
+                    Health::new(health_manager.monitor.data.clone(), state),
+                )
+            });
+            spawn!(send_gs, msg)?;
+            spawn_after!(report_health, ExtU64::secs(5))?;
+            Ok(())
+        });
+    }
+
+    #[task(binds = SERCOM5_2, shared = [&em, radio_manager])]
+    fn radio_rx(mut cx: radio_rx::Context) {
+        cx.shared.radio_manager.lock(|radio_manager| {
+            cx.shared.em.run(|| {
+                let msg = radio_manager.receive_message()?;
+                spawn!(send_internal, msg)?; // just broadcast the message throughout the system for now.
+                Ok(())
+            });
+        });
     }
 
     /**

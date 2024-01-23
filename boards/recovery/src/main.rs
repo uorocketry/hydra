@@ -11,6 +11,7 @@ use atsamd_hal as hal;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac::DmaController;
+use common_arm::hinfo;
 use common_arm::mcan;
 use common_arm::*;
 use communication::Capacities;
@@ -89,7 +90,8 @@ mod app {
         /* GPIO config */
         let led_green = pins.pb16.into_push_pull_output();
         let led_red = pins.pb17.into_push_pull_output();
-        let gpio = GPIOManager::new( // pins switched from schematic 
+        let gpio = GPIOManager::new(
+            // pins switched from schematic
             pins.pa09.into_push_pull_output(),
             pins.pa06.into_push_pull_output(),
         );
@@ -113,7 +115,11 @@ mod app {
                 can0,
                 gpio,
             },
-            Local {led_green, led_red, state_machine},
+            Local {
+                led_green,
+                led_red,
+                state_machine,
+            },
             init::Monotonics(mono),
         )
     }
@@ -124,34 +130,41 @@ mod app {
         loop {}
     }
 
-    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
     fn fire_drogue(mut cx: fire_drogue::Context) {
-        if !(*cx.local.fired) {
-            cx.shared.gpio.lock(|gpio| {
-                gpio.fire_drogue();
-                *cx.local.fired = true; 
-            });
-            spawn_after!(fire_drogue, ExtU64::secs(5)).ok();
-        } else {
-            cx.shared.gpio.lock(|gpio| {
-                gpio.close_drogue();
-            });
-        }
+        cx.shared.em.run(|| {
+            if !(*cx.local.fired) {
+                cx.shared.gpio.lock(|gpio| {
+                    gpio.fire_drogue();
+                    *cx.local.fired = true;
+                });
+                spawn_after!(fire_drogue, ExtU64::secs(5))?; // this becomes redundant with a proper error manager
+            } else {
+                cx.shared.gpio.lock(|gpio| {
+                    gpio.close_drogue();
+                });
+            }
+            Ok(())
+        });
     }
 
-    #[task(priority = 3, local = [fired: bool = false], shared=[gpio])]
+    #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
     fn fire_main(mut cx: fire_main::Context) {
-        if !(*cx.local.fired) {
-            cx.shared.gpio.lock(|gpio| {
-                gpio.fire_main();
-                *cx.local.fired = true;
-            });
-            spawn_after!(fire_main, ExtU64::secs(5)).ok();
-        } else {
-            cx.shared.gpio.lock(|gpio| {
-                gpio.close_main();
-            });
-        }
+        cx.shared.em.run(|| {
+            if !(*cx.local.fired) {
+                cx.shared.gpio.lock(|gpio| {
+                    gpio.fire_main();
+                    hinfo!(MainDeploy);
+                    *cx.local.fired = true;
+                });
+                spawn_after!(fire_main, ExtU64::secs(5))?; // this becomes redundant with a proper error manager
+            } else {
+                cx.shared.gpio.lock(|gpio| {
+                    gpio.close_main();
+                });
+            }
+            Ok(())
+        });
     }
 
     /// Runs the state machine.
@@ -168,12 +181,17 @@ mod app {
     }
 
     /// Handles the CAN0 interrupt.
-    #[task(binds = CAN0, shared = [can0, data_manager])]
+    #[task(binds = CAN0, shared = [can0, data_manager, &em])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
             cx.shared
                 .data_manager
-                .lock(|data_manager| can.process_data(data_manager));
+                .lock(|data_manager| {
+                    cx.shared.em.run(|| {
+                        can.process_data(data_manager)?;
+                        Ok(())
+                    });
+                });
         });
     }
 
@@ -197,17 +215,15 @@ mod app {
             let state = if let Some(rocket_state) = rocket_state {
                 rocket_state
             } else {
-                // This isn't really an error, we just don't have data yet. 
-                return Ok(())
+                // This isn't really an error, we just don't have data yet.
+                return Ok(());
             };
-            let board_state = messages::state::State {
-                data: state.into(),
-            };
+            let board_state = messages::state::State { data: state.into() };
             let message = Message::new(&monotonics::now(), COM_ID, board_state);
             spawn!(send_internal, message)?;
+            spawn_after!(state_send, ExtU64::secs(2))?; // I think this is fine here.
             Ok(())
         });
-        spawn_after!(state_send, ExtU64::secs(2)).ok();
     }
 
     /// Simple blink task to test the system.

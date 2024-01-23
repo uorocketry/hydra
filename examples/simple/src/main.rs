@@ -29,9 +29,9 @@ fn main() -> ! {
     );
 
     clock.configure_gclk_divider_and_source(
-        pac::gclk::pchctrl::GEN_A::GCLK2,
+        pac::gclk::pchctrl::GENSELECT_A::GCLK2,
         1,
-        pac::gclk::genctrl::SRC_A::DFLL,
+        pac::gclk::genctrl::SRCSELECT_A::DFLL,
         false,
     );
 

@@ -1,9 +1,11 @@
-use atsamd_hal;
+// use atsamd_hal::dmac;
 use core::convert::Infallible;
 use defmt::{write, Format};
 use derive_more::From;
 use embedded_sdmmc as sd;
 use messages::ErrorContext;
+
+/// Open up atsamd hal errors without including the whole crate.
 
 /// Contains all the various error types that can be encountered in the Hydra codebase. Extra errors
 /// types should be added to this list whenever needed.
@@ -19,8 +21,9 @@ pub enum HydraErrorType {
     SdCardError(sd::Error<sd::SdMmcError>),
     /// Error from the Mavlink library.
     MavlinkError(messages::mavlink::error::MessageWriteError),
+    MavlinkReadError(messages::mavlink::error::MessageReadError),
     /// DMA error.
-    DmaError(atsamd_hal::dmac::Error),
+    // DmaError(dmac::Error),
     /// CAN send error.
     CanError(nb::Error<mcan::tx_buffers::Error>),
     /// CAN message build error.
@@ -45,9 +48,12 @@ impl defmt::Format for HydraErrorType {
             HydraErrorType::MavlinkError(_) => {
                 write!(f, "Mavlink error!");
             }
-            HydraErrorType::DmaError(_) => {
-                write!(f, "DMA error!");
+            HydraErrorType::MavlinkReadError(_) => {
+                write!(f, "Mavlink read error!");
             }
+            // HydraErrorType::DmaError(_) => {
+            //     write!(f, "DMA error!");
+            // }
             HydraErrorType::CanError(_) => {
                 write!(f, "CAN error!");
             }

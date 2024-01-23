@@ -5,16 +5,17 @@
 //! This crate contains all the message definitions that will be used for inter-board communication
 //! and ground-station communication.
 
+use crate::command::Command;
+use crate::health::Health;
 use crate::sender::Sender;
 use crate::sensor::Sensor;
 use crate::state::State;
-use crate::command::Command;
 use defmt::Format;
 use derive_more::From;
 use fugit::Instant;
-use serde::{Deserialize, Serialize};
 /// This is to help control versions.
 pub use mavlink;
+use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
 use proptest_derive::Arbitrary;
@@ -22,10 +23,11 @@ use proptest_derive::Arbitrary;
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
+pub mod command;
+pub mod health;
 mod logging;
 pub mod sender;
 pub mod sensor;
-pub mod command;
 pub mod state;
 
 pub const MAX_SIZE: usize = 64;
@@ -60,6 +62,7 @@ pub enum Data {
     Sensor(Sensor),
     Log(Log),
     Command(Command),
+    Health(Health),
 }
 
 impl Message {
