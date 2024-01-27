@@ -17,6 +17,62 @@
             ]
         },
         {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Debug Camera",
+            "chip": "ATSAME51J20A",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/camera",
+                }
+            ]
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Debug Power",
+            "chip": "ATSAME51J20A",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/power",
+                }
+            ]
+        },
+        {
+            // "preLaunchTask": "Build Release Communication",
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Debug Recovery (Release)",
+            "chip": "ATSAME51J20A",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/recovery",
+                }
+            ]
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Debug Camera (Release)",
+            "chip": "ATSAME51J20A",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/camera",
+                }
+            ]
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Debug Power (Release)",
+            "chip": "ATSAME51J20A",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/power",
+                }
+            ]
+        },
+        {
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "openocd",
