@@ -2,7 +2,7 @@
 	"name": "DevContainer",
 	"dockerFile": "Dockerfile",
 	"features": {
-		"ghcr.io/lee-orr/rusty-dev-containers/cargo-make:0": {}
+		"ghcr.io/lee-orr/rusty-dev-containers/cargo-make:latest": {}
 	},
 	"remoteUser": "root"
 }
