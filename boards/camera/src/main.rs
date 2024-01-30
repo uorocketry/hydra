@@ -21,8 +21,15 @@ use hal::gpio::Pins;
 use hal::gpio::{Pin, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
-use panic_halt as _;
+// use panic_halt as _;
 use systick_monotonic::*;
+
+/// Custom panic handler.
+/// Reset the system if a panic occurs. 
+#[panic_handler]
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    cortex_m::peripheral::SCB::sys_reset();
+}
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {

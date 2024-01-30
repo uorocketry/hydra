@@ -30,9 +30,17 @@ use messages::command::RadioRate;
 use messages::health::Health;
 use messages::state::State;
 use messages::*;
-use panic_halt as _;
+// use panic_halt as _;
 use systick_monotonic::*;
 use types::*;
+
+/// Custom panic handler.
+/// Reset the system if a panic occurs. 
+#[panic_handler]
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    cortex_m::peripheral::SCB::sys_reset();
+}
+
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {

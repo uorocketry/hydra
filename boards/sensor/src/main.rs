@@ -26,7 +26,7 @@ use hal::sercom::{spi, IoSet2, Sercom4};
 use mcan::messageram::SharedMemory;
 use messages::sensor::Sensor;
 use messages::*;
-use panic_halt as _;
+// use panic_halt as _;
 use sbg_manager::{sbg_dma, sbg_handle_data, sbg_sd_task, SBGManager};
 //use sbg_manager::{sbg_dma, sbg_handle_data, SBGManager};
 
@@ -34,6 +34,13 @@ use sbg_rs::sbg::{CallbackData, SBG_BUFFER_SIZE};
 
 use systick_monotonic::*;
 use types::*;
+
+/// Custom panic handler.
+/// Reset the system if a panic occurs. 
+#[panic_handler]
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    cortex_m::peripheral::SCB::sys_reset();
+}
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
