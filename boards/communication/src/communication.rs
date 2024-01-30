@@ -13,16 +13,16 @@ use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM5;
 use atsamd_hal::prelude::_embedded_hal_serial_Read;
 use atsamd_hal::sercom;
+use atsamd_hal::sercom::uart;
 use atsamd_hal::sercom::uart::Uart;
 use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
-use atsamd_hal::sercom::uart;
 use atsamd_hal::typelevel::Increment;
 use common_arm::mcan;
 use common_arm::mcan::message::{rx, Raw};
 use common_arm::mcan::tx_buffers::DynTx;
 use common_arm::{herror, HydraError};
-use heapless::Vec;
 use heapless::HistoryBuffer;
+use heapless::Vec;
 use mavlink::embedded::Read;
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
@@ -296,14 +296,14 @@ impl RadioManager {
             self.buf.write(data);
             let (_header, msg) =
                 mavlink::read_versioned_msg(&mut self.radio.receiver, mavlink::MavlinkVersion::V2)?;
-            // Do we need the header? 
+            // Do we need the header?
             match msg {
                 mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(msg) => {
                     return Ok(postcard::from_bytes::<Message>(&msg.message)?);
                     // weird Ok syntax to coerce to hydra error type.
                 }
                 _ => {
-                    herror!(Error,ErrorContext::UnkownPostcardMessage);
+                    herror!(Error, ErrorContext::UnkownPostcardMessage);
                     return Err(mavlink::error::MessageReadError::Io.into());
                 }
             }

@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-panic-halt = "0.2.0" 
 cortex-m = { workspace = true }
 cortex-m-rt = "^0.7.0"
 cortex-m-rtic = "1.1.3"

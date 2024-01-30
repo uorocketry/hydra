@@ -10,13 +10,11 @@ use stm32h7xx_hal::gpio::Input;
 use stm32h7xx_hal::gpio::{Output, PushPull};
 use stm32h7xx_hal::prelude::*;
 
-// use panic_halt as _;
-
 /// Custom panic handler.
-/// Reset the system if a panic occurs. 
+/// Reset the system if a panic occurs.
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    cortex_m::peripheral::SCB::sys_reset();
+    stm32h7xx_hal::pac::SCB::sys_reset();
 }
 
 #[rtic::app(device = stm32h7xx_hal::stm32, dispatchers = [EXTI0, EXTI1])]
