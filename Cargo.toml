@@ -54,6 +54,7 @@ debug = true
 [profile.release]
 # symbols are nice and they don't increase the size on Flash
 #debug = true
+debug = 1
 #lto = true There is an issue with this where it says the interrupts symbol is defined multiple times. Only happens for the STM32H7XX.
 opt-level = 1
 
