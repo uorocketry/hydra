@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\boards",
+    "\\boards\\communication",
+    "\\boards\\communication\\src"
+  ],
+  "SelectedNode": "\\boards\\communication\\src\\data_manager.rs",
+  "PreviewInSolutionExplorer": false
+}

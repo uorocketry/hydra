@@ -36,6 +36,8 @@ where
         let pyro_status = get_status(data.pyro_sense, &self.monitor.range_pyro);
         let vcc_status = get_status(data.vcc_sense, &self.monitor.range_vcc);
         let failover_status = get_status(data.failover_sense, &self.monitor.range_failover);
+        let drogue_sense = get_status(data.drogue_sense, &self.monitor.range_drogue_sense);
+        let main_sense = get_status(data.main_sense, &self.monitor.range_main_sense);
 
         for status in [
             v5_status,
@@ -47,6 +49,8 @@ where
             pyro_status,
             vcc_status,
             failover_status,
+            drogue_sense,
+            main_sense,
         ] {
             match status {
                 HealthState::Error => return HealthState::Error,

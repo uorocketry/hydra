@@ -17,6 +17,8 @@ pub trait HealthMonitorChannels {
     fn get_ext_5v(&mut self) -> Option<u16>;
     fn get_ext_3v3(&mut self) -> Option<u16>;
     fn get_failover(&mut self) -> Option<u16>;
+    fn get_drogue_sense(&mut self) -> Option<u16>;
+    fn get_main_sense(&mut self) -> Option<u16>;
 }
 
 pub struct HealthMonitor<T: HealthMonitorChannels> {
@@ -33,6 +35,8 @@ pub struct HealthMonitor<T: HealthMonitorChannels> {
     pub range_ext_5v: RangeInclusive<u16>,
     pub range_ext_3v3: RangeInclusive<u16>,
     pub range_failover: RangeInclusive<u16>,
+    pub range_drogue_sense: RangeInclusive<u16>,
+    pub range_main_sense: RangeInclusive<u16>,
 }
 
 impl<T> HealthMonitor<T>
@@ -62,6 +66,12 @@ where
         let range_failover = ((resolution as f32 / calculate_voltage(divider1, divider2, 3.2))
             as u16)
             ..=((resolution as f32 / calculate_voltage(divider1, divider2, 3.4)) as u16);
+        let range_drogue_sense = ((resolution as f32 / calculate_voltage(divider1, divider2, 4.9))
+            as u16)
+            ..=((resolution as f32 / calculate_voltage(divider1, divider2, 5.1)) as u16);
+        let range_main_sense = ((resolution as f32 / calculate_voltage(divider1, divider2, 4.9))
+            as u16)
+            ..=((resolution as f32 / calculate_voltage(divider1, divider2, 5.1)) as u16);
         Self {
             channels,
             data: HealthStatus {
@@ -74,6 +84,8 @@ where
                 ext_v5: None,
                 ext_3v3: None,
                 failover_sense: None,
+                drogue_sense: None,
+                main_sense: None,
             },
             range_5v,
             range_3v3,
@@ -84,6 +96,9 @@ where
             range_ext_5v,
             range_ext_3v3,
             range_failover,
+            range_drogue_sense,
+            range_main_sense,
+
         }
     }
 
@@ -102,6 +117,8 @@ where
         self.data.ext_v5 = self.channels.get_ext_5v();
         self.data.ext_3v3 = self.channels.get_ext_3v3();
         self.data.failover_sense = self.channels.get_failover();
+        self.data.drogue_sense = self.channels.get_drogue_sense();
+        self.data.main_sense = self.channels.get_drogue_sense();
     }
 }
 
