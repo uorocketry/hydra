@@ -56,6 +56,8 @@ pub struct HealthStatus {
     pub ext_v5: Option<u16>,
     pub ext_3v3: Option<u16>,
     pub failover_sense: Option<u16>,
+    pub drogue_sense: Option<u16>,
+    pub main_sense: Option<u16>,
 }
 
 impl Health {
