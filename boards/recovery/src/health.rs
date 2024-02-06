@@ -1,7 +1,7 @@
 //! Health related code
 //! Would've liked to have this live in common-arm-atsame but the pins and adc are not standardised
 //! for all boards which poses the problem of giving an adc to a wrong pin in a generic way.
-//pins
+//Pins
 use atsamd_hal::gpio::{
     Alternate, Pin, B, PB00, PB01, PB02, PB03, PB05, PB08, PB09,
 };
