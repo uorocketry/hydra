@@ -14,23 +14,19 @@ use common_arm::HealthMonitorChannels;
 
 // I don't think this should own the ADC object, but rather when a call to evaluate is invoke it should be taken control
 // and then released when the function returns. Refactor this later.
-pub struct HealthMonitorChannelsCommunication {
+pub struct HealthMonitorChannelsRecovery {
     reader: Adc<ADC0>,
     reader1: Adc<ADC1>,
     pin_3v3: Pin<PB01, Alternate<B>>,
     pin_5v: Pin<PB02, Alternate<B>>,
     pin_pyro: Pin<PB03, Alternate<B>>,
     pin_vcc: Pin<PB00, Alternate<B>>,
-    //pin_ext_3v3: Pin<PB06, Alternate<B>>,
-    // pin_ext_5v: Pin<PB07, Alternate<B>>,
-    // pin_int_5v: Pin<PB08, Alternate<B>>,
-    // pin_int_3v3: Pin<PB09, Alternate<B>>,
     pin_failover: Pin<PB05, Alternate<B>>,
     pin_drogue_sense: Pin<PB09, Alternate<B>>,
     pin_main_sense: Pin<PB08, Alternate<B>>,
 }
 
-impl HealthMonitorChannels for HealthMonitorChannelsCommunication {
+impl HealthMonitorChannels for HealthMonitorChannelsRecovery {
     fn get_3v3(&mut self) -> Option<u16> {
         self.reader.read(&mut self.pin_3v3).ok()
     }
@@ -66,7 +62,7 @@ impl HealthMonitorChannels for HealthMonitorChannelsCommunication {
     }
 }
 
-impl HealthMonitorChannelsCommunication {
+impl HealthMonitorChannelsRecovery {
     pub fn new(
         reader: Adc<ADC0>,
         reader1: Adc<ADC1>,
@@ -74,25 +70,17 @@ impl HealthMonitorChannelsCommunication {
         pin_5v: Pin<PB02, Alternate<B>>,
         pin_pyro: Pin<PB03, Alternate<B>>,
         pin_vcc: Pin<PB00, Alternate<B>>,
-        pin_ext_3v3: Pin<PB06, Alternate<B>>,
-        pin_ext_5v: Pin<PB07, Alternate<B>>,
-        pin_int_5v: Pin<PB08, Alternate<B>>,
-        pin_int_3v3: Pin<PB09, Alternate<B>>,
         pin_failover: Pin<PB05, Alternate<B>>,
         pin_drogue_sense: Pin<PB09, Alternate<B>>,
         pin_main_sense: Pin<PB08, Alternate<B>>,
     ) -> Self {
-        HealthMonitorChannelsCommunication {
+        HealthMonitorChannelsRecovery {
             reader,
             reader1,
             pin_3v3,
             pin_5v,
             pin_pyro,
             pin_vcc,
-            pin_ext_3v3,
-            pin_ext_5v,
-            pin_int_5v,
-            pin_int_3v3,
             pin_failover,
             pin_drogue_sense,
             pin_main_sense,

@@ -4,6 +4,7 @@
 mod communication;
 mod data_manager;
 mod gpio_manager;
+mod health;
 mod state_machine;
 mod types;
 
@@ -13,12 +14,17 @@ use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac::DmaController;
 use common_arm::hinfo;
 use common_arm::mcan;
+use common_arm::HealthManager;
+use common_arm::HealthMonitor;
+use messages::health::Health;
 use common_arm::*;
 use communication::Capacities;
 use data_manager::DataManager;
 use gpio_manager::GPIOManager;
 use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
+use hal::adc::Adc;
+use health::HealthMonitorChannelsRecovery;
 use mcan::messageram::SharedMemory;
 use messages::*;
 use panic_halt as _;
@@ -35,6 +41,7 @@ mod app {
         em: ErrorManager,
         data_manager: DataManager,
         can0: communication::CanDevice0,
+        health_manager: HealthManager<HealthMonitorChannelsRecovery>,
         gpio: GPIOManager,
     }
 
@@ -72,7 +79,7 @@ mod app {
 
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
-        let (_, _, _, _mclk) = unsafe { clocks.pac.steal() };
+        let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
@@ -86,6 +93,28 @@ mod app {
             cx.local.can_memory,
             false,
         );
+
+        /* Setup ADC clocks */
+        let (_pclk_adc0, gclk0) = Pclk::enable(tokens.pclks.adc0, gclk0);
+        let (_pclk_adc1, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
+        /* Setup ADC */
+        let adc0 = Adc::adc0(peripherals.ADC0, &mut mclk);
+        let adc1 = Adc::adc1(peripherals.ADC1, &mut mclk);
+
+        let health_monitor_channels = HealthMonitorChannelsRecovery::new(
+            adc0,
+            adc1,
+            pins.pb01.into(),
+            pins.pb02.into(),
+            pins.pb03.into(),
+            pins.pb00.into(),
+            pins.pb05.into(),
+            pins.pb09.into(),
+            pins.pb08.into(),
+        );
+
+        let health_monitor = HealthMonitor::new(health_monitor_channels, 10000, 5000, 1023);
+        let health_manager = HealthManager::new(health_monitor);
 
         /* GPIO config */
         let led_green = pins.pb16.into_push_pull_output();
@@ -102,8 +131,7 @@ mod app {
         run_sm::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
-        // fire_main::spawn_after(ExtU64::secs(15)).ok();
-        // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
+        report_health::spawn().ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -112,6 +140,7 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
+                health_manager,
                 can0,
                 gpio,
             },
@@ -184,14 +213,12 @@ mod app {
     #[task(binds = CAN0, shared = [can0, data_manager, &em])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
-            cx.shared
-                .data_manager
-                .lock(|data_manager| {
-                    cx.shared.em.run(|| {
-                        can.process_data(data_manager)?;
-                        Ok(())
-                    });
+            cx.shared.data_manager.lock(|data_manager| {
+                cx.shared.em.run(|| {
+                    can.process_data(data_manager)?;
+                    Ok(())
                 });
+            });
         });
     }
 
@@ -222,6 +249,26 @@ mod app {
             let message = Message::new(&monotonics::now(), COM_ID, board_state);
             spawn!(send_internal, message)?;
             spawn_after!(state_send, ExtU64::secs(2))?; // I think this is fine here.
+            Ok(())
+        });
+    }
+
+    /**
+     * Simple health report
+     */
+    #[task(shared = [&em, health_manager])]
+    fn report_health(mut cx: report_health::Context) {
+        cx.shared.em.run(|| {
+            let msg = cx.shared.health_manager.lock(|health_manager| {
+                let state = health_manager.evaluate();
+                Message::new(
+                    &monotonics::now(),
+                    COM_ID,
+                    Health::new(health_manager.monitor.data.clone(), state),
+                )
+            });
+            spawn!(send_internal, msg)?; // dump to the can bus
+            spawn_after!(report_health, ExtU64::secs(5))?;
             Ok(())
         });
     }

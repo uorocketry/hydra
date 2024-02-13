@@ -64,19 +64,19 @@ where
 }
 
 fn get_status(data: Option<u16>, nominal: &RangeInclusive<u16>) -> HealthState {
-    match data {
+    return match data {
         Some(x) => {
-            if nominal.contains(&x) {
-                return HealthState::Nominal;
-            }
-            else {
+            if !nominal.contains(&x) {
                 warn!("Unsafe Voltage");
                 HealthState::Error
+            }
+            else {
+                HealthState::Nominal
             }
         },
         None => {
             warn!("No data");
-            return HealthState::Warning;
+            HealthState::Warning
         }
     }
 }
