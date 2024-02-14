@@ -4,5 +4,7 @@
 	"features": {
 		"ghcr.io/lee-orr/rusty-dev-containers/cargo-make:latest": {}
 	},
-	"remoteUser": "root"
+	"remoteUser": "root",
+	"runArgs": ["--privileged"] 
+ 
 }
