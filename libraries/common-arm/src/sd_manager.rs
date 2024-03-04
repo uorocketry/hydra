@@ -64,10 +64,10 @@ where
             Err(_) => {
                 herror!(Error, ErrorContext::SDCardNotConnected);
             }
-        }
+        };
 
         let mut volume = match sd_controller.get_volume(sd::VolumeIdx(0)) {
-            Ok(volume) => volume,
+            Ok(volume) => Some(volume),
             Err(_) => {
                 error!("Cannot get volume 0");
                 None
@@ -75,7 +75,7 @@ where
         };
 
         let root_directory = match sd_controller.open_root_dir(&volume) {
-            Ok(root_directory) => root_directory,
+            Ok(root_directory) => Some(root_directory),
             Err(_) => {
                 error!("Cannot get root");
                 None
@@ -88,7 +88,7 @@ where
             sd::Mode::ReadWriteCreateOrTruncate,
         );
         let file = match file {
-            Ok(file) => file,
+            Ok(file) => Some(file),
             Err(_) => {
                 error!("Cannot create file.");
                 None
@@ -96,10 +96,10 @@ where
         };
 
         SdManager {
-            sd_controller: sd_controller,
-            volume: Some(volume),
-            root_directory: Some(root_directory),
-            file: Some(file),
+            sd_controller,
+            volume,
+            root_directory,
+            file,
         }
     }
     pub fn write(
@@ -156,7 +156,7 @@ where
         self.sd_controller
             .close_dir(&self.volume, self.root_directory);
     }
-    pub fn is_mounted(mut self) {
+    pub fn is_mounted(mut self) -> bool {
         // Sd crate doesn't have a check method for SD card being still mounted
         // Use `card_size_bytes()` as indicator if device is still connected or not
         match self.sd_controller.device().card_size_bytes() {

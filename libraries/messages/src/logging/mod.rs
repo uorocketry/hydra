@@ -51,6 +51,6 @@ display_context!(
     [UnkownCanMessage, "Unknown CAN message received"],
     [UnknownRadioMessage, "Unknown radio message received"],
     [NoRadioTransfer, "No radio transfer available"],
-    [UnkownPostcardMessage, "Unknown postcard message received"]
+    [UnkownPostcardMessage, "Unknown postcard message received"],
     [SDCardNotConnected, "SD Card is not connected"]
 );

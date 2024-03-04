@@ -17,7 +17,7 @@ pub trait HealthMonitorChannels {
     fn get_ext_5v(&mut self) -> Option<u16>;
     fn get_ext_3v3(&mut self) -> Option<u16>;
     fn get_failover(&mut self) -> Option<u16>;
-    fn get_sd_status(&mut self) -> Option<bool>;
+    fn get_sd_card_status(&mut self) -> Option<bool>;
 }
 
 pub struct HealthMonitor<T: HealthMonitorChannels> {
@@ -104,7 +104,7 @@ where
         self.data.ext_v5 = self.channels.get_ext_5v();
         self.data.ext_3v3 = self.channels.get_ext_3v3();
         self.data.failover_sense = self.channels.get_failover();
-        self.data.sd_card = self.channels.get_sd_status_card();
+        self.data.sd_card = self.channels.get_sd_card_status();
     }
 }
 

@@ -53,7 +53,7 @@ impl HealthMonitorChannels for HealthMonitorChannelsCommunication {
     fn get_failover(&mut self) -> Option<u16> {
         self.reader1.read(&mut self.pin_failover).ok()
     }
-    fn get_sd_status(&mut self) -> Option<bool> {
+    fn get_sd_card_status(&mut self) -> Option<bool> {
         self.sd_manager.is_mounted()
     }
 }
