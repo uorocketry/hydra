@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye
+FROM mcr.microsoft.com/devcontainers/rust:latest
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get upgrade -y && apt-get install -y cmake pkg-config libusb-1.0-0-dev libftdi1-dev libudev-dev libssl-dev
