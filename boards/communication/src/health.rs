@@ -4,7 +4,7 @@
 
 use atsamd_hal::gpio::{Alternate, Pin, B, PB00, PB01, PB02, PB03, PB05, PB06, PB07, PB08, PB09};
 use atsamd_hal::{adc::Adc, ehal::adc::OneShot, pac::ADC0, pac::ADC1};
-use common_arm::HealthMonitorChannels;
+use common_arm::{HealthMonitorChannels, SdManager};
 
 // make sure to define the ADC types in types.rs
 
@@ -13,6 +13,7 @@ use common_arm::HealthMonitorChannels;
 pub struct HealthMonitorChannelsCommunication {
     reader: Adc<ADC0>,
     reader1: Adc<ADC1>,
+    sd_manager: SdManager,
     pin_3v3: Pin<PB01, Alternate<B>>,
     pin_5v: Pin<PB02, Alternate<B>>,
     pin_pyro: Pin<PB03, Alternate<B>>,
@@ -52,12 +53,16 @@ impl HealthMonitorChannels for HealthMonitorChannelsCommunication {
     fn get_failover(&mut self) -> Option<u16> {
         self.reader1.read(&mut self.pin_failover).ok()
     }
+    fn get_sd_status(&mut self) -> Option<bool> {
+        self.sd_manager.is_mounted()
+    }
 }
 
 impl HealthMonitorChannelsCommunication {
     pub fn new(
         reader: Adc<ADC0>,
         reader1: Adc<ADC1>,
+        sd_manager: SdManager,
         pin_3v3: Pin<PB01, Alternate<B>>,
         pin_5v: Pin<PB02, Alternate<B>>,
         pin_pyro: Pin<PB03, Alternate<B>>,
@@ -71,6 +76,7 @@ impl HealthMonitorChannelsCommunication {
         HealthMonitorChannelsCommunication {
             reader,
             reader1,
+            sd_manager,
             pin_3v3,
             pin_5v,
             pin_pyro,

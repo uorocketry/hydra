@@ -43,6 +43,7 @@ pub enum ErrorContext {
     UnknownRadioMessage,
     UnkownPostcardMessage,
     NoRadioTransfer,
+    SDCardNotConnected,
 }
 
 display_context!(
@@ -51,4 +52,5 @@ display_context!(
     [UnknownRadioMessage, "Unknown radio message received"],
     [NoRadioTransfer, "No radio transfer available"],
     [UnkownPostcardMessage, "Unknown postcard message received"]
+    [SDCardNotConnected, "SD Card is not connected"]
 );
