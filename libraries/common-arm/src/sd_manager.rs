@@ -5,7 +5,6 @@ use embedded_sdmmc as sd;
 use hal::spi::FullDuplex;
 
 use messages::ErrorContext;
-use sd::Directory;
 use crate::herror;
 
 /// Time source for `[SdInterface]`. It doesn't return any useful information for now, and will
@@ -75,33 +74,35 @@ where
             }
         };
 
-        let mut root_directory: Option<Directory> = None;
-        if volume.is_some() {
-            root_directory = match sd_controller.open_root_dir(volume.as_ref().unwrap()) {
+        let root_directory = match &volume {
+            Some(volume) => match sd_controller.open_root_dir(volume) {
                 Ok(root_directory) => Some(root_directory),
                 Err(_) => {
                     error!("Cannot get root");
                     None
                 }
-            };
-        }
-
-        let file: Result<sd::File, sd::Error<sd::SdMmcError>>;
-        if volume.is_some() && root_directory.is_some() {
-            file = sd_controller.open_file_in_dir(
-                volume.as_mut().unwrap(),
-                root_directory.as_ref().unwrap(),
-                "log.txt",
-                sd::Mode::ReadWriteCreateOrTruncate,
-            );
-        }
-
-        let file: Option<sd::File> = match file {
-            Ok(file) => Some(file),
-            Err(_) => {
-                error!("Cannot create file.");
-                None
             }
+            _ => None,
+        };
+
+        let file = match (&mut volume, &root_directory) {
+            (Some(volume), Some(root_directory)) => {
+                let _file = sd_controller.open_file_in_dir(
+                    volume,
+                    &root_directory,
+                    "log.txt",
+                    sd::Mode::ReadWriteCreateOrTruncate,
+                );
+                let _file = match _file {
+                    Ok(__file) => Some(__file),
+                    Err(_) => {
+                        error!("Cannot create file.");
+                        None
+                    }
+                };
+                _file
+            },
+            _ => None
         };
 
         SdManager {
@@ -111,6 +112,7 @@ where
             file,
         }
     }
+
     pub fn write(
         &mut self,
         file: &mut sd::File,
@@ -121,6 +123,7 @@ where
         }
         self.sd_controller.write(self.volume.as_mut().unwrap(), file, buffer)
     }
+
     pub fn write_str(
         &mut self,
         file: &mut sd::File,
@@ -132,6 +135,7 @@ where
         let buffer: &[u8] = msg.as_bytes();
         self.sd_controller.write(self.volume.as_mut().unwrap(), file, buffer)
     }
+
     pub fn open_file(&mut self, file_name: &str) -> Result<sd::File, sd::Error<sd::SdMmcError>> {
         if !self.is_mounted() {
             return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
@@ -143,6 +147,7 @@ where
             sd::Mode::ReadWriteCreateOrTruncate,
         )
     }
+
     pub fn close_current_file(&mut self) -> Result<(), sd::Error<sd::SdMmcError>> {
         if !self.is_mounted() {
             return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
@@ -152,19 +157,21 @@ where
         }
         Ok(())
     }
+
     pub fn close_file(&mut self, file: sd::File) -> Result<(), sd::Error<sd::SdMmcError>> {
         if !self.is_mounted() {
             return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
         }
         self.sd_controller.close_file(self.volume.as_ref().unwrap(), file)
     }
+
     pub fn close(&mut self) -> Result<(), sd::Error<sd::SdMmcError>> {
         if !self.is_mounted() {
             return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
         }
         self.sd_controller.close_dir(
             self.volume.as_ref().unwrap(), 
-            self.root_directory.as_ref().unwrap()
+            self.root_directory.unwrap()
         );
         Ok(())
     }
