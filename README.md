@@ -16,11 +16,40 @@
 2. Build: `cargo build`
 3. Install probe-run: `cargo install --git https://github.com/uorocketry/probe-run`
     - `probe-run` currently requires a patch to flash our chip, so please use the above version while the patch is upstreamed
-4, Install cargo-make: `cargo install cargo-make`
+4. Install cargo-make: `cargo install cargo-make`
 4. Flash: `cargo run --bin main`
 5. Run tests: `cargo make test-host` or `cargo make test-device`
 
 For more detailed instructions on flashing, debugging, and more, please see [the wiki](https://avwiki.uorocketry.ca/en/Avionics/HYDRA/Software).
+
+## Windows Users
+
+### Setting up with Docker
+1. Install Docker: https://docs.docker.com/desktop/install/windows-install/
+2. Install VS Code: https://code.visualstudio.com/download
+3. From VS Code, install the "Dev Containers" extension
+4. press `ctrl` + `shift` + `p`, and search for `Dev Containers: Open Folder in Container`
+
+### Setting up with WSL
+1. Enable WSL: https://learn.microsoft.com/en-us/windows/wsl/install
+2. Install a linux distro from the Microsoft Store
+4. Install ARM GNU Toolchain: https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
+  - NOTE: You may find this in your distro's package managerm, but make sure it is up to date.
+  - Ubuntu has an outdated version in its repositories. If using Ubuntu, download it manually from the link above
+3. Follow the rest of the instructions in [Getting Started][##-getting-started]
+
+### Flashing
+After plugging in J-Link, it will likely show up as unknown.
+1. Install Zadig: https://zadig.akeo.ie/
+2. From Zadig, select J-Link as the device and WinUSB as the driver
+3. click Reinstall WCID Driver
+
+If using WSL or Docker with a WSL backend (you probably are), you need to tell Windows to share J-Link with WSL.
+1. Install usbipd-win: https://github.com/dorssel/usbipd-win/releases
+2. Open command prompt/powershell with admin privileges and run `usbipd list`
+3. Make note of the entry called J-Link and run `usbipd bind --busid <busid>`
+4. Next, run `usbipd attach --wsl --busid <busid>`
+5. You can now follow the flashing instructions in [Getting Started][##-getting-started]
 
 ## Documentation
 
