@@ -42,14 +42,16 @@ For more detailed instructions on flashing, debugging, and more, please see [the
 After plugging in J-Link, it will likely show up as unknown.
 1. Install Zadig: https://zadig.akeo.ie/
 2. From Zadig, select J-Link as the device and WinUSB as the driver
-3. click Reinstall WCID Driver
+3. click Install Driver
 
 If using WSL or Docker with a WSL backend (you probably are), you need to tell Windows to share J-Link with WSL.
-1. Install usbipd-win: https://github.com/dorssel/usbipd-win/releases
-2. Open command prompt/powershell with admin privileges and run `usbipd list`
-3. Make note of the entry called J-Link and run `usbipd bind --busid <busid>`
-4. Next, run `usbipd attach --wsl --busid <busid>`
-5. You can now follow the flashing instructions in [Getting Started][##-getting-started]
+1. From WSL, install linux-tools-generic
+  1. on Ubuntu: `sudo apt install linux-tools-generic`
+2. Install usbipd-win: https://github.com/dorssel/usbipd-win/releases
+3. Open command prompt/powershell with admin privileges and run `usbipd list`
+4. Make note of the entry called J-Link and run `usbipd bind --busid <busid>`
+5. Next, run `usbipd attach --wsl --busid <busid>`
+6. You can now follow the flashing instructions in [Getting Started][##-getting-started]
 
 ## Documentation
 
