@@ -36,7 +36,7 @@ For more detailed instructions on flashing, debugging, and more, please see [the
 4. Install ARM GNU Toolchain: https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
   - NOTE: You may find this in your distro's package managerm, but make sure it is up to date.
   - Ubuntu has an outdated version in its repositories. If using Ubuntu, download it manually from the link above
-3. Follow the rest of the instructions in [Getting Started](##-getting-started)
+3. Follow the rest of the instructions in [Getting Started](#-getting-started)
 
 ### Flashing
 After plugging in J-Link, it will likely show up as unknown.
@@ -51,7 +51,7 @@ If using WSL or Docker with a WSL backend (you probably are), you need to tell W
 3. Open command prompt/powershell with admin privileges and run `usbipd list`
 4. Make note of the entry called J-Link and run `usbipd bind --busid <busid>`
 5. Next, run `usbipd attach --wsl --busid <busid>`
-6. You can now follow the flashing instructions in [Getting Started](##-getting-started)
+6. You can now follow the flashing instructions in [Getting Started](#-getting-started)
 
 ## Documentation
 
