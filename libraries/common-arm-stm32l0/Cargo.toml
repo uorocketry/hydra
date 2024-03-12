@@ -1,5 +1,5 @@
 [package]
-name = "common-arm-stm32"
+name = "common-arm-stm32l0"
 version = "0.1.0"
 edition = "2021"
 
