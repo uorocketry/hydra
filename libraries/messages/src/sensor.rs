@@ -15,7 +15,7 @@ use ts_rs::TS;
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Sensor {
     /// Used to differentiate between multiple components on the same sender. Unused right now.
-    pub component_id: u8,
+    // pub component_id: u8,
     pub data: SensorData,
 }
 
@@ -29,11 +29,14 @@ pub enum SensorData {
     EkfQuat(EkfQuat),
     EkfNav1(EkfNav1),
     EkfNav2(EkfNav2),
+    EkfNavAcc(EkfNavAcc),
     Imu1(Imu1),
     Imu2(Imu2),
     GpsVel(GpsVel),
+    GpsVelAcc(GpsVelAcc),
     GpsPos1(GpsPos1),
     GpsPos2(GpsPos2),
+    GpsPosAcc(GpsPosAcc),
 }
 
 /* Replace with new health monitor */
@@ -81,20 +84,10 @@ pub struct Temperature {
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct GpsPos1 {
-    #[doc = "< Time in us since the sensor power up."]
-    pub time_stamp: u32,
-    #[doc = "< GPS position status, type and bitmask."]
-    pub status: GpsPositionStatus,
-    #[doc = "< GPS time of week in ms."]
-    pub time_of_week: Option<u32>,
     #[doc = "< Latitude in degrees, positive north."]
     pub latitude: Option<f64>,
     #[doc = "< Longitude in degrees, positive east."]
     pub longitude: Option<f64>,
-    #[doc = "< Altitude above Mean Sea Level in meters."]
-    pub altitude: Option<f64>,
-    #[doc = "< Altitude difference between the geoid and the Ellipsoid in meters (Height above Ellipsoid = altitude + undulation)."]
-    pub undulation: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
@@ -102,6 +95,23 @@ pub struct GpsPos1 {
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct GpsPos2 {
+    #[doc = "< GPS time of week in ms."]
+    pub time_of_week: Option<u32>,
+    #[doc = "< Altitude difference between the geoid and the Ellipsoid in meters (Height above Ellipsoid = altitude + undulation)."]
+    pub undulation: Option<f32>,
+    #[doc = "< Altitude above Mean Sea Level in meters."]
+    pub altitude: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct GpsPosAcc {
+    #[doc = "< Time in us since the sensor power up."]
+    pub time_stamp: u32, 
+    #[doc = "< GPS position status, type and bitmask."]
+    pub status: GpsPositionStatus,
     #[doc = "< 1 sigma latitude accuracy in meters."]
     pub latitude_accuracy: Option<f32>,
     #[doc = "< 1 sigma longitude accuracy in meters."]
@@ -183,14 +193,26 @@ pub struct EkfQuat {
 #[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
+pub struct EkfNavAcc {
+    #[doc = "< EKF solution status bitmask and enum."]
+    pub status: EkfStatus,
+    #[doc = "< North, East, Down velocity 1 sigma standard deviation in m.s^-1."]
+    pub velocity_std_dev: Option<[f32; 3usize]>,
+    #[doc = "< Latitude, longitude and altitude 1 sigma standard deviation in meters."]
+    pub position_std_dev: Option<[f32; 3usize]>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct EkfNav1 {
     #[doc = "< Time in us since the sensor power up."]
     pub time_stamp: u32,
     #[doc = "< North, East, Down velocity in m.s^-1."]
     pub velocity: Option<[f32; 3usize]>,
-    #[doc = "< North, East, Down velocity 1 sigma standard deviation in m.s^-1."]
-    pub velocity_std_dev: Option<[f32; 3usize]>,
 }
+
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
@@ -201,10 +223,7 @@ pub struct EkfNav2 {
     pub position: Option<[f64; 3usize]>,
     #[doc = "< Altitude difference between the geoid and the Ellipsoid in meters (Height above Ellipsoid = altitude + undulation)."]
     pub undulation: Option<f32>,
-    #[doc = "< Latitude, longitude and altitude 1 sigma standard deviation in meters."]
-    pub position_std_dev: Option<[f32; 3usize]>,
-    #[doc = "< EKF solution status bitmask and enum."]
-    pub status: EkfStatus,
+
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
@@ -248,18 +267,25 @@ pub struct GpsVel {
     pub status: GpsVelStatus,
     #[doc = "< GPS North, East, Down velocity in m.s^-1."]
     pub velocity: Option<[f32; 3usize]>,
-    #[doc = "< GPS North, East, Down velocity 1 sigma accuracy in m.s^-1."]
-    pub velocity_acc: Option<[f32; 3usize]>,
     #[doc = "< Track ground course in degrees."]
     pub course: Option<f32>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Format)]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+pub struct GpsVelAcc {
     #[doc = "< Course accuracy in degrees."]
     pub course_acc: Option<f32>,
+    #[doc = "< GPS North, East, Down velocity 1 sigma accuracy in m.s^-1."]
+    pub velocity_acc: Option<[f32; 3usize]>,
 }
 
 impl Sensor {
     pub fn new(data: impl Into<SensorData>) -> Self {
         Sensor {
-            component_id: 0,
+            // component_id: 0,
             data: data.into(),
         }
     }

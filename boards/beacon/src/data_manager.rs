@@ -7,13 +7,16 @@ pub struct DataManager {
     pub air: Option<Message>,
     pub ekf_nav_1: Option<Message>,
     pub ekf_nav_2: Option<Message>,
+    pub ekf_nav_acc: Option<Message>,
     pub ekf_quat: Option<Message>,
     pub imu_1: Option<Message>,
     pub imu_2: Option<Message>,
     pub utc_time: Option<Message>,
     pub gps_vel: Option<Message>,
+    pub gps_vel_acc: Option<Message>,
     pub gps_pos_1: Option<Message>,
     pub gps_pos_2: Option<Message>,
+    pub gps_pos_acc: Option<Message>,
     pub state: Option<StateData>,
     pub logging_rate: Option<RadioRate>,
 }
@@ -24,13 +27,16 @@ impl DataManager {
             air: None,
             ekf_nav_1: None,
             ekf_nav_2: None,
+            ekf_nav_acc: None,
             ekf_quat: None,
             imu_1: None,
             imu_2: None,
             utc_time: None,
             gps_vel: None,
+            gps_vel_acc: None,
             gps_pos_1: None,
             gps_pos_2: None,
+            gps_pos_acc: None,
             state: None,
             logging_rate: Some(RadioRate::Slow), // start slow.
         }
@@ -47,18 +53,21 @@ impl DataManager {
     }
 
     /// Do not clone instead take to reduce CPU load.
-    pub fn take_sensors(&mut self) -> [Option<Message>; 10] {
+    pub fn take_sensors(&mut self) -> [Option<Message>; 13] {
         [
             self.air.take(),
             self.ekf_nav_1.take(),
             self.ekf_nav_2.take(),
+            self.ekf_nav_acc.take(),
             self.ekf_quat.take(),
             self.imu_1.take(),
             self.imu_2.take(),
             self.utc_time.take(),
             self.gps_vel.take(),
+            self.gps_vel_acc.take(),
             self.gps_pos_1.take(),
             self.gps_pos_2.take(),
+            self.gps_pos_acc.take(),
         ]
     }
 
@@ -68,6 +77,12 @@ impl DataManager {
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
             messages::Data::Sensor(ref sensor) => match sensor.data {
+                messages::sensor::SensorData::EkfNavAcc(_) => {
+                    self.ekf_nav_acc = Some(data);
+                }
+                messages::sensor::SensorData::GpsPosAcc(_) => {
+                    self.gps_pos_acc = Some(data);
+                }
                 messages::sensor::SensorData::Air(_) => {
                     self.air = Some(data);
                 }
@@ -82,6 +97,9 @@ impl DataManager {
                 }
                 messages::sensor::SensorData::GpsVel(_) => {
                     self.gps_vel = Some(data);
+                }
+                messages::sensor::SensorData::GpsVelAcc(_) => {
+                    self.gps_vel_acc = Some(data);
                 }
                 messages::sensor::SensorData::Imu1(_) => {
                     self.imu_1 = Some(data);

@@ -1,19 +1,19 @@
 use crate::app::sleep_system;
 use common_arm::{spawn, HydraError};
 use messages::sensor::{
-    Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime,
+    Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime, EkfNavAcc, GpsPosAcc, GpsVelAcc,
 };
 use messages::Message;
 
 #[derive(Clone)]
 pub struct DataManager {
     pub air: Option<Air>,
-    pub ekf_nav: Option<(EkfNav1, EkfNav2)>,
+    pub ekf_nav: Option<(EkfNav1, EkfNav2, EkfNavAcc)>,
     pub ekf_quat: Option<EkfQuat>,
     pub imu: Option<(Imu1, Imu2)>,
     pub utc_time: Option<UtcTime>,
-    pub gps_vel: Option<GpsVel>,
-    pub gps_pos: Option<(GpsPos1, GpsPos2)>,
+    pub gps_vel: Option<(GpsVel, GpsVelAcc)>,
+    pub gps_pos: Option<(GpsPos1, GpsPos2, GpsPosAcc)>,
 }
 
 impl DataManager {
@@ -29,18 +29,21 @@ impl DataManager {
         }
     }
 
-    pub fn clone_sensors(&self) -> [Option<SensorData>; 10] {
+    pub fn clone_sensors(&self) -> [Option<SensorData>; 13] {
         [
             self.air.clone().map(|x| x.into()),
             self.ekf_nav.clone().map(|x| x.0.into()),
             self.ekf_nav.clone().map(|x| x.1.into()),
+            self.ekf_nav.clone().map(|x| x.2.into()),
             self.ekf_quat.clone().map(|x| x.into()),
             self.imu.clone().map(|x| x.0.into()),
             self.imu.clone().map(|x| x.1.into()),
             self.utc_time.clone().map(|x| x.into()),
-            self.gps_vel.clone().map(|x| x.into()),
+            self.gps_vel.clone().map(|x| x.0.into()),
+            self.gps_vel.clone().map(|x| x.1.into()),
             self.gps_pos.clone().map(|x| x.0.into()),
             self.gps_pos.clone().map(|x| x.1.into()),
+            self.gps_pos.clone().map(|x| x.2.into()),
         ]
     }
 

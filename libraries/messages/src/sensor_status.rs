@@ -275,8 +275,10 @@ pub enum GpsSatelliteUsed {
     QzssL5
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
+#[cfg_attr(feature = "ts", derive(TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 pub struct GpsPositionStatus {
     status: u32,
 }

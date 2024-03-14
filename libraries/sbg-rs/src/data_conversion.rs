@@ -2,7 +2,7 @@ use crate::bindings::{
     SbgLogAirData, SbgLogEkfNavData, SbgLogEkfQuatData, SbgLogGpsVel, SbgLogImuData, SbgLogUtcData, SbgLogGpsPos,
 };
 use bitflags::Flags;
-use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime, GpsPos1, GpsPos2};
+use messages::sensor::{Air, EkfNav1, EkfNav2, EkfNavAcc, EkfQuat, GpsVel, Imu1, Imu2, UtcTime, GpsPos1, GpsPos2, GpsPosAcc, GpsVelAcc};
 use messages::sensor_status::{
     AirFlags, AirStatus, EkfFlags, EkfStatus, GpsVelStatus, GpsVelStatusE, ImuFlags, ImuStatus,
     UtcStatus, UtcTimeStatus, GpsPositionStatus, GpsPositionStatusE
@@ -20,7 +20,7 @@ where
     }
 }
 
-impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2) {
+impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2, GpsPosAcc) {
     fn from(value: SbgLogGpsPos) -> Self {
         let status = GpsPositionStatus::new(value.status);
         
@@ -31,22 +31,24 @@ impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2) {
         
         (
             GpsPos1 {
-                time_stamp: value.timeStamp,
-                status: status,
-                time_of_week: if valid {Some(value.timeOfWeek)} else {None},
                 latitude: if valid {Some(value.latitude)} else {None},
                 longitude: if valid {Some(value.longitude)} else {None},
-                altitude: if valid {Some(value.altitude)} else {None},
-                undulation: if valid {Some(value.undulation)} else {None},
             },
             GpsPos2 {
+                altitude: if valid {Some(value.altitude)} else {None},
+                undulation: if valid {Some(value.undulation)} else {None},
+                time_of_week: if valid {Some(value.timeOfWeek)} else {None},
+            },
+            GpsPosAcc {
+                status: status,
+                time_stamp: value.timeStamp,
                 latitude_accuracy: if valid {Some(value.latitudeAccuracy)} else {None},
                 longitude_accuracy: if valid {Some(value.longitudeAccuracy)} else {None},
                 altitude_accuracy: if valid {Some(value.altitudeAccuracy)} else {None},
                 num_sv_used: if valid {Some(value.numSvUsed)} else {None},
                 base_station_id: if valid {Some(value.baseStationId)} else {None},
                 differential_age: if valid {Some(value.differentialAge)} else {None},
-            },
+            }
         )
     }
 }
@@ -109,7 +111,7 @@ impl From<SbgLogEkfQuatData> for EkfQuat {
     }
 }
 
-impl From<SbgLogEkfNavData> for (EkfNav1, EkfNav2) {
+impl From<SbgLogEkfNavData> for (EkfNav1, EkfNav2, EkfNavAcc) {
     fn from(value: SbgLogEkfNavData) -> Self {
         let status = EkfStatus::new(value.status);
         let flags = status.get_flags();
@@ -118,14 +120,17 @@ impl From<SbgLogEkfNavData> for (EkfNav1, EkfNav2) {
             EkfNav1 {
                 time_stamp: value.timeStamp,
                 velocity: check(&flags, EkfFlags::VelocityValid, value.velocity),
-                velocity_std_dev: check(&flags, EkfFlags::VelocityValid, value.velocityStdDev),
+
             },
             EkfNav2 {
                 undulation: check(&flags, EkfFlags::AttitudeValid, value.undulation),
                 position: check(&flags, EkfFlags::PositionValid, value.position),
+            },
+            EkfNavAcc {
+                velocity_std_dev: check(&flags, EkfFlags::VelocityValid, value.velocityStdDev),
                 position_std_dev: check(&flags, EkfFlags::PositionValid, value.positionStdDev),
                 status,
-            },
+            }
         )
     }
 }
@@ -151,7 +156,7 @@ impl From<SbgLogImuData> for (Imu1, Imu2) {
     }
 }
 
-impl From<SbgLogGpsVel> for GpsVel {
+impl From<SbgLogGpsVel> for (GpsVel, GpsVelAcc) {
     fn from(value: SbgLogGpsVel) -> Self {
         let status = GpsVelStatus::new(value.status);
 
@@ -160,14 +165,19 @@ impl From<SbgLogGpsVel> for GpsVel {
             _ => false,
         };
 
-        Self {
-            time_stamp: value.timeStamp,
-            time_of_week: if valid {Some(value.timeOfWeek) } else {None}, 
-            status,
-            velocity: if valid { Some(value.velocity) } else { None },
-            velocity_acc: if valid { Some(value.velocityAcc) } else { None },
-            course: if valid { Some(value.course) } else { None },
-            course_acc: if valid { Some(value.courseAcc) } else { None },
-        }
+        (
+            GpsVel {
+                time_stamp: value.timeStamp,
+                time_of_week: if valid {Some(value.timeOfWeek) } else {None}, 
+                status,
+                velocity: if valid { Some(value.velocity) } else { None },
+                course: if valid { Some(value.course) } else { None },
+            }, 
+            GpsVelAcc {
+                velocity_acc: if valid { Some(value.velocityAcc) } else { None },
+                course_acc: if valid { Some(value.courseAcc) } else { None },
+            }
+            
+        )
     }
 }

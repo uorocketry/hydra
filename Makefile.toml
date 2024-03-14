@@ -23,6 +23,7 @@ dependencies = [
 [tasks.test-messages]
 command = "cargo"
 args = ["test", "-p", "messages", "--target", "${CARGO_MAKE_RUST_TARGET_TRIPLE}", "--features", "std", "--no-default-features"]
+env = {RUST_MIN_STACK = "8388608"}
 
 # -----------------------
 # Embedded Testing
