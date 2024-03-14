@@ -1,4 +1,4 @@
-use crate::sensor_status::{AirStatus, EkfStatus, GpsVelStatus, ImuStatus, UtcTimeStatus};
+use crate::sensor_status::{AirStatus, EkfStatus, GpsVelStatus, ImuStatus, UtcTimeStatus, GpsPositionStatus};
 use defmt::Format;
 use derive_more::From;
 use serde::{Deserialize, Serialize};
@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(any(feature = "std", test))]
 use proptest_derive::Arbitrary;
 
-use crate::sensor_status::{AirStatus, EkfStatus, GpsVelStatus, ImuStatus, UtcTimeStatus, GpsPositionStatus};
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
