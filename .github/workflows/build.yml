@@ -51,6 +51,12 @@ jobs:
     env:
       RUST_MIN_STACK: 8388608
     steps:
+      - uses: actions/checkout@v2
+      - name: Install packages
+        run: sudo apt update && sudo apt install -y cmake
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
       - uses: actions-rs/cargo@v1
         name: "Install cargo-make"
         with:
