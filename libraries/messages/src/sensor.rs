@@ -39,7 +39,7 @@ pub enum SensorData {
 /* Replace with new health monitor */
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Regulator {
@@ -47,7 +47,7 @@ pub struct Regulator {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Voltage {
@@ -56,7 +56,7 @@ pub struct Voltage {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Current {
@@ -65,7 +65,7 @@ pub struct Current {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct Temperature {
@@ -77,7 +77,7 @@ pub struct Temperature {
 
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct GpsPos1 {
@@ -98,7 +98,7 @@ pub struct GpsPos1 {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
 pub struct GpsPos2 {

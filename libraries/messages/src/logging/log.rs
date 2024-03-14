@@ -8,14 +8,13 @@ use ts_rs::TS;
 #[cfg(feature = "ts")]
 use ts_rs::TS;
 
-// #[cfg(any(feature = "std", test))]
-#[cfg(test)]
+#[cfg(any(feature = "std", test))]
 use proptest_derive::Arbitrary;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 pub struct Log {
     pub level: LogLevel,
     pub event: Event,
@@ -30,7 +29,7 @@ impl Log {
 #[derive(Serialize, Deserialize, Clone, Debug, Format)]
 #[cfg_attr(feature = "ts", derive(TS))]
 #[cfg_attr(feature = "ts", ts(export))]
-#[cfg_attr(test, derive(Arbitrary))]
+#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
 pub enum LogLevel {
     Info,
     Warning,
