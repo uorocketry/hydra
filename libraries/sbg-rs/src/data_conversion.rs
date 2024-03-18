@@ -24,10 +24,7 @@ impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2, GpsPosAcc) {
     fn from(value: SbgLogGpsPos) -> Self {
         let status = GpsPositionStatus::new(value.status);
         
-        let valid = match status.get_status() {
-            Some(GpsPositionStatusE::SolComputed) => true,
-            _ => false,
-        };
+        let valid = matches!(status.get_status(), Some(GpsPositionStatusE::SolComputed));
         
         (
             GpsPos1 {
