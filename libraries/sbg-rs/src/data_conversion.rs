@@ -154,10 +154,7 @@ impl From<SbgLogGpsVel> for (GpsVel, GpsVelAcc) {
     fn from(value: SbgLogGpsVel) -> Self {
         let status = GpsVelStatus::new(value.status);
 
-        let valid = match status.get_status() {
-            Some(GpsVelStatusE::SolComputed) => true,
-            _ => false,
-        };
+        let valid = matches!(status.get_status(), Some(GpsVelStatusE::SolComputed));
 
         (
             GpsVel {
