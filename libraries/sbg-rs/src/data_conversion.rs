@@ -53,10 +53,7 @@ impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2, GpsPosAcc) {
 impl From<SbgLogUtcData> for UtcTime {
     fn from(value: SbgLogUtcData) -> Self {
         let status = UtcTimeStatus::new(value.status);
-        let valid = match status.get_utc_status() {
-            Some(UtcStatus::Valid | UtcStatus::NoLeapSec) => true,
-            _ => false,
-        };
+        let valid = matches!(status.get_utc_status(), Some(UtcStatus::Valid | UtcStatus::NoLeapSec));
 
         Self {
             time_stamp: value.timeStamp, // not convinced this is matched valid to the Utc Status bitmask. 
