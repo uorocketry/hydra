@@ -1,28 +1,18 @@
-use crate::sensor_status::{AirStatus, EkfStatus, GpsVelStatus, ImuStatus, UtcTimeStatus, GpsPositionStatus};
-use defmt::Format;
+use crate::sensor_status::{
+    AirStatus, EkfStatus, GpsPositionStatus, GpsVelStatus, ImuStatus, UtcTimeStatus,
+};
 use derive_more::From;
-use serde::{Deserialize, Serialize};
+use messages_proc_macros_lib::common_derives;
 
-#[cfg(any(feature = "std", test))]
-use proptest_derive::Arbitrary;
-
-#[cfg(feature = "ts")]
-use ts_rs::TS;
-
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Sensor {
     /// Used to differentiate between multiple components on the same sender. Unused right now.
     // pub component_id: u8,
     pub data: SensorData,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub enum SensorData {
     UtcTime(UtcTime),
     Air(Air),
@@ -41,36 +31,24 @@ pub enum SensorData {
 
 /* Replace with new health monitor */
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Regulator {
     pub status: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Voltage {
     pub voltage: f32,
     pub rolling_avg: f32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Current {
     pub current: f32,
     pub rolling_avg: f32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Temperature {
     pub temperature: f32,
     pub rolling_avg: f32,
@@ -78,11 +56,7 @@ pub struct Temperature {
 
 /* Replace with new health monitor */
 
-
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct GpsPos1 {
     #[doc = "< Latitude in degrees, positive north."]
     pub latitude: Option<f64>,
@@ -90,10 +64,7 @@ pub struct GpsPos1 {
     pub longitude: Option<f64>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct GpsPos2 {
     #[doc = "< GPS time of week in ms."]
     pub time_of_week: Option<u32>,
@@ -103,13 +74,10 @@ pub struct GpsPos2 {
     pub altitude: Option<f64>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct GpsPosAcc {
     #[doc = "< Time in us since the sensor power up."]
-    pub time_stamp: u32, 
+    pub time_stamp: u32,
     #[doc = "< GPS position status, type and bitmask."]
     pub status: GpsPositionStatus,
     #[doc = "< 1 sigma latitude accuracy in meters."]
@@ -126,13 +94,10 @@ pub struct GpsPosAcc {
     pub differential_age: Option<u16>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct UtcTime {
     #[doc = "< Time in us since the sensor power up."]
-    pub time_stamp: u32, 
+    pub time_stamp: u32,
     #[doc = "< UTC time and clock status information"]
     pub status: UtcTimeStatus,
     #[doc = "< Year for example: 2013."]
@@ -153,10 +118,7 @@ pub struct UtcTime {
     pub gps_time_of_week: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Air {
     #[doc = "< Time in us since the sensor power up."]
     pub time_stamp: u32,
@@ -174,10 +136,7 @@ pub struct Air {
     pub air_temperature: Option<f32>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct EkfQuat {
     #[doc = "< Time in us since the sensor power up."]
     pub time_stamp: u32,
@@ -189,10 +148,7 @@ pub struct EkfQuat {
     pub status: EkfStatus,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct EkfNavAcc {
     #[doc = "< EKF solution status bitmask and enum."]
     pub status: EkfStatus,
@@ -202,10 +158,7 @@ pub struct EkfNavAcc {
     pub position_std_dev: Option<[f32; 3usize]>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct EkfNav1 {
     #[doc = "< Time in us since the sensor power up."]
     pub time_stamp: u32,
@@ -213,23 +166,15 @@ pub struct EkfNav1 {
     pub velocity: Option<[f32; 3usize]>,
 }
 
-
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct EkfNav2 {
     #[doc = "< Latitude, Longitude in degrees positive North and East.\nAltitude above Mean Sea Level in meters."]
     pub position: Option<[f64; 3usize]>,
     #[doc = "< Altitude difference between the geoid and the Ellipsoid in meters (Height above Ellipsoid = altitude + undulation)."]
     pub undulation: Option<f32>,
-
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Imu1 {
     #[doc = "< Time in us since the sensor power up."]
     pub time_stamp: u32,
@@ -241,10 +186,7 @@ pub struct Imu1 {
     pub gyroscopes: Option<[f32; 3usize]>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Imu2 {
     #[doc = "< Internal temperature in °C."]
     pub temperature: Option<f32>,
@@ -254,10 +196,7 @@ pub struct Imu2 {
     pub delta_angle: Option<[f32; 3usize]>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct GpsVel {
     #[doc = "< GPS time of week in ms."]
     pub time_of_week: Option<u32>,
@@ -271,10 +210,7 @@ pub struct GpsVel {
     pub course: Option<f32>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct GpsVelAcc {
     #[doc = "< Course accuracy in degrees."]
     pub course_acc: Option<f32>,

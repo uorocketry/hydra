@@ -2,25 +2,16 @@ mod log;
 mod macros;
 
 use core::fmt::Formatter;
-use macros::{display_context, display_event};
-use serde::{Deserialize, Serialize};
 use derive_more::From;
-use defmt::Format;
-
-#[cfg(feature = "ts")]
-use ts_rs::TS;
-
-#[cfg(any(feature = "std", test))]
-use proptest_derive::Arbitrary;
+use macros::{display_context, display_event};
+use messages_proc_macros_lib::common_derives;
 
 pub use log::{Log, LogLevel};
 
 /// Custom events for Hydra. These are used to send logging information to the ground-station in
 /// a space efficient way.
-#[derive(Serialize, Deserialize, Clone, Debug, From, Copy)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives(NoFormat)]
+#[derive(Copy, From)]
 pub enum Event {
     Initialized(),
     MainDeploy(),
@@ -35,10 +26,8 @@ display_event!(
 
 /// This is optionally used to add extra context to any errors. This information can then be sent
 /// to the ground station to have a more informative error message.
-#[derive(Serialize, Deserialize, Clone, From, Debug, Copy)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives(NoFormat)]
+#[derive(Copy, From)]
 pub enum ErrorContext {
     GroundStation,
     UnkownCanMessage,

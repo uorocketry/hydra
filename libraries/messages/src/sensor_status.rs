@@ -1,12 +1,6 @@
 use bitflags::bitflags;
-use defmt::Format;
+use messages_proc_macros_lib::common_derives;
 use serde::{Deserialize, Serialize};
-
-#[cfg(any(feature = "std", std))]
-use proptest_derive::Arbitrary;
-
-#[cfg(feature = "ts")]
-use ts_rs::TS;
 
 // ----------
 // EKF Status
@@ -55,10 +49,8 @@ bitflags! {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(Copy)]
 pub struct EkfStatus {
     status: u32,
 }
@@ -108,10 +100,8 @@ pub enum UtcStatus {
     Valid,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(Copy)]
 pub struct UtcTimeStatus {
     status: u16,
 }
@@ -157,10 +147,8 @@ bitflags! {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(Copy)]
 pub struct AirStatus {
     status: u16,
 }
@@ -195,10 +183,8 @@ bitflags! {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(Copy)]
 pub struct ImuStatus {
     status: u16,
 }
@@ -213,8 +199,6 @@ impl ImuStatus {
     }
 }
 
-
-
 // ----------
 // GPS Status
 // ----------
@@ -227,7 +211,7 @@ pub enum GpsPositionStatusE {
     #[doc = "< An internal error has occurred."]
     InternalError,
     #[doc = "< The height limit has been exceeded."]
-    HeightLimit
+    HeightLimit,
 }
 
 pub enum GpsPositionType {
@@ -246,13 +230,13 @@ pub enum GpsPositionType {
     #[doc = "< Floating RTK ambiguity solution (20 cms RTK)."]
     RtkFloat,
     #[doc = "< Integer RTK ambiguity solution (2 cms RTK)."]
-    RtkInt, 
+    RtkInt,
     #[doc = "< Precise Point Positioning with float ambiguities."]
     PppFloat,
     #[doc = "< Precise Point Positioning with fixed ambiguities."]
     PppInt,
     #[doc = "< Fixed location solution position."]
-    Fixed
+    Fixed,
 }
 
 pub enum GpsSatelliteUsed {
@@ -272,13 +256,11 @@ pub enum GpsSatelliteUsed {
     BdsB3,
     QzssL1,
     QzssL2,
-    QzssL5
+    QzssL5,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(Copy)]
 pub struct GpsPositionStatus {
     status: u32,
 }
@@ -320,7 +302,6 @@ impl GpsPositionStatus {
     }
 }
 
-
 // ----------
 // GPS Vel Status
 // ----------
@@ -347,10 +328,8 @@ pub enum GpsVelType {
     Differential,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(Copy)]
 pub struct GpsVelStatus {
     status: u32,
 }

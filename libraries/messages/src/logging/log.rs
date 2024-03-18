@@ -1,26 +1,13 @@
 use crate::logging::Event;
-use defmt::Format;
-use serde::{Deserialize, Serialize};
+use messages_proc_macros_lib::common_derives;
 
-#[cfg(feature = "ts")]
-use ts_rs::TS;
-
-#[cfg(any(feature = "std", test))]
-use proptest_derive::Arbitrary;
-
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Log {
     pub level: LogLevel,
     pub event: Event,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(any(feature = "std", test), derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub enum LogLevel {
     Info,
     Warning,
@@ -29,6 +16,6 @@ pub enum LogLevel {
 
 impl Log {
     pub fn new(level: LogLevel, event: Event) -> Self {
-        Log { level, event}
+        Log { level, event }
     }
 }
