@@ -37,7 +37,7 @@ impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2, GpsPosAcc) {
                 time_of_week: if valid {Some(value.timeOfWeek)} else {None},
             },
             GpsPosAcc {
-                status: status,
+                status,
                 time_stamp: value.timeStamp,
                 latitude_accuracy: if valid {Some(value.latitudeAccuracy)} else {None},
                 longitude_accuracy: if valid {Some(value.longitudeAccuracy)} else {None},
