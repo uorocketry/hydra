@@ -1,24 +1,11 @@
-use defmt::Format;
-use serde::{Deserialize, Serialize};
+use messages_proc_macros_lib::common_derives;
 
-#[cfg(test)]
-use proptest_derive::Arbitrary;
-
-#[cfg(feature = "ts")]
-use ts_rs::TS;
-
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct State {
     pub data: StateData,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub enum StateData {
     Initializing,
     WaitForTakeoff,

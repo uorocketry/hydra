@@ -56,10 +56,10 @@ pub enum CallbackData {
     UtcTime(UtcTime),
     Air(Air),
     EkfQuat(EkfQuat),
-    EkfNav((EkfNav1, EkfNav2)),
+    EkfNav((EkfNav1, EkfNav2, EkfNavAcc)),
     Imu((Imu1, Imu2)),
-    GpsVel(GpsVel),
-    GpsPos((GpsPos1, GpsPos2)),
+    GpsVel((GpsVel, GpsVelAcc)),
+    GpsPos((GpsPos1, GpsPos2, GpsPosAcc)),
 }
 
 struct UARTSBGInterface {

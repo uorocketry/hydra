@@ -61,7 +61,10 @@ impl DataManager {
     }
     pub fn is_launched(&self) -> bool {
         match self.air.as_ref() {
-            Some(air) => air.altitude > HEIGHT_MIN,
+            Some(air) => match air.altitude {
+                Some(altitude) => altitude > HEIGHT_MIN,
+                None => false,
+            }
             None => false,
         }
     }
@@ -100,7 +103,10 @@ impl DataManager {
     }
     pub fn is_below_main(&self) -> bool {
         match self.air.as_ref() {
-            Some(air) => air.altitude < MAIN_HEIGHT,
+            Some(air) => match air.altitude {
+                Some(altitude) => altitude < MAIN_HEIGHT,
+                None => false
+            }
             None => false,
         }
     }

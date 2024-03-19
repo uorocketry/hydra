@@ -1,17 +1,8 @@
-use defmt::Format;
 use derive_more::From;
-use serde::{Deserialize, Serialize};
+use messages_proc_macros_lib::common_derives;
 
-#[cfg(test)]
-use proptest_derive::Arbitrary;
-
-#[cfg(feature = "ts")]
-use ts_rs::TS;
-
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub struct Health {
     pub data: HealthData,
     pub status: HealthState,
@@ -23,29 +14,23 @@ pub struct Health {
 /// Error: something is wrong, and it's critical
 /// We need some way to quantify this concept of good and bad health.
 /// Could be current range or voltage range. If failover happens on the regulators that is warning.
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub enum HealthState {
     Nominal,
     Warning,
     Error,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub enum HealthData {
     // RegulatorStatus(RegulatorStatus),
     HealthStatus(HealthStatus),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub struct HealthStatus {
     pub v5: Option<u16>,
     pub v3_3: Option<u16>,

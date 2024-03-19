@@ -75,7 +75,10 @@ impl DataManager {
     }
     pub fn is_launched(&self) -> bool {
         match self.air.as_ref() {
-            Some(air) => air.altitude > HEIGHT_MIN,
+            Some(air) => match air.altitude {
+                Some(altitude) => altitude > HEIGHT_MIN,
+                None => false,
+            }
             None => false,
         }
     }
@@ -114,7 +117,10 @@ impl DataManager {
     }
     pub fn is_below_main(&self) -> bool {
         match self.air.as_ref() {
-            Some(air) => air.altitude < MAIN_HEIGHT,
+            Some(air) => match air.altitude {
+                Some(altitude) => altitude < MAIN_HEIGHT,
+                None => false,
+            }
             None => false,
         }
     }
@@ -125,14 +131,23 @@ impl DataManager {
         match data.data {
             messages::Data::Sensor(sensor) => match sensor.data {
                 messages::sensor::SensorData::Air(air_data) => {
-                    let tup_data = (air_data.altitude, air_data.time_stamp);
-                    self.air = Some(air_data);
-                    if let Some(recent) = self.historical_barometer_altitude.recent() {
-                        if recent.1 != tup_data.1 {
+                    /*
+                        NOTE!!!
+                        There should be added a counter to check how many times 
+                        the alt is dropped, if the number is high switch to 
+                        the on board barometer. 
+                     */
+
+                    if let Some(alt) = air_data.altitude {
+                        let tup_data: (f32, u32) = (alt, air_data.time_stamp);
+                        self.air = Some(air_data);
+                        if let Some(recent) = self.historical_barometer_altitude.recent() {
+                            if recent.1 != tup_data.1 {
+                                self.historical_barometer_altitude.write(tup_data);
+                            }
+                        } else {
                             self.historical_barometer_altitude.write(tup_data);
                         }
-                    } else {
-                        self.historical_barometer_altitude.write(tup_data);
                     }
                 }
                 messages::sensor::SensorData::EkfNav1(nav1_data) => {

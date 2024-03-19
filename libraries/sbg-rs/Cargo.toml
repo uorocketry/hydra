@@ -11,10 +11,13 @@ nb = "1.0.0"
 defmt = "0.3.2"
 atsamd-hal = { workspace = true }
 cortex-m = { workspace = true }
+serde = { workspace = true }
+
 cortex-m-rt = "^0.7.0"
 messages = { path = "../../libraries/messages" }
 common-arm = { path = "../../libraries/common-arm" }
 heapless = "0.7.16"
+bitflags = { version = "2.4.2", features = ["serde"] }
 
 [build-dependencies]
 cmake = "0.1"

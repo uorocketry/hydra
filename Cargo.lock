@@ -149,6 +149,9 @@ name = "bitflags"
 version = "2.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed570934406eb16438a4e976b1b4500774099c13b8cb96eec99f620f05090ddf"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "byteorder"
@@ -768,6 +771,7 @@ checksum = "523dc4f511e55ab87b694dc30d0f820d60906ef06413f93d4d7a1385599cc149"
 name = "messages"
 version = "0.1.0"
 dependencies = [
+ "bitflags 2.4.2",
  "defmt",
  "derive_more",
  "fugit",
@@ -1242,6 +1246,7 @@ name = "sbg-rs"
 version = "0.1.0"
 dependencies = [
  "atsamd-hal",
+ "bitflags 2.4.2",
  "cmake",
  "common-arm",
  "cortex-m",
@@ -1251,6 +1256,7 @@ dependencies = [
  "heapless",
  "messages",
  "nb 1.1.0",
+ "serde",
 ]
 
 [[package]]

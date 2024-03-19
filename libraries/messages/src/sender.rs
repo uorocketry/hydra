@@ -1,17 +1,8 @@
-use defmt::Format;
-use serde::{Deserialize, Serialize};
-
-#[cfg(test)]
-use proptest_derive::Arbitrary;
-
-#[cfg(feature = "ts")]
-use ts_rs::TS;
+use messages_proc_macros_lib::common_derives;
 
 // I don't agree with the naming, We can use these as Ids to sent commands to that specific board.
-#[derive(Serialize, Deserialize, Clone, Debug, Format, Copy)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(Copy)]
 pub enum Sender {
     GroundStation,
     SensorBoard,

@@ -1,0 +1,13 @@
+[package]
+name = "messages-proc-macros-lib"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "messages_proc_macros_lib"
+path = "src/lib.rs"
+proc-macro = true
+
+[dependencies]
+quote = "1.0.33"
+serde = { version = "1.0", features = ["derive"] }

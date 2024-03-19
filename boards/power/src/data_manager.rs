@@ -7,7 +7,7 @@ impl DataManager {
     pub fn new() -> Self {
         Self {}
     }
-    pub fn handle_data(&mut self, data: Message) {
+    pub fn handle_data(&mut self, _data: Message) {
         // to do
     }
 }

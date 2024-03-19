@@ -12,7 +12,11 @@ defmt = "0.3.2"
 fugit = "0.3.6"
 heapless = "0.7.16"
 ts-rs = { version = "6.2.1", optional = true }
-mavlink = { git = "https://github.com/uorocketry/rust-mavlink", default-features = false}
+mavlink = { git = "https://github.com/uorocketry/rust-mavlink", default-features = false }
+bitflags = { version = "2.3.1", features = ["serde"] }
+proptest = { version = "1.2.0", optional = true }
+proptest-derive = { version = "0.3.0", optional = true }
+messages-proc-macros-lib = { path = "messages-proc-macros-lib" }
 
 [dev-dependencies]
 proptest = "1.2.0"
@@ -21,5 +25,5 @@ postcard = { version = "1.0.4", features = ["alloc"] }
 
 [features]
 default = ["mavlink/embedded", "mavlink/uorocketry"]
-std = ["mavlink/default"]
+std = ["mavlink/default", "dep:proptest", "dep:proptest-derive"]
 ts = ["std", "dep:ts-rs"]

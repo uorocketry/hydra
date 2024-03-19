@@ -1,26 +1,14 @@
 use crate::sender::Sender;
-use defmt::Format;
 use derive_more::From;
-use serde::{Deserialize, Serialize};
+use messages_proc_macros_lib::common_derives;
 
-#[cfg(test)]
-use proptest_derive::Arbitrary;
-
-#[cfg(feature = "ts")]
-use ts_rs::TS;
-
-#[derive(Serialize, Deserialize, Clone, Debug, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
 pub struct Command {
     pub data: CommandData,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub enum CommandData {
     DeployDrogue(DeployDrogue),
     DeployMain(DeployMain),
@@ -28,43 +16,33 @@ pub enum CommandData {
     RadioRateChange(RadioRateChange),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub struct DeployDrogue {
     pub val: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub struct DeployMain {
     pub val: bool,
     // Auth?
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub struct PowerDown {
     pub board: Sender, // This isn't proper naming !! This is the board to be powered down. Changes name of sender.rs to board.rs.
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub struct RadioRateChange {
     pub rate: RadioRate,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, From, Format)]
-#[cfg_attr(test, derive(Arbitrary))]
-#[cfg_attr(feature = "ts", derive(TS))]
-#[cfg_attr(feature = "ts", ts(export))]
+#[common_derives]
+#[derive(From)]
 pub enum RadioRate {
     Fast,
     Slow,
