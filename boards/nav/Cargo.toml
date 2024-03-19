@@ -1,5 +1,5 @@
 [package]
-name = "sensor_v2"
+name = "nav"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,3 +14,5 @@ common-arm = {path = "../../libraries/common-arm"}
 stm32h7xx-hal = { workspace = true }
 postcard = "1.0.2"
 messages = { path = "../../libraries/messages" }
+systick-monotonic = "1.0.1"
+defmt = "0.3.2"
