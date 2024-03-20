@@ -6,8 +6,6 @@ use quote::quote;
 pub fn common_derives(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut output = TokenStream::from(quote! {
         #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-        #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-        #[cfg_attr(feature = "ts", ts(export))]
         #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
     });
 
