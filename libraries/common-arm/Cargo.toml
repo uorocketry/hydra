@@ -20,3 +20,4 @@ embedded-hal = "0.2.7"
 mcan = "0.3"
 nb = "1.1.0"
 messages = { path = "../messages" }
+common-arm-proc-macro-lib = { path = "common-arm-proc-macro-lib" }

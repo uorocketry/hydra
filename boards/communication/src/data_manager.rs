@@ -1,6 +1,15 @@
+use common_arm::data_manager;
 use messages::command::RadioRate;
 use messages::state::StateData;
 use messages::Message;
+use messages::sensor::{Air, UtcTime};
+
+data_manager!(
+    sensors: [
+        air: Air,
+        utc_time: UtcTime
+    ]
+);
 
 #[derive(Clone)]
 pub struct DataManager {
@@ -74,6 +83,7 @@ impl DataManager {
     pub fn clone_states(&self) -> [Option<StateData>; 1] {
         [self.state.clone()]
     }
+
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
             messages::Data::Sensor(ref sensor) => match sensor.data {
@@ -120,13 +130,9 @@ impl DataManager {
             messages::Data::State(state) => {
                 self.state = Some(state.data);
             }
-            messages::Data::Command(command) => match command.data {
-                messages::command::CommandData::RadioRateChange(command_data) => {
+            messages::Data::Command(command) =>
+                if let messages::command::CommandData::RadioRateChange(command_data) = command.data {
                     self.logging_rate = Some(command_data.rate);
-                }
-                messages::command::CommandData::DeployDrogue(_) => {}
-                messages::command::CommandData::DeployMain(_) => {}
-                messages::command::CommandData::PowerDown(_) => {}
             },
             _ => {}
         }

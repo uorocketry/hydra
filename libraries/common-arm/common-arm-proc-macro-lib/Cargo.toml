@@ -1,0 +1,14 @@
+[package]
+name = "common-arm-proc-macro-lib"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "common_arm_proc_macro_lib"
+path = "src/lib.rs"
+proc-macro = true
+
+[dependencies]
+quote = "1.0"
+syn = "2.0"
+proc-macro2 = "1.0"

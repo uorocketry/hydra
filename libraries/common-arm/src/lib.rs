@@ -19,5 +19,6 @@ pub use crate::health::health_manager::HealthManager;
 pub use crate::health::health_monitor::{HealthMonitor, HealthMonitorChannels};
 pub use crate::logging::HydraLogging;
 pub use crate::sd_manager::SdManager;
+pub use common_arm_proc_macro_lib::data_manager;
 
 use defmt_rtt as _; // global logger
