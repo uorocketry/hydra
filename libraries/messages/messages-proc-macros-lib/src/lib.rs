@@ -6,7 +6,7 @@ use quote::quote;
 pub fn common_derives(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut output = TokenStream::from(quote! {
         #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-        #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+        #[cfg_attr(feature = "std", derive(proptest_derive::Arbitrary))]
     });
 
     // Allow to omit the defmt::Format derive. Useful if this should be manually implemented.
