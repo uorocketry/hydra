@@ -49,6 +49,7 @@ mod app {
         led_green: Pin<PB16, PushPullOutput>,
         led_red: Pin<PB17, PushPullOutput>,
         state_machine: StateMachine,
+        recovery_timer: hal::timer::TimerCounter2,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -78,7 +79,7 @@ mod app {
 
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
-        let (_, _, _, _mclk) = unsafe { clocks.pac.steal() };
+        let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
@@ -104,6 +105,12 @@ mod app {
         /* State Machine config */
         let state_machine = StateMachine::new();
 
+        /* Recovery Timer config */
+        let (pclk_tc2tc3, gclk0) = Pclk::enable(tokens.pclks.tc2_tc3, gclk0);
+        let timerclk: hal::clock::v1::Tc2Tc3Clock = pclk_tc2tc3.into();
+        let mut recovery_timer = hal::timer::TimerCounter2::tc2_(&timerclk, peripherals.TC2, &mut mclk);
+        recovery_timer.enable_interrupt();
+
         /* Spawn tasks */
         run_sm::spawn().ok();
         state_send::spawn().ok();
@@ -125,6 +132,7 @@ mod app {
                 led_green,
                 led_red,
                 state_machine,
+                recovery_timer,
             },
             init::Monotonics(mono),
         )
@@ -134,6 +142,28 @@ mod app {
     #[idle]
     fn idle(_: idle::Context) -> ! {
         loop {}
+    }
+
+    // handle recovery counter
+    // start a counter
+    #[task(local = [recovery_timer])]
+    fn recovery_counter_tick(mut cx: recovery_timer_start::Context) {
+        let timer = cx.local.recovery_timer;
+        // should probably check if timer is already running
+        // to avoid resetting it
+        
+        let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
+        // timer requires specific duration format
+        let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> = duration_mins.convert();
+        timer.start();
+    }
+
+    // interrupt handler for when counter is finished
+    #[task(binds=TC2, local = [recovery_timer], shared=[data_manager])]
+    fn recovery_counter_finish(mut cx: recovery_counter_finish::Context) {
+        cx.shared.data_manager.lock(|data| {
+            data.recovery_counter += 1;
+        });
     }
 
     #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]

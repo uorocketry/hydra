@@ -1,10 +1,12 @@
 use crate::app::{fire_drogue, fire_main};
 use crate::state_machine::RocketStates;
+use atsamd_hal::timer::TimerCounter2;
 use common_arm::{spawn, HydraError};
 use defmt::info;
 use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
+use crate::app::recovery_timer_start;
 
 const MAIN_HEIGHT: f32 = 876.0; // meters ASL
 const HEIGHT_MIN: f32 = 600.0; // meters ASL
@@ -18,6 +20,7 @@ pub struct DataManager {
     pub gps_vel: Option<GpsVel>,
     pub historical_barometer_altitude: HistoryBuffer<(f32, u32), 8>,
     pub current_state: Option<RocketStates>,
+    pub recovery_counter: u8,
 }
 
 impl DataManager {
@@ -32,6 +35,7 @@ impl DataManager {
             gps_vel: None,
             historical_barometer_altitude,
             current_state: None,
+            recovery_counter: 0
         }
     }
     /// Returns true if the rocket is descending
@@ -99,10 +103,13 @@ impl DataManager {
                 match avg_sum / 7.0 {
                     // inclusive range
                     x if (-0.25..=0.25).contains(&x) => {
-                        return true;
+                        if (self.recovery_counter >= 15) {
+                            return true;
+                        }
+                        spawn!(recovery_counter_tick);
                     }
                     _ => {
-                        // continue
+                        self.recovery_counter = 0;
                     }
                 }
             }
