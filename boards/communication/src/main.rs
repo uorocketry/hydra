@@ -155,6 +155,7 @@ mod app {
         let health_monitor_channels = HealthMonitorChannelsCommunication::new(
             adc0,
             adc1,
+            sd_manager,
             pins.pb01.into(),
             pins.pb02.into(),
             pins.pb03.into(),
