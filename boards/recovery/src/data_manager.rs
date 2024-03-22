@@ -6,7 +6,7 @@ use defmt::info;
 use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
-use crate::app::recovery_timer_start;
+use crate::app::recovery_counter_tick;
 
 const MAIN_HEIGHT: f32 = 876.0; // meters ASL
 const HEIGHT_MIN: f32 = 600.0; // meters ASL
@@ -83,7 +83,7 @@ impl DataManager {
             None => false,
         }
     }
-    pub fn is_landed(&self) -> bool {
+    pub fn is_landed(&mut self) -> bool {
         if self.historical_barometer_altitude.len() < 8 {
             return false;
         }

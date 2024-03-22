@@ -147,7 +147,7 @@ mod app {
     // handle recovery counter
     // start a counter
     #[task(local = [recovery_timer])]
-    fn recovery_counter_tick(mut cx: recovery_timer_start::Context) {
+    fn recovery_counter_tick(mut cx: recovery_counter_tick::Context) {
         let timer = cx.local.recovery_timer;
         // should probably check if timer is already running
         // to avoid resetting it
@@ -155,11 +155,11 @@ mod app {
         let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
         // timer requires specific duration format
         let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> = duration_mins.convert();
-        timer.start();
+        timer.start(timer_duration);
     }
 
     // interrupt handler for when counter is finished
-    #[task(binds=TC2, local = [recovery_timer], shared=[data_manager])]
+    #[task(binds=TC2, shared=[data_manager])]
     fn recovery_counter_finish(mut cx: recovery_counter_finish::Context) {
         cx.shared.data_manager.lock(|data| {
             data.recovery_counter += 1;
