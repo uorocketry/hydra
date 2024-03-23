@@ -1,5 +1,5 @@
-use messages::sender::{Sender, Sender::PowerBoard};
+use messages::node::{Node, Node::PowerBoard};
 // -------
-// Sender ID
+// Node ID
 // -------
-pub static _COM_ID: Sender = PowerBoard;
+pub static _COM_ID: Node = PowerBoard;

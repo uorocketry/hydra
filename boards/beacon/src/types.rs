@@ -1,7 +1,7 @@
-use messages::sender::Sender;
-use messages::sender::Sender::BeaconBoard;
+use messages::node::Node;
+use messages::node::Node::BeaconBoard;
 
 // -------
-// Sender ID
+// Node ID
 // -------
-pub static COM_ID: Sender = BeaconBoard;
+pub static COM_ID: Node = BeaconBoard;

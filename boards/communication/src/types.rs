@@ -1,13 +1,13 @@
 use atsamd_hal::gpio::*;
 use atsamd_hal::sercom::uart::EightBit;
 use atsamd_hal::sercom::{uart, IoSet1, Sercom5};
-use messages::sender::Sender;
-use messages::sender::Sender::CommunicationBoard;
+use messages::node::Node;
+use messages::node::Node::CommunicationBoard;
 
 // -------
-// Sender ID
+// Node ID
 // -------
-pub static COM_ID: Sender = CommunicationBoard;
+pub static COM_ID: Node = CommunicationBoard;
 
 // -------
 // Ground Station

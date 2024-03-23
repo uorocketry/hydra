@@ -1,7 +1,7 @@
-use messages::sender::Sender;
-use messages::sender::Sender::RecoveryBoard;
+use messages::node::Node;
+use messages::node::Node::RecoveryBoard;
 
 // -------
-// Sender ID
+// Node ID
 // -------
-pub static COM_ID: Sender = RecoveryBoard;
+pub static COM_ID: Node = RecoveryBoard;

@@ -1,5 +1,5 @@
-use messages::sender::{Sender, Sender::CameraBoard};
+use messages::node::{Node, Node::CameraBoard};
 // -------
-// Sender ID
+// Node ID
 // -------
-pub static _COM_ID: Sender = CameraBoard;
+pub static _COM_ID: Node = CameraBoard;

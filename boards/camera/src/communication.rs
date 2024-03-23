@@ -103,7 +103,7 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
+                filter: ecan::StandardId::new(messages::node::Node::SensorBoard.into())
                     .unwrap(),
                 mask: ecan::StandardId::ZERO,
             })

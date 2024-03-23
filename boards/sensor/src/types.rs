@@ -8,14 +8,14 @@ use hal::dmac::BufferPair;
 use hal::sercom::IoSet2;
 
 use hal::sercom::Sercom4;
-use messages::sender::Sender;
-use messages::sender::Sender::SensorBoard;
+use messages::node::Node;
+use messages::node::Node::SensorBoard;
 use sbg_rs::sbg::SBG_BUFFER_SIZE;
 
 // -------
-// Sender ID
+// Node ID
 // -------
-pub static COM_ID: Sender = SensorBoard;
+pub static COM_ID: Node = SensorBoard;
 
 // -------
 // SBG
