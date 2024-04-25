@@ -34,7 +34,7 @@ For more detailed instructions on flashing, debugging, and more, please see [the
 1. Enable WSL: https://learn.microsoft.com/en-us/windows/wsl/install
 2. Install a linux distro from the Microsoft Store
 4. Install ARM GNU Toolchain: https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
-  - NOTE: You may find this in your distro's package managerm, but make sure it is up to date.
+  - NOTE: You may find this in your distro's package manager, but ensure it is version 13.2.
   - Ubuntu has an outdated version in its repositories. If using Ubuntu, download it manually from the link above
 3. Follow the rest of the instructions in [Getting Started](#-getting-started)
 
