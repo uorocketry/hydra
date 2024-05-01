@@ -25,6 +25,11 @@ pub mod sensor_status;
 pub mod state;
 
 pub const MAX_SIZE: usize = 64;
+pub const MAX_HEALTH_SIZE: usize = 47;
+pub const MAX_SENSOR_SIZE: usize = 53;
+pub const MAX_STATE_SIZE: usize = 13;
+pub const MAX_LOG_SIZE: usize = 15;
+pub const MAX_COMMAND_SIZE: usize = 15;
 
 pub use logging::{ErrorContext, Event, Log, LogLevel};
 
@@ -70,7 +75,7 @@ impl Message {
 
 #[cfg(test)]
 mod test {
-    use crate::{Message, MAX_SIZE};
+    use crate::{Message, MAX_HEALTH_SIZE, MAX_COMMAND_SIZE, MAX_LOG_SIZE, MAX_SENSOR_SIZE, MAX_STATE_SIZE};
     use proptest::prelude::*;
 
     proptest! {
@@ -78,8 +83,25 @@ mod test {
         fn message_size(msg: Message) {
             let bytes = postcard::to_allocvec(&msg).unwrap();
 
-            dbg!(msg);
-            assert!(dbg!(bytes.len()) <= MAX_SIZE);
+            dbg!(&msg);
+            // The size of the message should be less than or equal the maximum size.
+            match msg.data {
+                crate::Data::State(_) => {
+                    assert!(dbg!(bytes.len()) <= MAX_STATE_SIZE);
+                }
+                crate::Data::Sensor(_) => {
+                    assert!(dbg!(bytes.len()) <= MAX_SENSOR_SIZE);
+                }
+                crate::Data::Log(_) => {
+                    assert!(dbg!(bytes.len()) <= MAX_LOG_SIZE);
+                }
+                crate::Data::Command(_) => {
+                    assert!(dbg!(bytes.len()) <= MAX_COMMAND_SIZE);
+                }
+                crate::Data::Health(_) => {
+                    assert!(dbg!(bytes.len()) <= MAX_HEALTH_SIZE);
+                }
+            }
         }
     }
 }
