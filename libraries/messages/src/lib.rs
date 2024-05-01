@@ -78,7 +78,7 @@ mod test {
         fn message_size(msg: Message) {
             let bytes = postcard::to_allocvec(&msg).unwrap();
 
-            dbg!(msg);
+            dbg!(&msg);
             // The size of the message should be less than or equal the maximum size.
             match msg.data {
                 crate::Data::State(_) => {
