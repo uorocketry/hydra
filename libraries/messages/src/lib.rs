@@ -70,7 +70,7 @@ impl Message {
 
 #[cfg(test)]
 mod test {
-    use crate::{Message, MAX_SIZE};
+    use crate::Message;
     use proptest::prelude::*;
 
     proptest! {
@@ -78,8 +78,26 @@ mod test {
         fn message_size(msg: Message) {
             let bytes = postcard::to_allocvec(&msg).unwrap();
 
-            dbg!(msg);
-            assert!(dbg!(bytes.len()) <= MAX_SIZE);
+            // dbg!(msg);
+            // assert!(dbg!(bytes.len()) <= MAX_SIZE);
+            // check the messages data type is of which type and then check if the size is less than or equal there expected size
+            match msg.data {
+                crate::Data::State(_) => {
+                    assert!(bytes.len() <= 13);
+                }
+                crate::Data::Sensor(_) => {
+                    assert!(bytes.len() <= 53);
+                }
+                crate::Data::Log(_) => {
+                    assert!(bytes.len() <= 15);
+                }
+                crate::Data::Command(_) => {
+                    assert!(bytes.len() <= 15);
+                }
+                crate::Data::Health(_) => {
+                    assert!(bytes.len() <= 47);
+                }
+            }
         }
     }
 }
