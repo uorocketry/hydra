@@ -32,7 +32,7 @@ pub struct DeployMain {
 #[common_derives]
 #[derive(From)]
 pub struct PowerDown {
-    pub board: Node, // This isn't proper naming !! This is the board to be powered down. Changes name of sender.rs to board.rs.
+    pub board: Node,
 }
 
 #[common_derives]

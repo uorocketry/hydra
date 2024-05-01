@@ -1,6 +1,5 @@
 use messages_proc_macros_lib::common_derives;
 
-// I don't agree with the naming, We can use these as Ids to sent commands to that specific board.
 #[common_derives]
 #[derive(Copy)]
 pub enum Node {
