@@ -5,7 +5,7 @@ use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionI
 use crate::types::COM_ID;
 use defmt::{write, Format, Formatter};
 use messages::command::{Command, PowerDown, RadioRate, RadioRateChange};
-use messages::sender::Sender::SensorBoard;
+use messages::node::Node::SensorBoard;
 use messages::Message;
 use rtic::mutex::Mutex;
 

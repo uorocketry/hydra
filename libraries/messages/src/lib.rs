@@ -7,7 +7,7 @@
 
 use crate::command::Command;
 use crate::health::Health;
-use crate::sender::Sender;
+use crate::node::Node;
 use crate::sensor::Sensor;
 use crate::state::State;
 use derive_more::From;
@@ -19,7 +19,7 @@ use messages_proc_macros_lib::common_derives;
 pub mod command;
 pub mod health;
 mod logging;
-pub mod sender;
+pub mod node;
 pub mod sensor;
 pub mod sensor_status;
 pub mod state;
@@ -42,7 +42,7 @@ pub struct Message {
     pub timestamp: u64,
 
     /// The original sender of this message.
-    pub sender: Sender,
+    pub sender: Node,
 
     /// The data contained in this message.
     pub data: Data,
@@ -62,7 +62,7 @@ pub enum Data {
 impl Message {
     pub fn new<const NOM: u32, const DENOM: u32>(
         timestamp: &Instant<u64, NOM, DENOM>,
-        sender: Sender,
+        sender: Node,
         data: impl Into<Data>,
     ) -> Self {
         Message {
