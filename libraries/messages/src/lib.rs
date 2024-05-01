@@ -78,24 +78,23 @@ mod test {
         fn message_size(msg: Message) {
             let bytes = postcard::to_allocvec(&msg).unwrap();
 
-            // dbg!(msg);
-            // assert!(dbg!(bytes.len()) <= MAX_SIZE);
-            // check the messages data type is of which type and then check if the size is less than or equal there expected size
+            dbg!(msg);
+            // The size of the message should be less than or equal the maximum size.
             match msg.data {
                 crate::Data::State(_) => {
-                    assert!(bytes.len() <= 13);
+                    assert!(dbg!(bytes.len()) <= 13);
                 }
                 crate::Data::Sensor(_) => {
-                    assert!(bytes.len() <= 53);
+                    assert!(dbg!(bytes.len()) <= 53);
                 }
                 crate::Data::Log(_) => {
-                    assert!(bytes.len() <= 15);
+                    assert!(dbg!(bytes.len()) <= 15);
                 }
                 crate::Data::Command(_) => {
-                    assert!(bytes.len() <= 15);
+                    assert!(dbg!(bytes.len()) <= 15);
                 }
                 crate::Data::Health(_) => {
-                    assert!(bytes.len() <= 47);
+                    assert!(dbg!(bytes.len()) <= 47);
                 }
             }
         }
