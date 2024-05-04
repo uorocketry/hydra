@@ -17,6 +17,9 @@ impl State for TerminalDescent {
             spawn!(fire_main)?;
             Ok(())
         });
+        context.shared_resources.timer.lock(|timer| {
+            timer.start();
+        });
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         context.shared_resources.data_manager.lock(|data| {

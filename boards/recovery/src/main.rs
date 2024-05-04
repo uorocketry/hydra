@@ -19,12 +19,12 @@ use data_manager::DataManager;
 use gpio_manager::GPIOManager;
 use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
+use hal::timer::TimerCounter2;
 use mcan::messageram::SharedMemory;
 use messages::*;
 use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
 use types::COM_ID;
-use hal::timer::TimerCounter2;
 
 /// Custom panic handler.
 /// Reset the system if a panic occurs.
@@ -43,6 +43,7 @@ mod app {
         data_manager: DataManager,
         can0: communication::CanDevice0,
         gpio: GPIOManager,
+        recovery_timer: TimerCounter2,
     }
 
     #[local]
@@ -50,7 +51,6 @@ mod app {
         led_green: Pin<PB16, PushPullOutput>,
         led_red: Pin<PB17, PushPullOutput>,
         state_machine: StateMachine,
-        recovery_timer: TimerCounter2,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -109,7 +109,8 @@ mod app {
         /* Recovery Timer config */
         let (pclk_tc2tc3, gclk0) = Pclk::enable(tokens.pclks.tc2_tc3, gclk0);
         let timerclk: hal::clock::v1::Tc2Tc3Clock = pclk_tc2tc3.into();
-        let mut recovery_timer = hal::timer::TimerCounter2::tc2_(&timerclk, peripherals.TC2, &mut mclk);
+        let mut recovery_timer =
+            hal::timer::TimerCounter2::tc2_(&timerclk, peripherals.TC2, &mut mclk);
         recovery_timer.enable_interrupt();
 
         /* Spawn tasks */
@@ -128,12 +129,12 @@ mod app {
                 data_manager: DataManager::new(),
                 can0,
                 gpio,
+                recovery_timer,
             },
             Local {
                 led_green,
                 led_red,
                 state_machine,
-                recovery_timer,
             },
             init::Monotonics(mono),
         )
@@ -154,7 +155,8 @@ mod app {
         if timer.wait().is_ok() {
             let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
             // timer requires specific duration format
-            let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> = duration_mins.convert();
+            let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> =
+                duration_mins.convert();
             timer.enable_interrupt(); // clear interrupt?
             timer.start(timer_duration);
         }

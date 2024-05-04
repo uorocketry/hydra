@@ -1,3 +1,4 @@
+use crate::app::recovery_counter_tick;
 use crate::app::{fire_drogue, fire_main};
 use crate::state_machine::RocketStates;
 use common_arm::{spawn, HydraError};
@@ -5,10 +6,11 @@ use defmt::info;
 use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
-use crate::app::recovery_counter_tick;
 
 const MAIN_HEIGHT: f32 = 876.0; // meters ASL
 const HEIGHT_MIN: f32 = 600.0; // meters ASL
+const RECOVERY_DATA_POINTS: u8 = 8; // number of barometric altitude readings held by the recovery
+                                    // algorithm
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -35,12 +37,12 @@ impl DataManager {
             gps_vel: None,
             historical_barometer_altitude,
             current_state: None,
-            recovery_counter: 0
+            recovery_counter: 0,
         }
     }
     /// Returns true if the rocket is descending
     pub fn is_falling(&self) -> bool {
-        if self.historical_barometer_altitude.len() < 8 {
+        if (self.historical_barometer_altitude.len() as u8) < RECOVERY_DATA_POINTS {
             return false;
         }
         let mut buf = self.historical_barometer_altitude.oldest_ordered();
@@ -60,7 +62,7 @@ impl DataManager {
                     avg_sum += slope;
                     prev = i;
                 }
-                match avg_sum / 7.0 {
+                match avg_sum / (RECOVERY_DATA_POINTS as f32 - 1.0) {
                     // 7 because we have 8 points.
                     // exclusive range
                     x if !(-100.0..=-5.0).contains(&x) => {
@@ -106,7 +108,6 @@ impl DataManager {
                         if self.recovery_counter >= 15 {
                             return true;
                         }
-                        spawn!(recovery_counter_tick);
                     }
                     _ => {
                         self.recovery_counter = 0;

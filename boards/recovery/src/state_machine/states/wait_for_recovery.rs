@@ -32,6 +32,9 @@ impl State for WaitForRecovery {
                 })
             });
         }
+        context.shared_resources.timer.lock(|timer| {
+            timer.disable_interrupts();
+        })
     }
     fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
         no_transition!() // this is our final resting place. We should also powerdown this board.
