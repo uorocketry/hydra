@@ -19,6 +19,8 @@ jobs:
           components: clippy
           toolchain: stable
           target: thumbv7em-none-eabihf
+      - name: cargofmt
+        run: cargo fmt --check
       - uses: actions/cache@v3
         with:
           path: |
@@ -31,3 +33,4 @@ jobs:
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+  
