@@ -1,1 +1,1 @@
-//! Interface the SPI-based CAN device here. 
+//! Interface the SPI-based CAN device here.

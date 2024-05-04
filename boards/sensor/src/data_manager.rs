@@ -1,7 +1,8 @@
 use crate::app::sleep_system;
 use common_arm::{spawn, HydraError};
 use messages::sensor::{
-    Air, EkfNav1, EkfNav2, EkfQuat, GpsPos1, GpsPos2, GpsVel, Imu1, Imu2, SensorData, UtcTime, EkfNavAcc, GpsPosAcc, GpsVelAcc,
+    Air, EkfNav1, EkfNav2, EkfNavAcc, EkfQuat, GpsPos1, GpsPos2, GpsPosAcc, GpsVel, GpsVelAcc,
+    Imu1, Imu2, SensorData, UtcTime,
 };
 use messages::Message;
 
