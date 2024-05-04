@@ -1,6 +1,5 @@
 use crate::app::{fire_drogue, fire_main};
 use crate::state_machine::RocketStates;
-use atsamd_hal::timer::TimerCounter2;
 use common_arm::{spawn, HydraError};
 use defmt::info;
 use heapless::HistoryBuffer;
@@ -20,6 +19,7 @@ pub struct DataManager {
     pub gps_vel: Option<GpsVel>,
     pub historical_barometer_altitude: HistoryBuffer<(f32, u32), 8>,
     pub current_state: Option<RocketStates>,
+    // each tick represents a minute that passed
     pub recovery_counter: u8,
 }
 
@@ -103,7 +103,7 @@ impl DataManager {
                 match avg_sum / 7.0 {
                     // inclusive range
                     x if (-0.25..=0.25).contains(&x) => {
-                        if (self.recovery_counter >= 15) {
+                        if self.recovery_counter >= 15 {
                             return true;
                         }
                         spawn!(recovery_counter_tick);
