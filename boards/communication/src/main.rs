@@ -25,6 +25,7 @@ use hal::gpio::{
 use hal::prelude::*;
 use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
 use health::HealthMonitorChannelsCommunication;
+use heapless::Vec;
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
 use messages::health::Health;
@@ -231,7 +232,7 @@ mod app {
      * Sends a message to the radio over UART.
      */
     #[task(capacity = 10, shared = [&em, radio_manager])]
-    fn send_gs(mut cx: send_gs::Context, m: Message) {
+    fn send_gs(mut cx: send_gs::Context, m: Vec<u8, 255>) {
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
                 radio_manager.send_message(m)?;
@@ -241,10 +242,10 @@ mod app {
     }
 
     #[task(capacity = 10, local = [sd_manager], shared = [&em])]
-    fn sd_dump(cx: sd_dump::Context, m: Message) {
+    fn sd_dump(cx: sd_dump::Context, m: Vec<u8, 255>) {
         let manager = cx.local.sd_manager;
         cx.shared.em.run(|| {
-            let mut buf: [u8; 255] = [0; 255];
+            let mut buf: [u8; 255] = m.into_array()?;
             let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
             if let Some(mut file) = manager.file.take() {
                 manager.write(&mut file, &msg_ser)?;
@@ -262,23 +263,16 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (sensors, logging_rate) = cx
-            .shared
-            .data_manager
-            .lock(|data_manager| (data_manager.take_sensors(), data_manager.get_logging_rate()));
+        let (sensors, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
+            (
+                data_manager.stuff_messages(),
+                data_manager.get_logging_rate(),
+            )
+        });
 
         cx.shared.em.run(|| {
-            for msg in sensors {
-                match msg {
-                    Some(x) => {
-                        spawn!(send_gs, x.clone())?;
-                        spawn!(sd_dump, x)?;
-                    }
-                    None => {
-                        continue;
-                    }
-                }
-            }
+            spawn!(send_gs, sensors.clone())?;
+            spawn!(sd_dump, sensors)?;
             Ok(())
         });
         match logging_rate {
