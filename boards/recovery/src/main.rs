@@ -146,27 +146,21 @@ mod app {
         loop {}
     }
 
-    // handle recovery counter
-    // start a counter
-    #[task(local = [recovery_timer])]
-    fn recovery_counter_tick(cx: recovery_counter_tick::Context) {
-        let timer = cx.local.recovery_timer;
-        // only start timer if it is not already running
-        if timer.wait().is_ok() {
+    // interrupt handler for recovery counter
+    #[task(binds=TC2, shared=[data_manager, recovery_timer])]
+    fn recovery_counter_tick(mut cx: recovery_counter_tick::Context) {
+        cx.shared.recovery_timer.lock(|timer| {
+            if timer.wait().is_ok() {
+                cx.shared.data_manager.lock(|data| {
+                    data.recovery_counter += 1;
+                });
+            }
+            // restart timer after interrupt
             let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
             // timer requires specific duration format
-            let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> =
-                duration_mins.convert();
-            timer.enable_interrupt(); // clear interrupt?
+            let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> = duration_mins.convert();
+            timer.enable_interrupt(); // clear interrupt
             timer.start(timer_duration);
-        }
-    }
-
-    // interrupt handler for when counter is finished
-    #[task(binds=TC2, shared=[data_manager])]
-    fn recovery_counter_finish(mut cx: recovery_counter_finish::Context) {
-        cx.shared.data_manager.lock(|data| {
-            data.recovery_counter += 1;
         });
     }
 
@@ -209,7 +203,7 @@ mod app {
 
     /// Runs the state machine.
     /// This takes control of the shared resources.
-    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager, &em])]
+    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager, &em, recovery_timer])]
     fn run_sm(mut cx: run_sm::Context) {
         cx.local.state_machine.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,

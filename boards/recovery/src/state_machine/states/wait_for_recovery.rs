@@ -8,6 +8,7 @@ use messages::command::{Command, PowerDown, RadioRate, RadioRateChange};
 use messages::sender::Sender::SensorBoard;
 use messages::Message;
 use rtic::mutex::Mutex;
+use atsamd_hal::prelude::_atsamd_hal_timer_traits_InterruptDrivenTimer;
 
 #[derive(Debug, Clone)]
 pub struct WaitForRecovery {}
@@ -32,8 +33,8 @@ impl State for WaitForRecovery {
                 })
             });
         }
-        context.shared_resources.timer.lock(|timer| {
-            timer.disable_interrupts();
+        context.shared_resources.recovery_timer.lock(|timer| {
+            timer.disable_interrupt();
         })
     }
     fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {

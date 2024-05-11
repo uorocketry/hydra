@@ -1,4 +1,3 @@
-use crate::app::recovery_counter_tick;
 use crate::app::{fire_drogue, fire_main};
 use crate::state_machine::RocketStates;
 use common_arm::{spawn, HydraError};

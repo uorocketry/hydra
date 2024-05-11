@@ -12,12 +12,13 @@ use enum_dispatch::enum_dispatch;
 use messages::state;
 use rtic::Mutex;
 pub use states::Initializing;
+use atsamd_hal::timer::TimerCounter2;
 
 pub trait StateMachineSharedResources {
     fn lock_can(&mut self, f: &dyn Fn(&mut CanDevice0));
     fn lock_data_manager(&mut self, f: &dyn Fn(&mut DataManager));
     fn lock_gpio(&mut self, f: &dyn Fn(&mut GPIOManager));
-    fn lock_timer(&mut self, f: &dyn Fn(&mut TimerCounter2));
+    fn lock_recovery_timer(&mut self, f: &dyn Fn(&mut TimerCounter2));
 }
 
 impl<'a> StateMachineSharedResources for crate::app::__rtic_internal_run_smSharedResources<'a> {
@@ -30,7 +31,7 @@ impl<'a> StateMachineSharedResources for crate::app::__rtic_internal_run_smShare
     fn lock_gpio(&mut self, fun: &dyn Fn(&mut GPIOManager)) {
         self.gpio.lock(fun)
     }
-    fn lock_timer(&mut self, fun: &dyn Fn(&mut TimerCounter2)) {
+    fn lock_recovery_timer(&mut self, fun: &dyn Fn(&mut TimerCounter2)) {
         self.recovery_timer.lock(fun)
     }
 }
