@@ -75,7 +75,9 @@ impl Message {
 
 #[cfg(test)]
 mod test {
-    use crate::{Message, MAX_HEALTH_SIZE, MAX_COMMAND_SIZE, MAX_LOG_SIZE, MAX_SENSOR_SIZE, MAX_STATE_SIZE};
+    use crate::{
+        Message, MAX_COMMAND_SIZE, MAX_HEALTH_SIZE, MAX_LOG_SIZE, MAX_SENSOR_SIZE, MAX_STATE_SIZE,
+    };
     use proptest::prelude::*;
 
     proptest! {

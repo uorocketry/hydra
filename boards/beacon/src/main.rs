@@ -9,19 +9,22 @@ use common_arm::SdManager;
 use common_arm::*;
 use data_manager::DataManager;
 // use defmt::info;
+use hal::{
+    gpio::*,
+    gpio::{
+        gpioa::{PA10, PA9},
+        Output, PushPull,
+    },
+    prelude::*,
+    rcc::Config,
+};
 use messages::sensor::Sensor;
 use messages::*;
 use stm32l0xx_hal as hal;
-use hal::{
-    gpio::*,
-    prelude::*,
-    rcc::Config,
-    gpio::{gpioa::{PA9, PA10}, Output, PushPull},
-};
 
 use systick_monotonic::*;
 
-// use https://github.com/lora-rs/lora-rs.git 
+// use https://github.com/lora-rs/lora-rs.git
 
 /// Custom panic handler.
 /// Reset the system if a panic occurs.
@@ -30,7 +33,7 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
     stm32l0xx_hal::pac::SCB::sys_reset();
 }
 
-// Add dispatchers 
+// Add dispatchers
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EXTI0_1, EXTI2_3, EXTI4_15])]
 mod app {
 
@@ -56,11 +59,11 @@ mod app {
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let device = cx.device;
         let core = cx.core;
-        
-        // configure the clock 
+
+        // configure the clock
         let mut rcc = device.RCC.freeze(Config::hse(64_000_000u32.Hz()));
 
-        // configure leds 
+        // configure leds
         let gpioa = device.GPIOA.split(&mut rcc);
         let mut green_led = gpioa.pa9.into_push_pull_output();
         let mut red_led = gpioa.pa10.into_push_pull_output();
@@ -73,12 +76,8 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
-
             },
-            Local { 
-                green_led,
-                red_led,
-            },
+            Local { green_led, red_led },
             init::Monotonics(mono),
         )
     }
@@ -97,7 +96,7 @@ mod app {
         todo!("Send messages over CAN");
     }
 
-    #[task(capacity = 5)] 
+    #[task(capacity = 5)]
     fn send_external(cx: send_external::Context, m: Message) {
         todo!("Send messages over LORA");
     }

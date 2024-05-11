@@ -78,7 +78,7 @@ impl DataManager {
             Some(air) => match air.altitude {
                 Some(altitude) => altitude > HEIGHT_MIN,
                 None => false,
-            }
+            },
             None => false,
         }
     }
@@ -120,7 +120,7 @@ impl DataManager {
             Some(air) => match air.altitude {
                 Some(altitude) => altitude < MAIN_HEIGHT,
                 None => false,
-            }
+            },
             None => false,
         }
     }
@@ -132,11 +132,11 @@ impl DataManager {
             messages::Data::Sensor(sensor) => match sensor.data {
                 messages::sensor::SensorData::Air(air_data) => {
                     /*
-                        NOTE!!!
-                        There should be added a counter to check how many times 
-                        the alt is dropped, if the number is high switch to 
-                        the on board barometer. 
-                     */
+                       NOTE!!!
+                       There should be added a counter to check how many times
+                       the alt is dropped, if the number is high switch to
+                       the on board barometer.
+                    */
 
                     if let Some(alt) = air_data.altitude {
                         let tup_data: (f32, u32) = (alt, air_data.time_stamp);
