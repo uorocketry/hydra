@@ -221,11 +221,10 @@ mod app {
         });
     }
 
-    /// Receives a log message from the custom logger so that it can be sent over the radio.
     pub fn queue_gs_message(d: impl Into<Data>) {
         let message = Message::new(&monotonics::now(), COM_ID, d.into());
-
-        send_gs::spawn(message).ok();
+        let bytes = postcard::to_vec(&message).unwrap();
+        spawn!(send_gs, bytes).ok();
     }
 
     /**
@@ -245,7 +244,7 @@ mod app {
     fn sd_dump(cx: sd_dump::Context, m: Vec<u8, 255>) {
         let manager = cx.local.sd_manager;
         cx.shared.em.run(|| {
-            let mut buf: [u8; 255] = m.into_array()?;
+            let mut buf: [u8; 255] = [0; 255];
             let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
             if let Some(mut file) = manager.file.take() {
                 manager.write(&mut file, &msg_ser)?;
@@ -263,7 +262,7 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (sensors, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
+        let (stuffed_messages, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
             (
                 data_manager.stuff_messages(),
                 data_manager.get_logging_rate(),
@@ -271,8 +270,9 @@ mod app {
         });
 
         cx.shared.em.run(|| {
-            spawn!(send_gs, sensors.clone())?;
-            spawn!(sd_dump, sensors)?;
+            let bytes = postcard::to_vec(&stuffed_messages?)?;
+            spawn!(send_gs, bytes.clone())?;
+            spawn!(sd_dump, bytes)?;
             Ok(())
         });
         match logging_rate {
@@ -294,7 +294,8 @@ mod app {
         cx.shared.em.run(|| {
             if let Some(x) = state_data {
                 let message = Message::new(&monotonics::now(), COM_ID, State::new(x));
-                spawn!(send_gs, message)?;
+                let bytes = postcard::to_vec(&message).unwrap();
+                spawn!(send_gs, bytes)?;
             } // if there is none we still return since we simply don't have data yet.
             Ok(())
         });
@@ -315,7 +316,8 @@ mod app {
                     Health::new(health_manager.monitor.data.clone(), state),
                 )
             });
-            spawn!(send_gs, msg)?;
+            let bytes = postcard::to_vec(&msg).unwrap();
+            spawn!(send_gs, bytes)?;
             spawn_after!(report_health, ExtU64::secs(5))?;
             Ok(())
         });
