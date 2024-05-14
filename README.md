@@ -12,13 +12,22 @@
 
 ## Getting Started
 
+> If you are in a DevContainer skip to step 5.
+
 1. Install Rust: https://www.rust-lang.org/tools/install
-2. Build: `cargo build`
-3. Install probe-run: `cargo install --git https://github.com/uorocketry/probe-run`
-    - `probe-run` currently requires a patch to flash our chip, so please use the above version while the patch is upstreamed
-4. Install cargo-make: `cargo install cargo-make`
-4. Flash: `cargo run --bin main`
-5. Run tests: `cargo make test-host` or `cargo make test-device`
+2. Install necessary build tools:
+  - cargo-make: `cargo install cargo-make`
+  - probe-rs: `cargo install probe-rs --features cli`
+3. Install the [ARM GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) (last tested with 13.2) and have it available in your PATH
+  - Arch Linux: `sudo pacman -S arm-none-eabi-gcc`
+  - Alpine/Debian/Ubuntu: <https://pkgs.org/download/gcc-arm-none-eabi>
+  - MacOS: `brew install arm-none-eabi-gcc`
+4. Build: `cargo build`
+  - In case it fails, try `cargo build --release`
+5. Run tests:
+  - In the host machine: `cargo make test-host`
+  - In the device: `cargo make test-device`
+6. Flash on hardware: `cargo run --bin main`
 
 For more detailed instructions on flashing, debugging, and more, please see [the wiki](https://avwiki.uorocketry.ca/en/Avionics/HYDRA/Software).
 
