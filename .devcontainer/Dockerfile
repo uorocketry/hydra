@@ -7,6 +7,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y cmake pkg-config 
 RUN mkdir -p toolchain && \
     curl -L "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz" \
     | tar --strip-components=1 -xJ -C toolchain && \
-    cargo install --locked probe-rs --features cli \
-    cargo install --locked cargo-make
+    cargo install probe-rs --features cli \
+    cargo install cargo-make
 ENV PATH="${PATH}:/toolchain/bin"
