@@ -111,7 +111,6 @@ mod app {
         let timerclk: hal::clock::v1::Tc2Tc3Clock = pclk_tc2tc3.into();
         let mut recovery_timer =
             hal::timer::TimerCounter2::tc2_(&timerclk, peripherals.TC2, &mut mclk);
-        recovery_timer.enable_interrupt();
 
         /* Spawn tasks */
         run_sm::spawn().ok();
@@ -154,13 +153,13 @@ mod app {
                 cx.shared.data_manager.lock(|data| {
                     data.recovery_counter += 1;
                 });
+                // restart timer after interrupt
+                let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
+                // timer requires specific duration format
+                let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> = duration_mins.convert();
+                timer.start(timer_duration);
             }
-            // restart timer after interrupt
-            let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
-            // timer requires specific duration format
-            let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> = duration_mins.convert();
             timer.enable_interrupt(); // clear interrupt
-            timer.start(timer_duration);
         });
     }
 
