@@ -5,6 +5,7 @@ use crate::communication::CanDevice0;
 use crate::data_manager::DataManager;
 use crate::gpio_manager::GPIOManager;
 use crate::state_machine::states::*;
+use atsamd_hal::timer::TimerCounter2;
 pub use black_magic::*;
 use core::fmt::Debug;
 use defmt::Format;
@@ -12,7 +13,6 @@ use enum_dispatch::enum_dispatch;
 use messages::state;
 use rtic::Mutex;
 pub use states::Initializing;
-use atsamd_hal::timer::TimerCounter2;
 
 pub trait StateMachineSharedResources {
     fn lock_can(&mut self, f: &dyn Fn(&mut CanDevice0));

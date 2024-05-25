@@ -1,14 +1,15 @@
 use super::Descent;
 use crate::app::fire_main;
 use crate::state_machine::{
-    RocketStates, State, StateMachineContext, StateMachineSharedResources, TransitionInto, WaitForRecovery
+    RocketStates, State, StateMachineContext, StateMachineSharedResources, TransitionInto,
+    WaitForRecovery,
 };
 use crate::{no_transition, transition};
+use atsamd_hal::prelude::_embedded_hal_timer_CountDown;
 use atsamd_hal::timer_traits::InterruptDrivenTimer;
 use common_arm::spawn;
 use defmt::{write, Format, Formatter};
 use rtic::mutex::Mutex;
-use atsamd_hal::prelude::_embedded_hal_timer_CountDown;
 
 #[derive(Debug, Clone)]
 pub struct TerminalDescent {}
@@ -24,7 +25,8 @@ impl State for TerminalDescent {
             timer.enable_interrupt();
             let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
             // timer requires specific duration format
-            let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> = duration_mins.convert();
+            let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> =
+                duration_mins.convert();
             timer.start(timer_duration);
         });
     }

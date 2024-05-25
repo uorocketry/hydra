@@ -156,7 +156,8 @@ mod app {
                 // restart timer after interrupt
                 let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
                 // timer requires specific duration format
-                let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> = duration_mins.convert();
+                let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> =
+                    duration_mins.convert();
                 timer.start(timer_duration);
             }
             timer.enable_interrupt(); // clear interrupt
