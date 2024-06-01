@@ -221,7 +221,7 @@ mod app {
         });
     }
 
-    pub fn queue_gs_message(d: impl Into<Data>){
+    pub fn queue_gs_message(d: impl Into<Data>) {
         let message = Message::new(&monotonics::now(), COM_ID, d.into());
         let bytes = postcard::to_vec(&message);
         if let Ok(bytes) = bytes {
