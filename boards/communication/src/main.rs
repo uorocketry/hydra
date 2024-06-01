@@ -221,10 +221,12 @@ mod app {
         });
     }
 
-    pub fn queue_gs_message(d: impl Into<Data>) {
+    pub fn queue_gs_message(d: impl Into<Data>){
         let message = Message::new(&monotonics::now(), COM_ID, d.into());
-        let bytes = postcard::to_vec(&message).unwrap();
-        spawn!(send_gs, bytes).ok();
+        let bytes = postcard::to_vec(&message);
+        if let Ok(bytes) = bytes {
+            send_gs::spawn(bytes).ok();
+        }
     }
 
     /**
@@ -294,7 +296,7 @@ mod app {
         cx.shared.em.run(|| {
             if let Some(x) = state_data {
                 let message = Message::new(&monotonics::now(), COM_ID, State::new(x));
-                let bytes = postcard::to_vec(&message).unwrap();
+                let bytes = postcard::to_vec(&message)?;
                 spawn!(send_gs, bytes)?;
             } // if there is none we still return since we simply don't have data yet.
             Ok(())
@@ -316,7 +318,7 @@ mod app {
                     Health::new(health_manager.monitor.data.clone(), state),
                 )
             });
-            let bytes = postcard::to_vec(&msg).unwrap();
+            let bytes = postcard::to_vec(&msg)?;
             spawn!(send_gs, bytes)?;
             spawn_after!(report_health, ExtU64::secs(5))?;
             Ok(())

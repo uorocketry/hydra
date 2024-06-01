@@ -1,16 +1,17 @@
+use common_arm::HydraError;
 use heapless::{HistoryBuffer, Vec};
 use messages::command::RadioRate;
 use messages::state::StateData;
 use messages::Message;
 use messages::{
-    MAX_COMMAND_SIZE, MAX_HEALTH_SIZE, MAX_LOG_SIZE, MAX_SENSOR_SIZE, MAX_SIZE, MAX_STATE_SIZE,
+    MAX_COMMAND_SIZE, MAX_HEALTH_SIZE, MAX_LOG_SIZE, MAX_SENSOR_SIZE, MAX_STATE_SIZE,
 };
 use postcard;
 
-const MAX_RADIO_MSG: u8 = 255;
+const MAX_RADIO_MSG: usize = 255;
 
 pub struct DataManager {
-    pub message_queue: HistoryBuffer<Message, 32>,
+    pub message_queue: HistoryBuffer<Message, 64>,
     pub logging_rate: Option<RadioRate>,
     pub state: Option<StateData>,
 }
@@ -34,40 +35,40 @@ impl DataManager {
         return RadioRate::Slow;
     }
 
-    pub fn stuff_messages(&mut self) -> Result<Vec<u8, 255>, postcard::Error> {
+    pub fn stuff_messages(&mut self) -> Result<Vec<u8, 255>, HydraError> {
         let mut bytes: Vec<u8, 255> = Vec::new();
         for el in self.message_queue.oldest_ordered() {
             match el.data {
                 messages::Data::Command(_) => {
-                    if bytes.len() + MAX_COMMAND_SIZE <= MAX_SIZE {
+                    if bytes.len() + MAX_COMMAND_SIZE <= MAX_RADIO_MSG {
                         bytes.extend(postcard::to_vec::<messages::Message, MAX_COMMAND_SIZE>(el)?);
                     } else {
                         break;
                     }
                 }
                 messages::Data::Health(_) => {
-                    if bytes.len() + MAX_HEALTH_SIZE <= MAX_SIZE {
+                    if bytes.len() + MAX_HEALTH_SIZE <= MAX_RADIO_MSG {
                         bytes.extend(postcard::to_vec::<messages::Message, MAX_HEALTH_SIZE>(el)?);
                     } else {
                         break;
                     }
                 }
                 messages::Data::Sensor(_) => {
-                    if bytes.len() + MAX_SENSOR_SIZE <= MAX_SIZE {
+                    if bytes.len() + MAX_SENSOR_SIZE <= MAX_RADIO_MSG {
                         bytes.extend(postcard::to_vec::<messages::Message, MAX_SENSOR_SIZE>(el)?);
                     } else {
                         break;
                     }
                 }
                 messages::Data::State(_) => {
-                    if bytes.len() + MAX_STATE_SIZE <= MAX_SIZE {
+                    if bytes.len() + MAX_STATE_SIZE <= MAX_RADIO_MSG {
                         bytes.extend(postcard::to_vec::<messages::Message, MAX_STATE_SIZE>(el)?);
                     } else {
                         break;
                     }
                 }
                 messages::Data::Log(_) => {
-                    if bytes.len() + MAX_LOG_SIZE <= MAX_SIZE {
+                    if bytes.len() + MAX_LOG_SIZE <= MAX_RADIO_MSG {
                         bytes.extend(postcard::to_vec::<messages::Message, MAX_LOG_SIZE>(el)?);
                     } else {
                         break;
@@ -78,7 +79,7 @@ impl DataManager {
         if bytes.len() > 0 {
             return Ok(bytes);
         }
-        return Err(postcard::Error::WontImplement);
+        return Err(HydraError::from("No messages to send"));
     }
 
     pub fn handle_data(&mut self, data: Message) {
