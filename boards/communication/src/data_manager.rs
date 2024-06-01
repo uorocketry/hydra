@@ -3,9 +3,7 @@ use heapless::{HistoryBuffer, Vec};
 use messages::command::RadioRate;
 use messages::state::StateData;
 use messages::Message;
-use messages::{
-    MAX_COMMAND_SIZE, MAX_HEALTH_SIZE, MAX_LOG_SIZE, MAX_SENSOR_SIZE, MAX_STATE_SIZE,
-};
+use messages::{MAX_COMMAND_SIZE, MAX_HEALTH_SIZE, MAX_LOG_SIZE, MAX_SENSOR_SIZE, MAX_STATE_SIZE};
 use postcard;
 
 const MAX_RADIO_MSG: usize = 255;
