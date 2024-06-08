@@ -10,6 +10,7 @@ const MAIN_HEIGHT: f32 = 876.0; // meters ASL
 const HEIGHT_MIN: f32 = 600.0; // meters ASL
 const RECOVERY_DATA_POINTS: u8 = 8; // number of barometric altitude readings held by the recovery
                                     // algorithm
+const RECOVERY_TIMER_TIMEOUT: u8 = 15; // minutes
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -104,7 +105,7 @@ impl DataManager {
                 match avg_sum / 7.0 {
                     // inclusive range
                     x if (-0.25..=0.25).contains(&x) => {
-                        if self.recovery_counter >= 15 {
+                        if self.recovery_counter >= RECOVERY_TIMER_TIMEOUT {
                             return true;
                         }
                     }
