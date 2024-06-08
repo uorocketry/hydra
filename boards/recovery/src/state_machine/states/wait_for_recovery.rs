@@ -3,7 +3,7 @@ use crate::app::monotonics;
 use crate::no_transition;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::types::COM_ID;
-use atsamd_hal::prelude::_atsamd_hal_timer_traits_InterruptDrivenTimer;
+use atsamd_hal::timer_traits::InterruptDrivenTimer;
 use defmt::{write, Format, Formatter};
 use messages::command::{Command, PowerDown, RadioRate, RadioRateChange};
 use messages::sender::Sender::SensorBoard;
