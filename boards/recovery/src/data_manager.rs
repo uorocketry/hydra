@@ -19,7 +19,8 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
-    pub historical_barometer_altitude: HistoryBuffer<(f32, u32), 8>,
+    pub historical_barometer_altitude: HistoryBuffer<(f32, u32), 8>, // RECOVERY_DATA_POINTS (issue
+    // when putting as const)
     pub current_state: Option<RocketStates>,
     // each tick represents a minute that passed
     pub recovery_counter: u8,
@@ -69,7 +70,7 @@ impl DataManager {
                         return false;
                     }
                     _ => {
-                        info!("avg: {}", avg_sum / 7.0);
+                        info!("avg: {}", avg_sum / (RECOVERY_DATA_POINTS as f32 - 1.0));
                     }
                 }
             }
@@ -86,7 +87,7 @@ impl DataManager {
         }
     }
     pub fn is_landed(&mut self) -> bool {
-        if self.historical_barometer_altitude.len() < 8 {
+        if self.historical_barometer_altitude.len() < RECOVERY_DATA_POINTS {
             return false;
         }
         let mut buf = self.historical_barometer_altitude.oldest_ordered();
@@ -102,7 +103,7 @@ impl DataManager {
                     avg_sum += (i.0 - prev.0) / time_diff;
                     prev = i;
                 }
-                match avg_sum / 7.0 {
+                match avg_sum / (RECOVERY_DATA_POINTS as f32 - 1.0) {
                     // inclusive range
                     x if (-0.25..=0.25).contains(&x) => {
                         if self.recovery_counter >= RECOVERY_TIMER_TIMEOUT {
