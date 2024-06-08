@@ -25,6 +25,7 @@ use hal::gpio::{
 use hal::prelude::*;
 use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
 use health::HealthMonitorChannelsCommunication;
+use heapless::Vec;
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
 use messages::health::Health;
@@ -220,18 +221,19 @@ mod app {
         });
     }
 
-    /// Receives a log message from the custom logger so that it can be sent over the radio.
     pub fn queue_gs_message(d: impl Into<Data>) {
         let message = Message::new(&monotonics::now(), COM_ID, d.into());
-
-        send_gs::spawn(message).ok();
+        let bytes = postcard::to_vec(&message);
+        if let Ok(bytes) = bytes {
+            send_gs::spawn(bytes).ok();
+        }
     }
 
     /**
      * Sends a message to the radio over UART.
      */
     #[task(capacity = 10, shared = [&em, radio_manager])]
-    fn send_gs(mut cx: send_gs::Context, m: Message) {
+    fn send_gs(mut cx: send_gs::Context, m: Vec<u8, 255>) {
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
                 radio_manager.send_message(m)?;
@@ -241,7 +243,7 @@ mod app {
     }
 
     #[task(capacity = 10, local = [sd_manager], shared = [&em])]
-    fn sd_dump(cx: sd_dump::Context, m: Message) {
+    fn sd_dump(cx: sd_dump::Context, m: Vec<u8, 255>) {
         let manager = cx.local.sd_manager;
         cx.shared.em.run(|| {
             let mut buf: [u8; 255] = [0; 255];
@@ -262,23 +264,17 @@ mod app {
      */
     #[task(shared = [data_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
-        let (sensors, logging_rate) = cx
-            .shared
-            .data_manager
-            .lock(|data_manager| (data_manager.take_sensors(), data_manager.get_logging_rate()));
+        let (stuffed_messages, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
+            (
+                data_manager.stuff_messages(),
+                data_manager.get_logging_rate(),
+            )
+        });
 
         cx.shared.em.run(|| {
-            for msg in sensors {
-                match msg {
-                    Some(x) => {
-                        spawn!(send_gs, x.clone())?;
-                        spawn!(sd_dump, x)?;
-                    }
-                    None => {
-                        continue;
-                    }
-                }
-            }
+            let bytes = postcard::to_vec(&stuffed_messages?)?;
+            spawn!(send_gs, bytes.clone())?;
+            spawn!(sd_dump, bytes)?;
             Ok(())
         });
         match logging_rate {
@@ -300,7 +296,8 @@ mod app {
         cx.shared.em.run(|| {
             if let Some(x) = state_data {
                 let message = Message::new(&monotonics::now(), COM_ID, State::new(x));
-                spawn!(send_gs, message)?;
+                let bytes = postcard::to_vec(&message)?;
+                spawn!(send_gs, bytes)?;
             } // if there is none we still return since we simply don't have data yet.
             Ok(())
         });
@@ -321,7 +318,8 @@ mod app {
                     Health::new(health_manager.monitor.data.clone(), state),
                 )
             });
-            spawn!(send_gs, msg)?;
+            let bytes = postcard::to_vec(&msg)?;
+            spawn!(send_gs, bytes)?;
             spawn_after!(report_health, ExtU64::secs(5))?;
             Ok(())
         });

@@ -263,9 +263,7 @@ impl RadioManager {
             mav_sequence: 0,
         }
     }
-    pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
-        let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
-
+    pub fn send_message(&mut self, payload: Vec<u8, 255>) -> Result<(), HydraError> {
         let mav_header = mavlink::MavHeader {
             system_id: 1,
             component_id: 1,
