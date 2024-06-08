@@ -108,9 +108,9 @@ impl From<state::StateData> for RocketStates {
     }
 }
 // Linter: an implementation of From is preferred since it gives you Into<_> for free where the reverse isn't true
-impl Into<state::StateData> for RocketStates {
-    fn into(self) -> state::StateData {
-        match self {
+impl From<RocketStates> for state::StateData {
+    fn from(val: RocketStates) -> Self {
+        match val {
             RocketStates::Initializing(_) => state::StateData::Initializing,
             RocketStates::WaitForTakeoff(_) => state::StateData::WaitForTakeoff,
             RocketStates::Ascent(_) => state::StateData::Ascent,

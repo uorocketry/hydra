@@ -1,8 +1,7 @@
 use super::Descent;
 use crate::app::fire_main;
 use crate::state_machine::{
-    RocketStates, State, StateMachineContext, StateMachineSharedResources, TransitionInto,
-    WaitForRecovery,
+    RocketStates, State, StateMachineContext, TransitionInto, WaitForRecovery,
 };
 use crate::{no_transition, transition};
 use atsamd_hal::prelude::_embedded_hal_timer_CountDown;
@@ -20,7 +19,6 @@ impl State for TerminalDescent {
             spawn!(fire_main)?;
             Ok(())
         });
-        // context.shared_resources.
         context.shared_resources.recovery_timer.lock(|timer| {
             timer.enable_interrupt();
             let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);

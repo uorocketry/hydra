@@ -109,8 +109,7 @@ mod app {
         /* Recovery Timer config */
         let (pclk_tc2tc3, gclk0) = Pclk::enable(tokens.pclks.tc2_tc3, gclk0);
         let timerclk: hal::clock::v1::Tc2Tc3Clock = pclk_tc2tc3.into();
-        let mut recovery_timer =
-            hal::timer::TimerCounter2::tc2_(&timerclk, peripherals.TC2, &mut mclk);
+        let recovery_timer = hal::timer::TimerCounter2::tc2_(&timerclk, peripherals.TC2, &mut mclk);
 
         /* Spawn tasks */
         run_sm::spawn().ok();
