@@ -87,7 +87,7 @@ impl DataManager {
         }
     }
     pub fn is_landed(&mut self) -> bool {
-        if self.historical_barometer_altitude.len() < RECOVERY_DATA_POINTS {
+        if self.historical_barometer_altitude.len() < RECOVERY_DATA_POINTS.into() {
             return false;
         }
         let mut buf = self.historical_barometer_altitude.oldest_ordered();
