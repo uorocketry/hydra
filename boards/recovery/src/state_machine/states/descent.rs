@@ -1,7 +1,7 @@
 use super::Ascent;
 use crate::app::fire_drogue;
 use crate::state_machine::{
-    RocketStates, State, StateMachineContext, TerminalDescent, TransitionInto,
+    RocketEvents, RocketStates, State, StateMachineContext, TerminalDescent, TransitionInto
 };
 use crate::{no_transition, transition};
 use common_arm::spawn;
@@ -27,9 +27,18 @@ impl State for Descent {
             }
         })
     }
+
+    //  sample code for event handling it is not complete and will not work shouldn't be used
+    // this is an event function that is called when an event is passed to the state to see if it should transition if relevant
+    fn event(&mut self, event: RocketEvents) -> Option<RocketStates> {
+        match event {
+            RocketEvents::DeployDrogue(_) => transition!(self, TerminalDescent),
+            _ => {}
+        }
+    }
 }
 
-impl TransitionInto<Descent> for Ascent {
+impl TransitionInto<Descent> for Ascent { 
     fn transition(&self) -> Descent {
         Descent {}
     }

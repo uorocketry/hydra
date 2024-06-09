@@ -29,6 +29,13 @@ impl State for TerminalDescent {
     }
 }
 
+fn event(&mut self, event: RocketEvents) -> Option<RocketStates> {
+    match event {
+        RocketEvents::DeployMain(_) => transition!(self, WaitForRecovery),
+        _ => {}
+    }
+}
+
 impl TransitionInto<TerminalDescent> for Descent {
     fn transition(&self) -> TerminalDescent {
         TerminalDescent {}
