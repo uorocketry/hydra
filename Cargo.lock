@@ -787,6 +787,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "messages-proc-macros-lib"
+version = "0.1.0"
+dependencies = [
+ "quote 1.0.35",
+ "serde",
+]
+
+[[package]]
 name = "modular-bitfield"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -805,6 +813,22 @@ dependencies = [
  "proc-macro2 1.0.78",
  "quote 1.0.35",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "nav"
+version = "0.1.0"
+dependencies = [
+ "common-arm",
+ "common-arm-stm32h7",
+ "cortex-m",
+ "cortex-m-rt",
+ "cortex-m-rtic",
+ "defmt",
+ "messages",
+ "postcard",
+ "stm32h7xx-hal",
+ "systick-monotonic",
 ]
 
 [[package]]
@@ -1307,20 +1331,6 @@ dependencies = [
  "sbg-rs",
  "systick-monotonic",
  "typenum",
-]
-
-[[package]]
-name = "sensor_v2"
-version = "0.1.0"
-dependencies = [
- "common-arm",
- "common-arm-stm32h7",
- "cortex-m",
- "cortex-m-rt",
- "cortex-m-rtic",
- "messages",
- "postcard",
- "stm32h7xx-hal",
 ]
 
 [[package]]
