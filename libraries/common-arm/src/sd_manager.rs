@@ -1,8 +1,11 @@
 use core::{fmt::Debug, marker::PhantomData};
-use defmt::info;
+use defmt::{info, error};
 use embedded_hal as hal;
 use embedded_sdmmc as sd;
 use hal::spi::FullDuplex;
+
+use messages::ErrorContext;
+use crate::herror;
 
 /// Time source for `[SdInterface]`. It doesn't return any useful information for now, and will
 /// always return an arbitrary time.
@@ -39,8 +42,8 @@ where
     CS: hal::digital::v2::OutputPin,
 {
     pub sd_controller: sd::Controller<sd::SdMmcSpi<SPI, CS>, TimeSink>,
-    pub volume: sd::Volume,
-    pub root_directory: sd::Directory,
+    pub volume: Option<sd::Volume>,
+    pub root_directory: Option<sd::Directory>,
     pub file: Option<sd::File>,
 }
 
@@ -52,85 +55,134 @@ where
 {
     pub fn new(spi: SPI, cs: CS) -> Self {
         let time_sink: TimeSink = TimeSink::new(); // Need to give this a DateTime object for actual timing.
-        let mut sd_cont = sd::Controller::new(sd::SdMmcSpi::new(spi, cs), time_sink);
-        match sd_cont.device().init() {
-            Ok(_) => match sd_cont.device().card_size_bytes() {
+        let mut sd_controller = sd::Controller::new(sd::SdMmcSpi::new(spi, cs), time_sink);
+        match sd_controller.device().init() {
+            Ok(_) => match sd_controller.device().card_size_bytes() {
                 Ok(size) => info!("Card is {} bytes", size),
-                Err(_) => panic!("Cannot get card size"),
+                Err(_) => error!("Cannot get card size"),
             },
             Err(_) => {
-                panic!("Cannot get SD card.");
-            }
-        }
-
-        let mut volume = match sd_cont.get_volume(sd::VolumeIdx(0)) {
-            Ok(volume) => volume,
-            Err(_) => {
-                panic!("Cannot get volume 0");
+                herror!(Error, ErrorContext::SDCardNotConnected);
             }
         };
 
-        let root_directory = match sd_cont.open_root_dir(&volume) {
-            Ok(root_directory) => root_directory,
+        let mut volume = match sd_controller.get_volume(sd::VolumeIdx(0)) {
+            Ok(volume) => Some(volume),
             Err(_) => {
-                panic!("Cannot get root");
+                error!("Cannot get volume 0");
+                None
             }
         };
-        let file = sd_cont.open_file_in_dir(
-            &mut volume,
-            &root_directory,
-            "log.txt",
-            sd::Mode::ReadWriteCreateOrTruncate,
-        );
-        let file = match file {
-            Ok(file) => file,
-            Err(_) => {
-                panic!("Cannot create file.");
+
+        let root_directory = match &volume {
+            Some(volume) => match sd_controller.open_root_dir(volume) {
+                Ok(root_directory) => Some(root_directory),
+                Err(_) => {
+                    error!("Cannot get root");
+                    None
+                }
             }
+            _ => None,
+        };
+
+        let file = match (&mut volume, &root_directory) {
+            (Some(volume), Some(root_directory)) => {
+                let _file = sd_controller.open_file_in_dir(
+                    volume,
+                    &root_directory,
+                    "log.txt",
+                    sd::Mode::ReadWriteCreateOrTruncate,
+                );
+                let _file = match _file {
+                    Ok(__file) => Some(__file),
+                    Err(_) => {
+                        error!("Cannot create file.");
+                        None
+                    }
+                };
+                _file
+            },
+            _ => None
         };
 
         SdManager {
-            sd_controller: sd_cont,
+            sd_controller,
             volume,
             root_directory,
-            file: Some(file),
+            file,
         }
     }
+
     pub fn write(
         &mut self,
         file: &mut sd::File,
         buffer: &[u8],
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
-        self.sd_controller.write(&mut self.volume, file, buffer)
+        if !self.is_mounted() {
+            return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
+        }
+        self.sd_controller.write(self.volume.as_mut().unwrap(), file, buffer)
     }
+
     pub fn write_str(
         &mut self,
         file: &mut sd::File,
         msg: &str,
     ) -> Result<usize, sd::Error<sd::SdMmcError>> {
+        if !self.is_mounted() {
+            return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
+        }
         let buffer: &[u8] = msg.as_bytes();
-        self.sd_controller.write(&mut self.volume, file, buffer)
+        self.sd_controller.write(self.volume.as_mut().unwrap(), file, buffer)
     }
+
     pub fn open_file(&mut self, file_name: &str) -> Result<sd::File, sd::Error<sd::SdMmcError>> {
+        if !self.is_mounted() {
+            return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
+        }
         self.sd_controller.open_file_in_dir(
-            &mut self.volume,
-            &self.root_directory,
+            self.volume.as_mut().unwrap(),
+            self.root_directory.as_ref().unwrap(),
             file_name,
             sd::Mode::ReadWriteCreateOrTruncate,
         )
     }
+
     pub fn close_current_file(&mut self) -> Result<(), sd::Error<sd::SdMmcError>> {
+        if !self.is_mounted() {
+            return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
+        }
         if let Some(file) = self.file.take() {
             return self.close_file(file);
         }
         Ok(())
     }
+
     pub fn close_file(&mut self, file: sd::File) -> Result<(), sd::Error<sd::SdMmcError>> {
-        self.sd_controller.close_file(&self.volume, file)
+        if !self.is_mounted() {
+            return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
+        }
+        self.sd_controller.close_file(self.volume.as_ref().unwrap(), file)
     }
-    pub fn close(mut self) {
-        self.sd_controller
-            .close_dir(&self.volume, self.root_directory);
+
+    pub fn close(&mut self) -> Result<(), sd::Error<sd::SdMmcError>> {
+        if !self.is_mounted() {
+            return Err(sd::Error::DeviceError(sd::SdMmcError::CardNotFound));
+        }
+        self.sd_controller.close_dir(
+            self.volume.as_ref().unwrap(), 
+            self.root_directory.unwrap()
+        );
+        Ok(())
+    }
+
+    pub fn is_mounted(&mut self) -> bool {
+        // Sd crate doesn't have a check method for SD card being still mounted
+        // Use `card_size_bytes()` as indicator if device is still connected or not
+        match self.sd_controller.device().card_size_bytes() {
+            Ok(size) => true,
+            Err(_) => false,
+        }
     }
 }
 
