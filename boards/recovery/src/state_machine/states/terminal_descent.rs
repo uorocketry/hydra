@@ -1,7 +1,7 @@
 use super::Descent;
 use crate::app::fire_main;
 use crate::state_machine::{
-    RocketStates, State, StateMachineContext, TransitionInto, WaitForRecovery,RocketEvents
+    RocketEvents, RocketStates, State, StateMachineContext, TransitionInto, WaitForRecovery,
 };
 use crate::{no_transition, transition};
 use common_arm::spawn;
@@ -30,7 +30,7 @@ impl State for TerminalDescent {
     fn event(&mut self, event: RocketEvents) -> Option<RocketStates> {
         match event {
             RocketEvents::DeployMain(_) => transition!(self, WaitForRecovery),
-            _ => {}
+            _ => None,
         }
     }
 }

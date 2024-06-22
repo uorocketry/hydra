@@ -31,7 +31,7 @@ impl State for Descent {
     fn event(&mut self, event: RocketEvents) -> Option<RocketStates> {
         match event {
             RocketEvents::DeployDrogue(_) => transition!(self, TerminalDescent),
-            _ => {}
+            _ => None,
         }
     }
 }

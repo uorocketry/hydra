@@ -11,8 +11,8 @@ use defmt::Format;
 use enum_dispatch::enum_dispatch;
 use messages::state;
 use rtic::Mutex;
-pub use states::Initializing;
 pub use states::Abort;
+pub use states::Initializing;
 
 pub trait StateMachineSharedResources {
     fn lock_can(&mut self, f: &dyn Fn(&mut CanDevice0));
@@ -57,7 +57,7 @@ impl StateMachine {
         }
     }
 
-    pub fn handle_event(&mut self, event: RocketEvents, context: &mut StateMachineContext) {
+    pub fn handle_event(&mut self, _event: RocketEvents, context: &mut StateMachineContext) {
         if let Some(new_state) = self.state.event(event) {
             self.state.exit();
             new_state.enter(context);
