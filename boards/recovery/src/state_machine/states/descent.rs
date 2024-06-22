@@ -28,8 +28,6 @@ impl State for Descent {
         })
     }
 
-    //  sample code for event handling it is not complete and will not work shouldn't be used
-    // this is an event function that is called when an event is passed to the state to see if it should transition if relevant
     fn event(&mut self, event: RocketEvents) -> Option<RocketStates> {
         match event {
             RocketEvents::DeployDrogue(_) => transition!(self, TerminalDescent),
