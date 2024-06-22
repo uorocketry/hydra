@@ -12,6 +12,7 @@ use enum_dispatch::enum_dispatch;
 use messages::state;
 use rtic::Mutex;
 pub use states::Initializing;
+pub use states::Abort;
 
 pub trait StateMachineSharedResources {
     fn lock_can(&mut self, f: &dyn Fn(&mut CanDevice0));
@@ -57,8 +58,6 @@ impl StateMachine {
     }
 
     pub fn handle_event(&mut self, event: RocketEvents, context: &mut StateMachineContext) {
-        // first check if state cares abt event if it doesnt check globals then if all dont match returns none 
-        // make a distinction between evnets that will be handled globally and others by the state
         if let Some(new_state) = self.state.event(event) {
             self.state.exit();
             new_state.enter(context);
@@ -69,7 +68,7 @@ impl StateMachine {
                 RocketEvents::DeployMain(true) => todo!(),
                 RocketEvents::Abort => {
                     self.state.exit();
-                    let new_state = RocketStates::Abort(AbortState {});
+                    let new_state = RocketStates::Abort(Abort {});
                     // new_state.enter(context);
                     self.state = new_state;
                 }
@@ -93,7 +92,7 @@ impl Default for StateMachine {
 pub enum RocketEvents {
     DeployDrogue(bool),
     DeployMain(bool),
-    Abort
+    Abort,
 }
 
 // All states are defined here. Another struct must be defined for the actual state, and that struct

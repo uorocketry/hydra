@@ -1,7 +1,7 @@
 use super::Ascent;
 use crate::app::fire_drogue;
 use crate::state_machine::{
-    RocketEvents, RocketStates, State, StateMachineContext, TerminalDescent, TransitionInto
+    RocketEvents, RocketStates, State, StateMachineContext, TerminalDescent, TransitionInto,
 };
 use crate::{no_transition, transition};
 use common_arm::spawn;
@@ -38,7 +38,7 @@ impl State for Descent {
     }
 }
 
-impl TransitionInto<Descent> for Ascent { 
+impl TransitionInto<Descent> for Ascent {
     fn transition(&self) -> Descent {
         Descent {}
     }

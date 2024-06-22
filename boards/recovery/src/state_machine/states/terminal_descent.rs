@@ -1,7 +1,7 @@
 use super::Descent;
 use crate::app::fire_main;
 use crate::state_machine::{
-    RocketStates, State, StateMachineContext, TransitionInto, WaitForRecovery,
+    RocketStates, State, StateMachineContext, TransitionInto, WaitForRecovery,RocketEvents
 };
 use crate::{no_transition, transition};
 use common_arm::spawn;
