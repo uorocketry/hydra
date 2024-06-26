@@ -19,6 +19,7 @@ use data_manager::DataManager;
 use gpio_manager::GPIOManager;
 use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
 use hal::prelude::*;
+use hal::timer::TimerCounter2;
 use mcan::messageram::SharedMemory;
 use messages::*;
 use state_machine::{StateMachine, StateMachineContext};
@@ -42,6 +43,7 @@ mod app {
         data_manager: DataManager,
         can0: communication::CanDevice0,
         gpio: GPIOManager,
+        recovery_timer: TimerCounter2,
     }
 
     #[local]
@@ -78,7 +80,7 @@ mod app {
 
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
-        let (_, _, _, _mclk) = unsafe { clocks.pac.steal() };
+        let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
@@ -104,6 +106,11 @@ mod app {
         /* State Machine config */
         let state_machine = StateMachine::new();
 
+        /* Recovery Timer config */
+        let (pclk_tc2tc3, gclk0) = Pclk::enable(tokens.pclks.tc2_tc3, gclk0);
+        let timerclk: hal::clock::v1::Tc2Tc3Clock = pclk_tc2tc3.into();
+        let recovery_timer = hal::timer::TimerCounter2::tc2_(&timerclk, peripherals.TC2, &mut mclk);
+
         /* Spawn tasks */
         run_sm::spawn().ok();
         state_send::spawn().ok();
@@ -120,6 +127,7 @@ mod app {
                 data_manager: DataManager::new(),
                 can0,
                 gpio,
+                recovery_timer,
             },
             Local {
                 led_green,
@@ -134,6 +142,25 @@ mod app {
     #[idle]
     fn idle(_: idle::Context) -> ! {
         loop {}
+    }
+
+    // interrupt handler for recovery counter
+    #[task(binds=TC2, shared=[data_manager, recovery_timer])]
+    fn recovery_counter_tick(mut cx: recovery_counter_tick::Context) {
+        cx.shared.recovery_timer.lock(|timer| {
+            if timer.wait().is_ok() {
+                cx.shared.data_manager.lock(|data| {
+                    data.recovery_counter += 1;
+                });
+                // restart timer after interrupt
+                let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
+                // timer requires specific duration format
+                let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> =
+                    duration_mins.convert();
+                timer.start(timer_duration);
+            }
+            timer.enable_interrupt(); // clear interrupt
+        });
     }
 
     #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
@@ -175,7 +202,7 @@ mod app {
 
     /// Runs the state machine.
     /// This takes control of the shared resources.
-    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager, &em])]
+    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager, &em, recovery_timer])]
     fn run_sm(mut cx: run_sm::Context) {
         cx.local.state_machine.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,

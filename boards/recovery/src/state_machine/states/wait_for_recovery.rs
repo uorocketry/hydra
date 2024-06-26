@@ -3,9 +3,10 @@ use crate::app::monotonics;
 use crate::no_transition;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::types::COM_ID;
+use atsamd_hal::timer_traits::InterruptDrivenTimer;
 use defmt::{write, Format, Formatter};
 use messages::command::{Command, PowerDown, RadioRate, RadioRateChange};
-use messages::sender::Sender::SensorBoard;
+use messages::node::Node::SensorBoard;
 use messages::Message;
 use rtic::mutex::Mutex;
 
@@ -32,6 +33,9 @@ impl State for WaitForRecovery {
                 })
             });
         }
+        context.shared_resources.recovery_timer.lock(|timer| {
+            timer.disable_interrupt();
+        })
     }
     fn step(&mut self, _context: &mut StateMachineContext) -> Option<RocketStates> {
         no_transition!() // this is our final resting place. We should also powerdown this board.
