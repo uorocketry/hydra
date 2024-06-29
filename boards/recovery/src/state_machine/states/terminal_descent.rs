@@ -27,9 +27,12 @@ impl State for TerminalDescent {
             }
         })
     }
-    fn event(&mut self, event: RocketEvents) -> Option<RocketStates> {
+    fn event(&mut self, event: RocketEvents, context: &mut StateMachineContext) -> Option<RocketStates> {
         match event {
-            RocketEvents::DeployMain(_) => transition!(self, WaitForRecovery),
+            RocketEvents::DeployMain(false) => context.shared_resources.em.run(|| {
+                spawn!(fire_main)?;
+                Ok(())
+            }),
             _ => None,
         }
     }

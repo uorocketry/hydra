@@ -7,6 +7,7 @@ use crate::{no_transition, transition};
 use common_arm::spawn;
 use defmt::{write, Format, Formatter};
 use rtic::mutex::Mutex;
+use typenum::False;
 
 #[derive(Debug, Clone)]
 pub struct Descent {}
@@ -28,9 +29,12 @@ impl State for Descent {
         })
     }
 
-    fn event(&mut self, event: RocketEvents) -> Option<RocketStates> {
+    fn event(&mut self, event: RocketEvents, context: &mut StateMachineContext) -> Option<RocketStates> {
         match event {
-            RocketEvents::DeployDrogue(_) => transition!(self, TerminalDescent),
+            RocketEvents::DeployDrogue(false) => context.shared_resources.em.run(|| {
+                spawn!(fire_drogue)?;
+                Ok(())
+            }),
             _ => None,
         }
     }
