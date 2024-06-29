@@ -141,6 +141,7 @@ impl DataManager {
             messages::Data::Sensor(sensor) => match sensor.data {
                 messages::sensor::SensorData::Air(air_data) => {
                     /*
+
                        NOTE!!!
                        There should be added a counter to check how many times
                        the alt is dropped, if the number is high switch to

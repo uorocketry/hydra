@@ -12,6 +12,7 @@ use defmt::Format;
 use enum_dispatch::enum_dispatch;
 use messages::state;
 use rtic::Mutex;
+pub use states::Abort;
 pub use states::Initializing;
 
 pub trait StateMachineSharedResources {
@@ -61,6 +62,26 @@ impl StateMachine {
         }
     }
 
+    pub fn handle_event(&mut self, _event: RocketEvents, context: &mut StateMachineContext) {
+        if let Some(new_state) = self.state.event(event) {
+            self.state.exit();
+            new_state.enter(context);
+            self.state = new_state;
+        } else {
+            match event {
+                RocketEvents::DeployDrogue(true) => todo!(),
+                RocketEvents::DeployMain(true) => todo!(),
+                RocketEvents::Abort => {
+                    self.state.exit();
+                    let new_state = RocketStates::Abort(Abort {});
+                    // new_state.enter(context);
+                    self.state = new_state;
+                }
+                _ => {}
+            }
+        }
+    }
+
     pub fn get_state(&self) -> RocketStates {
         self.state.clone()
     }
@@ -74,8 +95,9 @@ impl Default for StateMachine {
 
 // All events are found here
 pub enum RocketEvents {
-    DeployDrogue,
-    DeployMain,
+    DeployDrogue(bool),
+    DeployMain(bool),
+    Abort,
 }
 
 // All states are defined here. Another struct must be defined for the actual state, and that struct

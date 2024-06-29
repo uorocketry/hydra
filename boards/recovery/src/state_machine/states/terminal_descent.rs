@@ -1,7 +1,7 @@
 use super::Descent;
 use crate::app::fire_main;
 use crate::state_machine::{
-    RocketStates, State, StateMachineContext, TransitionInto, WaitForRecovery,
+    RocketEvents, RocketStates, State, StateMachineContext, TransitionInto, WaitForRecovery,
 };
 use crate::{no_transition, transition};
 use atsamd_hal::prelude::_embedded_hal_timer_CountDown;
@@ -36,6 +36,15 @@ impl State for TerminalDescent {
                 no_transition!()
             }
         })
+    }
+    fn event(&mut self, event: RocketEvents, context: &mut StateMachineContext) -> Option<RocketStates> {
+        match event {
+            RocketEvents::DeployMain(false) => context.shared_resources.em.run(|| {
+                spawn!(fire_main)?;
+                Ok(())
+            }),
+            _ => None,
+        }
     }
 }
 
