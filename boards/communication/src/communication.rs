@@ -120,8 +120,7 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::RecoveryBoard.into())
-                    .unwrap(),
+                filter: ecan::StandardId::new(messages::node::Node::RecoveryBoard.into()).unwrap(),
                 mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Recovery filter"));
@@ -129,8 +128,7 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo1,
-                filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
-                    .unwrap(),
+                filter: ecan::StandardId::new(messages::node::Node::SensorBoard.into()).unwrap(),
                 mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Sensor filter"));
@@ -138,7 +136,7 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::PowerBoard.into()).unwrap(),
+                filter: ecan::StandardId::new(messages::node::Node::PowerBoard.into()).unwrap(),
                 mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Power filter"));
@@ -146,8 +144,7 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into())
-                    .unwrap(),
+                filter: ecan::StandardId::new(messages::node::Node::GroundStation.into()).unwrap(),
                 mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Ground Station filter"));

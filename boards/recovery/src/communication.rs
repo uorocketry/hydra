@@ -111,8 +111,7 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
-                    .unwrap(),
+                filter: ecan::StandardId::new(messages::node::Node::SensorBoard.into()).unwrap(),
                 mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Sensor Board filter"));
@@ -121,7 +120,7 @@ impl CanDevice0 {
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo1,
-                filter: ecan::StandardId::new(messages::sender::Sender::CommunicationBoard.into())
+                filter: ecan::StandardId::new(messages::node::Node::CommunicationBoard.into())
                     .unwrap(),
                 mask: ecan::StandardId::ZERO,
             })

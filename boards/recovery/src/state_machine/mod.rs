@@ -5,6 +5,7 @@ use crate::communication::CanDevice0;
 use crate::data_manager::DataManager;
 use crate::gpio_manager::GPIOManager;
 use crate::state_machine::states::*;
+use atsamd_hal::timer::TimerCounter2;
 pub use black_magic::*;
 use core::fmt::Debug;
 use defmt::Format;
@@ -18,6 +19,7 @@ pub trait StateMachineSharedResources {
     fn lock_can(&mut self, f: &dyn Fn(&mut CanDevice0));
     fn lock_data_manager(&mut self, f: &dyn Fn(&mut DataManager));
     fn lock_gpio(&mut self, f: &dyn Fn(&mut GPIOManager));
+    fn lock_recovery_timer(&mut self, f: &dyn Fn(&mut TimerCounter2));
 }
 
 impl<'a> StateMachineSharedResources for crate::app::__rtic_internal_run_smSharedResources<'a> {
@@ -29,6 +31,9 @@ impl<'a> StateMachineSharedResources for crate::app::__rtic_internal_run_smShare
     }
     fn lock_gpio(&mut self, fun: &dyn Fn(&mut GPIOManager)) {
         self.gpio.lock(fun)
+    }
+    fn lock_recovery_timer(&mut self, fun: &dyn Fn(&mut TimerCounter2)) {
+        self.recovery_timer.lock(fun)
     }
 }
 
@@ -125,9 +130,9 @@ impl From<state::StateData> for RocketStates {
     }
 }
 // Linter: an implementation of From is preferred since it gives you Into<_> for free where the reverse isn't true
-impl Into<state::StateData> for RocketStates {
-    fn into(self) -> state::StateData {
-        match self {
+impl From<RocketStates> for state::StateData {
+    fn from(val: RocketStates) -> Self {
+        match val {
             RocketStates::Initializing(_) => state::StateData::Initializing,
             RocketStates::WaitForTakeoff(_) => state::StateData::WaitForTakeoff,
             RocketStates::Ascent(_) => state::StateData::Ascent,
