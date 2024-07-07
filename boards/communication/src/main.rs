@@ -3,6 +3,7 @@
 
 mod communication;
 mod data_manager;
+mod gps;
 mod health;
 mod types;
 
@@ -57,6 +58,7 @@ mod app {
     #[local]
     struct Local {
         led: Pin<PA05, PushPullOutput>,
+        gps_device: gps::GpsDevice,
         sd_manager: SdManager<
             Spi<
                 Config<
@@ -121,15 +123,25 @@ mod app {
 
         /* Radio config */
         let (radio, gclk0) = RadioDevice::new(
-            tokens.pclks.sercom5,
+            tokens.pclks.sercom0,
             &mclk,
-            peripherals.SERCOM5,
-            pins.pb17,
-            pins.pb16,
+            peripherals.SERCOM0,
+            pins.pa09,
+            pins.pa08,
             gclk0,
         );
 
         let radio_manager = RadioManager::new(radio);
+
+        /* GPS config */
+        let (gps_device, gclk0) = gps::GpsDevice::new(
+            tokens.pclks.sercom2,
+            &mclk,
+            peripherals.SERCOM2,
+            pins.pa13,
+            pins.pa12,
+            gclk0,
+        );
 
         /* SD config */
         let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
@@ -189,7 +201,11 @@ mod app {
                 radio_manager,
                 can0,
             },
-            Local { led, sd_manager },
+            Local {
+                led,
+                gps_device,
+                sd_manager,
+            },
             init::Monotonics(mono),
         )
     }
