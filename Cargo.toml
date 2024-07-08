@@ -1,26 +1,19 @@
 [workspace]
 resolver = "2"
 
-members = [
-    "boards/*",
-    "examples/*",
-    "libraries/*"
-]
+members = ["boards/*", "examples/*", "libraries/*"]
 
 # Specify which members to build by default. Some libraries, such as messages, contain dev-dependencies that will give
 # compile errors if built directly.
-default-members = [
-    "boards/*",
-    "examples/*"
-]
+default-members = ["boards/*", "examples/*"]
 
 [workspace.dependencies.embedded-hal]
-version="0.2.7"
+version = "0.2.7"
 
 [workspace.dependencies.stm32h7xx-hal]
-git = "https://github.com/stm32-rs/stm32h7xx-hal"  
+git = "https://github.com/stm32-rs/stm32h7xx-hal"
 # We use 35 even though we have the 33. 
-features = ["defmt", "rt", "stm32h735"  ]
+features = ["defmt", "rt", "stm32h735", "can"]
 
 [workspace.dependencies.atsamd-hal]
 git = "https://github.com/uorocketry/atsamd"
@@ -71,3 +64,4 @@ opt-level = 0
 #Try to remove this
 [profile.release.build-override]
 #opt-level = 0
+

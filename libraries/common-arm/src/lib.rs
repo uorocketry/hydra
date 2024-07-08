@@ -6,8 +6,6 @@
 //! here.
 //!
 
-pub use mcan;
-
 mod error;
 mod health;
 mod logging;

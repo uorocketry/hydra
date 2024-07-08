@@ -257,6 +257,7 @@ dependencies = [
  "atsamd-hal",
  "common-arm",
  "embedded-hal",
+ "mcan",
 ]
 
 [[package]]
@@ -581,6 +582,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25cbce373ec4653f1a01a31e8a5e5ec0c622dc27ff9c4e6606eefef5cbbed4a5"
 
 [[package]]
+name = "fdcan"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "553fb8420a8ca433ed032a3f284deeb95c12e4d3d25cdc15196669a27b2ae34b"
+dependencies = [
+ "bitflags 1.3.2",
+ "nb 1.1.0",
+ "paste",
+ "static_assertions",
+ "vcell",
+ "volatile-register",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -824,6 +839,7 @@ dependencies = [
  "cortex-m-rt",
  "cortex-m-rtic",
  "defmt",
+ "fdcan",
  "messages",
  "postcard",
  "stm32h7xx-hal",
@@ -1458,6 +1474,7 @@ dependencies = [
  "embedded-dma",
  "embedded-hal",
  "embedded-storage",
+ "fdcan",
  "fugit",
  "nb 1.1.0",
  "paste",
