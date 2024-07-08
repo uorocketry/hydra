@@ -9,8 +9,8 @@ use atsamd_hal::gpio::{Alternate, AlternateI, Pin, I, PA22, PA23};
 use atsamd_hal::pac::CAN0;
 
 use atsamd_hal::typelevel::Increment;
-use common_arm::mcan;
 use common_arm::HydraError;
+use common_arm_atsame::mcan;
 use defmt::info;
 use heapless::Vec;
 use mcan::bus::Can;

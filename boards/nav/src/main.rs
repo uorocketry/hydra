@@ -101,12 +101,21 @@ mod app {
             StandardFilter::accept_all_into_fifo0(),
         );
 
-        let (sck, miso, mosi) = (gpioa.pa5, gpioa.pa6, gpioa.pa7);
-
-        let spi = ctx
-            .device
-            .SPI1
-            .spi((sck, miso, mosi), spi::MODE_0, 1.MHz(), &ccdr.clocks);
+        let spi: stm32h7xx_hal::spi::Spi<
+            stm32h7xx_hal::stm32::SPI1,
+            stm32h7xx_hal::spi::Enabled,
+            u8,
+        > = ctx.device.SPI1.spi(
+            (
+                gpioa.pa5.into_alternate::<5>(),
+                gpioa.pa6.into_alternate(),
+                gpioa.pa7.into_alternate(),
+            ),
+            spi::Config::new(spi::MODE_0),
+            1.MHz(),
+            ccdr.peripheral.SPI1,
+            &ccdr.clocks,
+        );
 
         // leds
         let mut led_red = gpioa.pa1.into_push_pull_output();

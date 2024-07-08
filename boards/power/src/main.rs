@@ -7,8 +7,8 @@ mod types;
 
 use crate::data_manager::DataManager;
 use atsamd_hal as hal;
-use common_arm::mcan;
 use common_arm::*;
+use common_arm_atsame::mcan;
 use communication::CanDevice0;
 use communication::Capacities;
 use hal::clock::v2::pclk::Pclk;

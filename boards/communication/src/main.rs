@@ -7,11 +7,11 @@ mod health;
 mod types;
 
 use atsamd_hal as hal;
-use common_arm::mcan;
 use common_arm::HealthManager;
 use common_arm::HealthMonitor;
 use common_arm::SdManager;
 use common_arm::*;
+use common_arm_atsame::mcan;
 use communication::Capacities;
 use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
