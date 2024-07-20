@@ -2,6 +2,7 @@
 #![no_main]
 
 mod data_manager;
+mod types;
 
 use common_arm::*;
 use core::num::{NonZeroU16, NonZeroU8};
@@ -23,6 +24,7 @@ use stm32h7xx_hal::prelude::*;
 use stm32h7xx_hal::spi;
 use stm32h7xx_hal::{rcc, rcc::rec};
 use systick_monotonic::*;
+use types::SBGSerial;
 
 /// Custom panic handler.
 /// Reset the system if a panic occurs.
