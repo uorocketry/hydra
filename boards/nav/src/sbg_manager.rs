@@ -3,8 +3,6 @@ use atsamd_hal::clock::v2::gclk::Gclk0Id;
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::dmac;
 use atsamd_hal::dmac::Transfer;
-use atsamd_hal::gpio::{Pin, Reset, PB02, PB03};
-use atsamd_hal::pac::{MCLK, RTC};
 use atsamd_hal::sercom::IoSet6;
 // use atsamd_hal::prelude::_atsamd21_hal_time_U32Ext;
 use atsamd_hal::rtc::Rtc;
@@ -23,6 +21,9 @@ use embedded_alloc::Heap;
 use rtic::Mutex;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
+use stm32h7xx_hal::gpio::Alternate;
+use stm32h7xx_hal::gpio::Pin;
+use stm32h7xx_hal::rtc::Rtc;
 
 pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 
@@ -36,12 +37,9 @@ pub struct SBGManager {
 
 impl SBGManager {
     pub fn new(
-        rx: Pin<PB03, Reset>,
-        tx: Pin<PB02, Reset>,
-        pclk_sercom5: Pclk<Sercom5, Gclk0Id>,
-        mclk: &mut MCLK,
-        sercom5: Sercom5,
-        rtc: RTC,
+        rx: Pin<'D', 0, Alternate<8>>,
+        tx: Pin<'D', 1, Alternate<8>>,
+        rtc: Rtc,
         mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
     ) -> Self {
         /* Initialize the Heap */
@@ -52,14 +50,11 @@ impl SBGManager {
             unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
         }
 
-        let pads_sbg = uart::Pads::<Sercom5, IoSet6>::default().rx(rx).tx(tx);
-        let uart_sbg = ConfigSBG::new(mclk, sercom5, pads_sbg, pclk_sercom5.freq())
-            .baud(
-                115200.Hz(),
-                uart::BaudMode::Fractional(uart::Oversampling::Bits8),
-            )
-            .enable();
-
+        let uart_sbg = ctx
+            .device
+            .UART4
+            .serial((tx, rx), 9_800.bps(), ccdr.peripheral.UART4, &ccdr.clocks)
+            .unwrap();
         let (sbg_rx, sbg_tx) = uart_sbg.split();
 
         /* DMAC config */

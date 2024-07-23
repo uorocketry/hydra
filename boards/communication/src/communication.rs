@@ -11,7 +11,6 @@ use atsamd_hal::gpio::{Alternate, AlternateI, Disabled, Floating, Pin, I, PA22, 
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM5;
-use atsamd_hal::prelude::_embedded_hal_serial_Read;
 use atsamd_hal::sercom;
 use atsamd_hal::sercom::uart;
 use atsamd_hal::sercom::uart::Uart;
@@ -24,6 +23,7 @@ use common_arm_atsame::mcan::tx_buffers::DynTx;
 use heapless::HistoryBuffer;
 use heapless::Vec;
 use mavlink::embedded::Read;
+use mavlink::peek_reader::PeekReader;
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
 use mcan::interrupt::state::EnabledLine0;
@@ -213,7 +213,7 @@ impl CanDevice0 {
 
 pub struct RadioDevice {
     transmitter: Uart<GroundStationUartConfig, TxDuplex>,
-    receiver: Uart<GroundStationUartConfig, RxDuplex>,
+    receiver: PeekReader<Uart<GroundStationUartConfig, RxDuplex>>,
 }
 
 impl RadioDevice {
@@ -244,7 +244,7 @@ impl RadioDevice {
         (
             RadioDevice {
                 transmitter: tx,
-                receiver: rx,
+                receiver: PeekReader::new(rx),
             },
             gclk0,
         )
@@ -266,9 +266,7 @@ impl RadioManager {
             mav_sequence: 0,
         }
     }
-    pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
-        let payload: Vec<u8, 255> = postcard::to_vec(&m)?;
-
+    pub fn send_message(&mut self, payload: [u8; 255]) -> Result<(), HydraError> {
         let mav_header = mavlink::MavHeader {
             system_id: 1,
             component_id: 1,
@@ -291,7 +289,7 @@ impl RadioManager {
         self.mav_sequence
     }
     pub fn receive_message(&mut self) -> Result<Message, HydraError> {
-        if let Ok(data) = self.radio.receiver.read() {
+        if let Ok(data) = self.radio.receiver.read_u8() {
             // lets add this data to the buffer and see if we can parse it
             self.buf.write(data);
             let (_header, msg) =
@@ -318,12 +316,5 @@ impl Read for RadioManager {
         let len = buf.len().min(self.buf.len());
         buf[..len].copy_from_slice(&self.buf[..len]);
         Ok(())
-    }
-    fn read_u8(&mut self) -> Result<u8, mavlink::error::MessageReadError> {
-        if !self.buf.is_empty() {
-            Ok(self.buf[0])
-        } else {
-            Err(mavlink::error::MessageReadError::Io)
-        }
     }
 }

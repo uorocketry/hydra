@@ -4,6 +4,7 @@ use defmt::{write, Format};
 use derive_more::From;
 use embedded_sdmmc as sd;
 use messages::ErrorContext;
+use ms5611_01ba::error::DeviceError;
 
 /// Open up atsamd hal errors without including the whole crate.
 
@@ -28,6 +29,8 @@ pub enum HydraErrorType {
     CanError(nb::Error<mcan::tx_buffers::Error>),
     /// CAN message build error.
     CanMessageError(mcan::message::TooMuchData),
+    /// Error from the MS5611 barometer library.
+    BarometerError(DeviceError),
 }
 
 impl defmt::Format for HydraErrorType {
@@ -50,6 +53,9 @@ impl defmt::Format for HydraErrorType {
             }
             HydraErrorType::MavlinkReadError(_) => {
                 write!(f, "Mavlink read error!");
+            }
+            HydraErrorType::BarometerError(_) => {
+                write!(f, "Barometer error!");
             }
             // HydraErrorType::DmaError(_) => {
             //     write!(f, "DMA error!");

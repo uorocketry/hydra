@@ -15,12 +15,20 @@ use common_arm::hinfo;
 use common_arm::*;
 use common_arm_atsame::mcan;
 use communication::Capacities;
+use core::fmt::Debug;
 use data_manager::DataManager;
+use defmt::info;
+use embedded_hal::spi::FullDuplex;
 use gpio_manager::GPIOManager;
-use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
+use hal::gpio::{
+    Alternate, Output, Pin, Pins, PushPull, PushPullOutput, C, D, PA04, PA05, PA06, PA07, PA09,
+    PB16, PB17,
+};
 use hal::prelude::*;
+use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet3, Sercom0};
 use mcan::messageram::SharedMemory;
 use messages::*;
+use ms5611_01ba::{calibration::OversamplingRatio, MS5611_01BA};
 use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
 use types::COM_ID;
@@ -49,6 +57,20 @@ mod app {
         led_green: Pin<PB16, PushPullOutput>,
         led_red: Pin<PB17, PushPullOutput>,
         state_machine: StateMachine,
+        barometer: MS5611_01BA<
+            Spi<
+                Config<
+                    Pads<
+                        hal::pac::SERCOM0,
+                        IoSet3,
+                        Pin<PA07, Alternate<D>>,
+                        Pin<PA04, Alternate<D>>,
+                        Pin<PA05, Alternate<D>>,
+                    >,
+                >,
+                Duplex,
+            >,
+        >,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -78,7 +100,7 @@ mod app {
 
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
-        let (_, _, _, _mclk) = unsafe { clocks.pac.steal() };
+        let (_, _, _, mclk) = unsafe { clocks.pac.steal() };
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
@@ -98,11 +120,28 @@ mod app {
         let led_red = pins.pb17.into_push_pull_output();
         let gpio = GPIOManager::new(
             // pins switched from schematic
-            pins.pa09.into_push_pull_output(),
-            pins.pa06.into_push_pull_output(),
+            pins.pb12.into_push_pull_output(),
+            pins.pb11.into_push_pull_output(),
         );
         /* State Machine config */
         let state_machine = StateMachine::new();
+
+        //type pads = hal::sercom::spi::PadsFromIds<Sercom0, IoSet3, PA07, PA04, PA05, PA06>;
+        //let pads_spi = pads::Pads::new(pins.pa07, pins.pa04, pins.pa05, pins.pa06);
+
+        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
+        let pads_spi = spi::Pads::<Sercom0, IoSet3>::default()
+            .sclk(pins.pa05)
+            .data_in(pins.pa07)
+            .data_out(pins.pa04);
+
+        let baro_spi = spi::Config::new(&mclk, peripherals.SERCOM0, pads_spi, pclk_sd.freq())
+            .length::<spi::lengths::U1>()
+            .bit_order(spi::BitOrder::MsbFirst)
+            .spi_mode(spi::MODE_0)
+            .enable();
+
+        let barometer = MS5611_01BA::new(baro_spi, OversamplingRatio::OSR2048);
 
         /* Spawn tasks */
         run_sm::spawn().ok();
@@ -125,6 +164,7 @@ mod app {
                 led_green,
                 led_red,
                 state_machine,
+                barometer,
             },
             init::Monotonics(mono),
         )
@@ -134,6 +174,16 @@ mod app {
     #[idle]
     fn idle(_: idle::Context) -> ! {
         loop {}
+    }
+
+    #[task(local = [barometer], shared = [&em])]
+    fn read_barometer(cx: read_barometer::Context) {
+        cx.shared.em.run(|| {
+            let mut barometer = cx.local.barometer;
+            let (p, t) = barometer.get_data()?;
+            info!("pressure {} temperature {}", p, t);
+            Ok(())
+        });
     }
 
     #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]

@@ -234,7 +234,8 @@ mod app {
     fn send_gs(mut cx: send_gs::Context, m: Message) {
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
-                radio_manager.send_message(m)?;
+                radio_manager
+                    .send_message(postcard::to_slice(&m, &mut [0; 255])?.try_into().unwrap())?;
                 Ok(())
             })
         });

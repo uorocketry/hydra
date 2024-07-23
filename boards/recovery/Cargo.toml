@@ -19,3 +19,6 @@ atsamd-hal = { workspace = true }
 messages = { path = "../../libraries/messages" }
 typenum = "1.16.0"
 enum_dispatch = "0.3.11"
+ms5611-01ba = { git = "https://github.com/NoahSprenger/ms5611-01ba", branch = "embedded-hal-02" }
+
+embedded-hal = "0.2.7"
