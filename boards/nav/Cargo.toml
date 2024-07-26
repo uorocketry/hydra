@@ -17,3 +17,5 @@ messages = { path = "../../libraries/messages" }
 systick-monotonic = "1.0.1"
 defmt = "0.3.2"
 fdcan = "0.2"
+
+heapless = "0.7.16"

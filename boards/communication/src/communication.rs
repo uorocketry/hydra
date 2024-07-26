@@ -7,9 +7,14 @@ use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::Can0;
 use atsamd_hal::clock::v2::Source;
+use atsamd_hal::gpio::PA08;
+use atsamd_hal::gpio::PA09;
 use atsamd_hal::gpio::{Alternate, AlternateI, Disabled, Floating, Pin, I, PA22, PA23, PB16, PB17};
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
+use atsamd_hal::pac::SERCOM0;
+use atsamd_hal::pac::SERCOM2;
+use atsamd_hal::pac::SERCOM4;
 use atsamd_hal::pac::SERCOM5;
 use atsamd_hal::sercom;
 use atsamd_hal::sercom::uart;
@@ -218,18 +223,18 @@ pub struct RadioDevice {
 
 impl RadioDevice {
     pub fn new<S>(
-        radio_token: PclkToken<SERCOM5>,
+        radio_token: PclkToken<SERCOM2>,
         mclk: &MCLK,
-        sercom: SERCOM5,
-        rx_pin: Pin<PB17, Disabled<Floating>>,
-        tx_pin: Pin<PB16, Disabled<Floating>>,
+        sercom: SERCOM2,
+        rx_pin: Pin<PA08, Disabled<Floating>>,
+        tx_pin: Pin<PA09, Disabled<Floating>>,
         gclk0: S,
     ) -> (Self, S::Inc)
     where
         S: Source<Id = Gclk0Id> + Increment,
     {
         let (pclk_radio, gclk0) = Pclk::enable(radio_token, gclk0);
-        let pads = uart::Pads::<sercom::Sercom5, _>::default()
+        let pads = uart::Pads::<sercom::Sercom2, _>::default()
             .rx(rx_pin)
             .tx(tx_pin);
         let uart = GroundStationUartConfig::new(mclk, sercom, pads, pclk_radio.freq())

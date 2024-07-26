@@ -14,7 +14,8 @@ use fdcan::{
     frame::{FrameFormat, TxFrameHeader},
     id::StandardId,
 };
-use stm32h7xx_hal::gpio::gpioa::{PA1, PA2};
+use fugit::RateExtU32;
+use stm32h7xx_hal::gpio::gpioa::{PA1, PA2, PA3};
 use stm32h7xx_hal::gpio::gpioc::{PC13, PC3};
 use stm32h7xx_hal::gpio::Input;
 use stm32h7xx_hal::gpio::Speed;
@@ -41,11 +42,12 @@ mod app {
     struct SharedResources {
         data_manager: DataManager,
         em: ErrorManager,
+        // rtc: Rtc,
     }
     #[local]
     struct LocalResources {
-        led_red: PA1<Output<PushPull>>,
-        led_green: PA2<Output<PushPull>>,
+        led_red: PA2<Output<PushPull>>,
+        led_green: PA3<Output<PushPull>>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -81,6 +83,18 @@ mod app {
         let gpioa = ctx.device.GPIOA.split(ccdr.peripheral.GPIOA);
         let gpiod = ctx.device.GPIOD.split(ccdr.peripheral.GPIOD);
         let gpiob = ctx.device.GPIOB.split(ccdr.peripheral.GPIOB);
+
+        let pins = gpiob.pb14.into_alternate();
+
+        let mut c0 = ctx
+            .device
+            .TIM12
+            .pwm(pins, 1.kHz(), ccdr.peripheral.TIM12, &ccdr.clocks);
+
+        c0.set_duty(c0.get_max_duty() / 2);
+        // PWM outputs are disabled by default
+        c0.enable();
+
         assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 24_000_000);
         let fdcan_prec = ccdr
             .peripheral
@@ -120,8 +134,8 @@ mod app {
         );
 
         // leds
-        let mut led_red = gpioa.pa1.into_push_pull_output();
-        let mut led_green = gpioa.pa2.into_push_pull_output();
+        let mut led_red = gpioa.pa2.into_push_pull_output();
+        let mut led_green = gpioa.pa3.into_push_pull_output();
 
         // UART for sbg
         let tx = gpiod.pd1.into_alternate();
@@ -164,6 +178,7 @@ mod app {
                 spawn_after!(blink, ExtU64::millis(200))?;
             } else {
                 cx.local.led_green.toggle();
+                info!("Blinking");
                 spawn_after!(blink, ExtU64::secs(1))?;
             }
             Ok(())
@@ -174,4 +189,18 @@ mod app {
     fn sleep_system(mut cx: sleep_system::Context) {
         // Turn off the SBG and CAN
     }
+
+    //extern "Rust" {
+    //   #[task(capacity = 3, shared = [&em, sd_manager])]
+    //  fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
+
+    //#[task(binds = DMAC_0, shared = [&em], local = [sbg_manager])]
+    //fn sbg_dma(context: sbg_dma::Context);
+
+    //#[task(capacity = 20, shared = [data_manager])]
+    //fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
+
+    //#[task(shared = [rtc, &em])]
+    //fn sbg_get_time(context: sbg_get_time::Context);
+    //}
 }

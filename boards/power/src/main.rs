@@ -11,9 +11,10 @@ use common_arm::*;
 use common_arm_atsame::mcan;
 use communication::CanDevice0;
 use communication::Capacities;
+use defmt::info;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
-use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
+use hal::gpio::{Pin, Pins, PushPullOutput, PA08, PB16, PB17};
 use hal::prelude::*;
 use mcan::messageram::SharedMemory;
 use systick_monotonic::*;
@@ -40,6 +41,7 @@ mod app {
     struct Local {
         led_green: Pin<PB16, PushPullOutput>,
         led_red: Pin<PB17, PushPullOutput>,
+        reg_5v: Pin<PA08, PushPullOutput>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -50,6 +52,7 @@ mod app {
         can_memory: SharedMemory<Capacities> = SharedMemory::new()
     ])]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
+        info!("Starting up");
         let mut peripherals = cx.device;
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
@@ -89,8 +92,10 @@ mod app {
         // LEDs
         let led_green = pins.pb16.into_push_pull_output();
         let led_red = pins.pb17.into_push_pull_output();
+        let reg_5v = pins.pa08.into_push_pull_output();
 
         blink::spawn().ok();
+        reg_5v::spawn().ok();
         // adc::spawn().ok();
 
         /* Monotonic clock */
@@ -102,7 +107,11 @@ mod app {
                 data_manager: DataManager::new(),
                 can0,
             },
-            Local { led_green, led_red },
+            Local {
+                led_green,
+                led_red,
+                reg_5v,
+            },
             init::Monotonics(mono),
         )
     }
@@ -111,6 +120,15 @@ mod app {
     #[idle]
     fn idle(_: idle::Context) -> ! {
         loop {}
+    }
+
+    #[task(local = [reg_5v], shared = [&em])]
+    fn reg_5v(cx: reg_5v::Context) {
+        cx.shared.em.run(|| {
+            info!("Enable 5V regulator");
+            cx.local.reg_5v.set_high()?;
+            Ok(())
+        });
     }
 
     // #[task(local = [adc_test, adc_pin], shared = [&em])]

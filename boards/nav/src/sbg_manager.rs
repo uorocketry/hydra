@@ -11,21 +11,31 @@ use core::ffi::c_void;
 use core::mem::size_of;
 use core::ptr;
 // use atsamd_hal::time::*;
+use crate::app::sbg_get_time;
 use crate::app::sbg_handle_data;
 use crate::app::sbg_sd_task as sbg_sd;
 use atsamd_hal::prelude::*;
 use atsamd_hal::sercom::{uart, Sercom, Sercom5};
 use common_arm::spawn;
+use core::{mem, mem::MaybeUninit};
 use defmt::info;
 use embedded_alloc::Heap;
 use rtic::Mutex;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
+use stm32h7xx_hal::dma::{
+    dma::{DmaConfig, StreamsTuple},
+    PeripheralToMemory, Transfer,
+};
 use stm32h7xx_hal::gpio::Alternate;
 use stm32h7xx_hal::gpio::Pin;
 use stm32h7xx_hal::rtc::Rtc;
 
-pub static mut BUF_DST: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
+//#[link_section = ".axisram.buffers"]
+//static mut SBG_BUFFER: MayberUninit<[u8; SBG_BUFFER_SIZE]> = MaybeUninit::uninit();
+
+#[link_section = ".axisram.buffers"]
+pub static mut SBG_BUFFER: SBGBuffer = &mut [0; SBG_BUFFER_SIZE];
 
 // Simple heap required by the SBG library
 static HEAP: Heap = Heap::empty();
@@ -40,12 +50,14 @@ impl SBGManager {
         rx: Pin<'D', 0, Alternate<8>>,
         tx: Pin<'D', 1, Alternate<8>>,
         rtc: Rtc,
-        mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
+        mut stream_tuple: StreamsTuple<stm32h7xx_hal::pac::DMA1>,
+        //mut dma_channel: dmac::Channel<dmac::Ch0, dmac::Ready>,
     ) -> Self {
         /* Initialize the Heap */
         {
             use core::mem::MaybeUninit;
             const HEAP_SIZE: usize = 1024;
+            // TODO: Could add a link section here to memory.
             static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
             unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
         }
@@ -57,30 +69,46 @@ impl SBGManager {
             .unwrap();
         let (sbg_rx, sbg_tx) = uart_sbg.split();
 
-        /* DMAC config */
-        dma_channel
-            .as_mut()
-            .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        let xfer = Transfer::new(dma_channel, sbg_rx, unsafe { &mut *BUF_DST }, false)
-            .expect("DMA err")
-            .begin(Sercom5::DMA_RX_TRIGGER, dmac::TriggerAction::BURST);
+        // TODO: This could be wrong. It's a bit of a guess.
+        //let sbg_buffer: &'static mut [u8; SBG_BUFFER_SIZE] = {
+        //    let buf: &mut [MaybeUninit<u8>; SBG_BUFFER_SIZE] =
+        //        unsafe { &mut *(core::ptr::addr_of_mut!(SBG_BUFFER) as *mut _) };
+        //    for (i, value) in buf.iter_mut().enumerate() {
+        //        unsafe { value.as_mut_ptr().write(i as u8) };
+        //    }
+        //          unsafe { SBG_BUFFER.assume_init_mut() }
+        //       };
 
-        // There is a bug within the HAL that improperly configures the RTC
-        // in count32 mode. This is circumvented by first using clock mode then
-        // converting to count32 mode.
-        let rtc_temp = Rtc::clock_mode(rtc, 1024.Hz(), mclk);
-        let mut rtc = rtc_temp.into_count32_mode();
-        rtc.set_count32(0);
+        let config = DmaConfig::default().memory_increment(true);
+        let transfer: Transfer<_, _, _, PeripheralToMemory> = Transfer::init(
+            stream_tuple.0,
+            sbg_rx,
+            unsafe { &mut *SBG_BUFFER },
+            None,
+            config,
+        );
 
-        let sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc, |data| {
-            sbg_handle_data::spawn(data).ok();
+        transfer.start(|serial| {
+            serial.enable_rx_dma();
         });
+
+        let sbg: sbg::SBG = sbg::SBG::new(
+            sbg_tx,
+            |_| sbg_get_time::spawn().ok(),
+            |data| {
+                sbg_handle_data::spawn(data).ok();
+            },
+        );
 
         SBGManager {
             sbg_device: sbg,
             xfer: Some(xfer),
         }
     }
+}
+
+pub fn sbg_get_time(mut cx: sbg_get_time::Context) -> u32 {
+    cx.shared.rtc.lock(|rtc| rtc.date_time().unwrap())
 }
 
 pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {

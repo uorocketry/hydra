@@ -3,7 +3,6 @@
 
 mod communication;
 mod data_manager;
-mod health;
 mod types;
 
 use atsamd_hal as hal;
@@ -15,16 +14,20 @@ use common_arm_atsame::mcan;
 use communication::Capacities;
 use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
+use defmt::info;
 use hal::adc::Adc;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
 use hal::gpio::Pins;
 use hal::gpio::{
-    Alternate, Output, Pin, PushPull, PushPullOutput, C, PA05, PB12, PB13, PB14, PB15,
+    Alternate, Output, Pin, PushPull, PushPullOutput, C, D, PA02, PA04, PA05, PA06, PA07, PB12,
+    PB13, PB14, PB15,
 };
 use hal::prelude::*;
-use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, Sercom4};
-use health::HealthMonitorChannelsCommunication;
+use hal::sercom::uart;
+use hal::sercom::{
+    spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, IoSet3, Sercom0, Sercom2, Sercom4,
+};
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
 use messages::health::Health;
@@ -49,29 +52,29 @@ mod app {
     struct Shared {
         em: ErrorManager,
         data_manager: DataManager,
-        health_manager: HealthManager<HealthMonitorChannelsCommunication>,
         radio_manager: RadioManager,
         can0: communication::CanDevice0,
     }
 
     #[local]
     struct Local {
-        led: Pin<PA05, PushPullOutput>,
-        sd_manager: SdManager<
-            Spi<
-                Config<
-                    Pads<
-                        hal::pac::SERCOM4,
-                        IoSet1,
-                        Pin<PB15, Alternate<C>>,
-                        Pin<PB12, Alternate<C>>,
-                        Pin<PB13, Alternate<C>>,
-                    >,
-                >,
-                Duplex,
-            >,
-            Pin<PB14, Output<PushPull>>,
-        >,
+        led: Pin<PA02, PushPullOutput>,
+        gps_uart: GpsUart,
+        //sd_manager: SdManager<
+        //   Spi<
+        //       Config<
+        //            Pads<
+        //                hal::pac::SERCOM0,
+        //                IoSet3,
+        //               Pin<PA07, Alternate<D>>,
+        //              Pin<PA04, Alternate<D>>,
+        //             Pin<PA05, Alternate<D>>,
+        //         >,
+        //     >,
+        //     Duplex,
+        // >,
+        // Pin<PA06, Output<PushPull>>,
+        //>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -121,62 +124,52 @@ mod app {
 
         /* Radio config */
         let (radio, gclk0) = RadioDevice::new(
-            tokens.pclks.sercom5,
+            tokens.pclks.sercom2,
             &mclk,
-            peripherals.SERCOM5,
-            pins.pb17,
-            pins.pb16,
+            peripherals.SERCOM2,
+            pins.pa08,
+            pins.pa09,
             gclk0,
         );
 
         let radio_manager = RadioManager::new(radio);
 
         /* SD config */
-        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
-        let pads_spi = spi::Pads::<Sercom4, IoSet1>::default()
-            .sclk(pins.pb13)
-            .data_in(pins.pb15)
-            .data_out(pins.pb12);
-        let sdmmc_spi = spi::Config::new(&mclk, peripherals.SERCOM4, pads_spi, pclk_sd.freq())
-            .length::<spi::lengths::U1>()
-            .bit_order(spi::BitOrder::MsbFirst)
-            .spi_mode(spi::MODE_0)
+        //let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
+        //let pads_spi = spi::Pads::<Sercom0, IoSet3>::default()
+        //   .sclk(pins.pa05)
+        //  .data_in(pins.pa07)
+        // .data_out(pins.pa04);
+        //let sdmmc_spi = spi::Config::new(&mclk, peripherals.SERCOM0, pads_spi, pclk_sd.freq())
+        //   .length::<spi::lengths::U1>()
+        //  .bit_order(spi::BitOrder::MsbFirst)
+        //  .spi_mode(spi::MODE_0)
+        //  .enable();
+        //let sd_manager = SdManager::new(sdmmc_spi, pins.pa06.into_push_pull_output());
+
+        let (pclk_gps, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
+        //info!("here");
+        let pads = hal::sercom::uart::Pads::<hal::sercom::Sercom4, IoSet3>::default()
+            .rx(pins.pa13)
+            .tx(pins.pa12);
+
+        let mut gps_uart = GpsUartConfig::new(&mclk, peripherals.SERCOM4, pads, pclk_gps.freq())
+            .baud(
+                9600.Hz(),
+                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+            )
             .enable();
-        let sd_manager = SdManager::new(sdmmc_spi, pins.pb14.into_push_pull_output());
-
-        /* Setup ADC clocks */
-        let (_pclk_adc0, gclk0) = Pclk::enable(tokens.pclks.adc0, gclk0);
-        let (_pclk_adc1, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
-        /* Setup ADC */
-        let adc0 = Adc::adc0(peripherals.ADC0, &mut mclk);
-        let adc1 = Adc::adc1(peripherals.ADC1, &mut mclk);
-
-        /* Setup Health Monitor */
-        let health_monitor_channels = HealthMonitorChannelsCommunication::new(
-            adc0,
-            adc1,
-            pins.pb01.into(),
-            pins.pb02.into(),
-            pins.pb03.into(),
-            pins.pb00.into(),
-            pins.pb06.into(),
-            pins.pb07.into(),
-            pins.pb08.into(),
-            pins.pb09.into(),
-            pins.pb05.into(),
-        );
-
-        let health_monitor = HealthMonitor::new(health_monitor_channels, 10000, 5000, 1023);
-        let health_manager = HealthManager::new(health_monitor);
+        gps_uart.enable_interrupts(hal::sercom::uart::Flags::RXC);
 
         /* Status LED */
-        let led = pins.pa05.into_push_pull_output();
-
+        let led = pins.pa02.into_push_pull_output();
+        let mut gps_enable = pins.pb09.into_push_pull_output();
+        //gps_enable.set_high().ok();
+        gps_enable.set_low().ok();
         /* Spawn tasks */
         sensor_send::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
-        report_health::spawn().ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -185,11 +178,10 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
-                health_manager,
                 radio_manager,
                 can0,
             },
-            Local { led, sd_manager },
+            Local { led, gps_uart },
             init::Monotonics(mono),
         )
     }
@@ -198,6 +190,15 @@ mod app {
     #[idle]
     fn idle(_: idle::Context) -> ! {
         loop {}
+    }
+
+    #[task(binds = SERCOM2_2, local = [gps_uart], shared = [&em])]
+    fn gps_rx(mut cx: gps_rx::Context) {
+        cx.shared.em.run(|| {
+            let byte = cx.local.gps_uart.read().unwrap();
+            info!("GPS: {}", byte);
+            Ok(())
+        });
     }
 
     /// Handles the CAN0 interrupt.
@@ -241,22 +242,22 @@ mod app {
         });
     }
 
-    #[task(capacity = 10, local = [sd_manager], shared = [&em])]
-    fn sd_dump(cx: sd_dump::Context, m: Message) {
-        let manager = cx.local.sd_manager;
-        cx.shared.em.run(|| {
-            let mut buf: [u8; 255] = [0; 255];
-            let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
-            if let Some(mut file) = manager.file.take() {
-                manager.write(&mut file, &msg_ser)?;
-                manager.file = Some(file);
-            } else if let Ok(mut file) = manager.open_file("log.txt") {
-                manager.write(&mut file, &msg_ser)?;
-                manager.file = Some(file);
-            }
-            Ok(())
-        });
-    }
+    //   #[task(capacity = 10, local = [sd_manager], shared = [&em])]
+    //  fn sd_dump(cx: sd_dump::Context, m: Message) {
+    //     let manager = cx.local.sd_manager;
+    //    cx.shared.em.run(|| {
+    //        let mut buf: [u8; 255] = [0; 255];
+    //       let msg_ser = postcard::to_slice_cobs(&m, &mut buf)?;
+    //      if let Some(mut file) = manager.file.take() {
+    //         manager.write(&mut file, &msg_ser)?;
+    //         manager.file = Some(file);
+    //    } else if let Ok(mut file) = manager.open_file("log.txt") {
+    //       manager.write(&mut file, &msg_ser)?;
+    //       manager.file = Some(file);
+    //   }
+    //   Ok(())
+    // });
+    //}
 
     /**
      * Sends information about the sensors.
@@ -273,7 +274,7 @@ mod app {
                 match msg {
                     Some(x) => {
                         spawn!(send_gs, x.clone())?;
-                        spawn!(sd_dump, x)?;
+                        //                     spawn!(sd_dump, x)?;
                     }
                     None => {
                         continue;
@@ -306,26 +307,6 @@ mod app {
             Ok(())
         });
         spawn_after!(state_send, ExtU64::secs(5)).ok();
-    }
-
-    /**
-     * Simple health report
-     */
-    #[task(shared = [&em, health_manager])]
-    fn report_health(mut cx: report_health::Context) {
-        cx.shared.em.run(|| {
-            let msg = cx.shared.health_manager.lock(|health_manager| {
-                let state = health_manager.evaluate();
-                Message::new(
-                    &monotonics::now(),
-                    COM_ID,
-                    Health::new(health_manager.monitor.data.clone(), state),
-                )
-            });
-            spawn!(send_gs, msg)?;
-            spawn_after!(report_health, ExtU64::secs(5))?;
-            Ok(())
-        });
     }
 
     #[task(binds = SERCOM5_2, shared = [&em, radio_manager])]
