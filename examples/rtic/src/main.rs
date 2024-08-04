@@ -46,9 +46,11 @@ mod app {
         let led = pins.pa14.into_push_pull_output();
 
         // Tell the MCU to sleep deeply for maximum power savings
-        core.SCB.set_sleepdeep();
+        // core.SCB.set_sleepdeep();
+        core.SCB.clear_sleepdeep();
 
         // Spawn the LED blink task right after init
+        info!("Spawned blink task");
         blink::spawn().ok();
 
         // Use the system's Systick for RTIC to keep track of the time

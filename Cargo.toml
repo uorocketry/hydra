@@ -16,9 +16,10 @@ git = "https://github.com/stm32-rs/stm32h7xx-hal"
 features = ["defmt", "rt", "stm32h735", "can", "rtc"]
 
 [workspace.dependencies.atsamd-hal]
-#git = "https://github.com/uorocketry/atsamd"
-version = "0.17.0"
-features = ["same51j", "same51j-rt", "dma", "can"]
+git = "https://github.com/uorocketry/atsamd"
+#git = "https://github.com/atsamd-rs/atsamd"
+#version = "0.17.0"
+features = ["defmt", "same51j", "same51j-rt", "dma", "can"]
 
 [workspace.dependencies.stm32l0xx-hal]
 git = "https://github.com/stm32-rs/stm32l0xx-hal"
@@ -37,6 +38,7 @@ features = ["critical-section-single-core"]
 [profile.dev]
 # Using LTO causes issues with GDB.
 lto = false
+panic = 'abort'
 
 # Only optimize dependencies for size in debug, keeping the top crate debug friendly
 [profile.dev.package."*"]
@@ -52,11 +54,13 @@ debug = true
 debug = true
 
 [profile.release]
-# symbols are nice and they don't increase the size on Flash
-#debug = true
-debug = 1
-#lto = true There is an issue with this where it says the interrupts symbol is defined multiple times. Only happens for the STM32H7XX.
-opt-level = 1
+codegen-units = 1
+debug = 2
+debug-assertions = false # <-
+incremental = false
+lto = 'fat'
+opt-level = 3            # <-
+overflow-checks = false  # <-
 
 [profile.release.package.sbg-rs]
 debug = true

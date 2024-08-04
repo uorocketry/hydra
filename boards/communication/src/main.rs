@@ -5,22 +5,24 @@ mod communication;
 mod data_manager;
 mod types;
 
+use atsamd_hal::rtc::Count32Mode;
 use atsamd_hal as hal;
 use common_arm::HealthManager;
 use common_arm::HealthMonitor;
 use common_arm::SdManager;
 use common_arm::*;
 use common_arm_atsame::mcan;
+// use panic_halt as _;
+
 use communication::Capacities;
 use communication::{RadioDevice, RadioManager};
 use data_manager::DataManager;
-use defmt::info;
 use hal::adc::Adc;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
 use hal::gpio::Pins;
 use hal::gpio::{
-    Alternate, Output, Pin, PushPull, PushPullOutput, C, D, PA02, PA04, PA05, PA06, PA07, PB12,
+    Alternate, Output, Pin, PushPull, PushPullOutput, C, D, PA02, PA04, PA05, PA06, PA03, PA07, PB12, PA08, PA09,
     PB13, PB14, PB15,
 };
 use hal::prelude::*;
@@ -34,17 +36,52 @@ use messages::health::Health;
 use messages::state::State;
 use messages::*;
 use systick_monotonic::*;
+use core::cell::RefCell;
 use types::*;
+use atsamd_hal::{
+    clock::v2::{
+        clock_system_at_reset,
+        xosc::{CrystalCurrent, SafeClockDiv, StartUpDelay, Xosc},
+    },
+    pac::Peripherals,
+};
+use cortex_m::interrupt::Mutex;
+use atsamd_hal::time::*;
+use fugit::ExtU64;
+use cortex_m_rt::exception;
+use cortex_m_rt::ExceptionFrame;
+use defmt::info;
+use defmt_rtt as _; // global logger
+use panic_probe as _;
+use fugit::ExtU32;
+use fugit::RateExtU32;
 
-/// Custom panic handler.
-/// Reset the system if a panic occurs.
-#[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
-    atsamd_hal::pac::SCB::sys_reset();
+#[inline(never)]
+#[defmt::panic_handler]
+fn panic() -> ! {
+    cortex_m::asm::udf()
 }
+
+/// Hardfault handler.
+///
+/// Terminates the application and makes a semihosting-capable debug tool exit
+/// with an error. This seems better than the default, which is to spin in a
+/// loop.
+#[cortex_m_rt::exception]
+unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
+    loop {
+        
+    }
+}
+
+static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefCell::new(None));
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+
+    use atsamd_hal::clock::v2::gclk::{self, Gclk};
+    use fugit::RateExtU64;
+    use state::StateData;
 
     use super::*;
 
@@ -58,27 +95,28 @@ mod app {
 
     #[local]
     struct Local {
-        led: Pin<PA02, PushPullOutput>,
-        gps_uart: GpsUart,
-        //sd_manager: SdManager<
-        //   Spi<
-        //       Config<
-        //            Pads<
-        //                hal::pac::SERCOM0,
-        //                IoSet3,
-        //               Pin<PA07, Alternate<D>>,
-        //              Pin<PA04, Alternate<D>>,
-        //             Pin<PA05, Alternate<D>>,
+        led: Pin<PA03, PushPullOutput>,
+        // gps_uart: GpsUart,
+        // sd_manager: SdManager<
+        //     Spi<
+        //         Config<
+        //             Pads<
+        //                 hal::pac::SERCOM0,
+        //                 IoSet3,
+        //                 Pin<PA07, Alternate<D>>,
+        //                 Pin<PA04, Alternate<D>>,
+        //                 Pin<PA05, Alternate<D>>,
+        //             >,
         //         >,
+        //         Duplex,
         //     >,
-        //     Duplex,
+        //     Pin<PA06, Output<PushPull>>,
         // >,
-        // Pin<PA06, Output<PushPull>>,
-        //>,
     }
 
     #[monotonic(binds = SysTick, default = true)]
-    type SysMono = Systick<100>; // 100 Hz / 10 ms granularity
+    type MyMono = Systick<100>; // 100 Hz / 10 ms granularity
+
 
     #[init(local = [
         #[link_section = ".can"]
@@ -86,14 +124,14 @@ mod app {
     ])]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut peripherals = cx.device;
-        let core = cx.core;
+        let mut core = cx.core;
         let pins = Pins::new(peripherals.PORT);
 
         // let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
         // let dmaChannels = dmac.split();
 
         /* Logging Setup */
-        HydraLogging::set_ground_station_callback(queue_gs_message);
+        // HydraLogging::set_ground_station_callback(queue_gs_message);
 
         /* Clock setup */
         let (_, clocks, tokens) = atsamd_hal::clock::v2::clock_system_at_reset(
@@ -103,6 +141,7 @@ mod app {
             peripherals.MCLK,
             &mut peripherals.NVMCTRL,
         );
+
         let gclk0 = clocks.gclk0;
 
         // SAFETY: Misusing the PAC API can break the system.
@@ -110,6 +149,7 @@ mod app {
         let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
 
         /* CAN config */
+
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
         let (can0, gclk0) = communication::CanDevice0::new(
             pins.pa23.into_mode(),
@@ -119,61 +159,100 @@ mod app {
             peripherals.CAN0,
             gclk0,
             cx.local.can_memory,
-            false,
+            true,
         );
 
+        // setup external osc 
+        // let xosc0 = atsamd_hal::clock::v2::xosc::Xosc::from_crystal(
+        //     tokens.xosc0,
+        //     pins.pa14,
+        //     pins.pa15,
+        //     48_000_000.Hz(),
+        // ).current(CrystalCurrent::Medium)
+        // .loop_control(true)
+        // .low_buf_gain(true)
+        // .start_up_delay(StartUpDelay::Delay488us).enable();
+        // while !xosc0.is_ready() {
+        //     info!("Waiting for XOSC0 to stabilize");
+        // }
+
+        // let (mut gclk0, dfll) =
+            // hal::clock::v2::gclk::Gclk::from_source(tokens.gclks.gclk2, xosc0);
+        // let gclk2 = gclk2.div(gclk::GclkDiv8::Div(1)).enable(); 
+        let (pclk_radio, gclk0) = Pclk::enable(tokens.pclks.sercom2, gclk0);
         /* Radio config */
-        let (radio, gclk0) = RadioDevice::new(
-            tokens.pclks.sercom2,
-            &mclk,
-            peripherals.SERCOM2,
-            pins.pa08,
-            pins.pa09,
-            gclk0,
-        );
+
+        let rx: Pin<PA08, Alternate<C>> = pins.pa08.into_alternate();
+        let tx: Pin<PA09, Alternate<C>> = pins.pa09.into_alternate();
+        let pads = uart::Pads::<hal::sercom::Sercom2, _>::default()
+            .rx(rx)
+            .tx(tx);
+        let mut uart = GroundStationUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_radio.freq())
+            .baud(
+                RateExtU32::Hz(57600),
+                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+            )
+            .enable();
+
+        let (radio) = RadioDevice::new(uart);
 
         let radio_manager = RadioManager::new(radio);
 
-        /* SD config */
-        //let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
-        //let pads_spi = spi::Pads::<Sercom0, IoSet3>::default()
-        //   .sclk(pins.pa05)
-        //  .data_in(pins.pa07)
-        // .data_out(pins.pa04);
-        //let sdmmc_spi = spi::Config::new(&mclk, peripherals.SERCOM0, pads_spi, pclk_sd.freq())
-        //   .length::<spi::lengths::U1>()
-        //  .bit_order(spi::BitOrder::MsbFirst)
-        //  .spi_mode(spi::MODE_0)
-        //  .enable();
-        //let sd_manager = SdManager::new(sdmmc_spi, pins.pa06.into_push_pull_output());
+        // /* SD config */
+        // let (mut gclk1, dfll) =
+        //     hal::clock::v2::gclk::Gclk::from_source(tokens.gclks.gclk1, clocks.dfll);
+        // let gclk1 = gclk1.div(gclk::GclkDiv16::Div(3)).enable(); // 48 / 3 = 16 MHzs
+        // let (pclk_sd, gclk1) = Pclk::enable(tokens.pclks.sercom0, gclk1);
+
+        // let pads_spi = spi::Pads::<Sercom0, IoSet3>::default()
+        //     .sclk(pins.pa05)
+        //     .data_in(pins.pa07)
+        //     .data_out(pins.pa04);
+        // let sdmmc_spi = spi::Config::new(&mclk, peripherals.SERCOM0, pads_spi, pclk_sd.freq())
+        //     .length::<spi::lengths::U1>()
+        //     .bit_order(spi::BitOrder::MsbFirst)
+        //     .spi_mode(spi::MODE_0)
+        //     .enable();
+        // let sd_manager = SdManager::new(sdmmc_spi, pins.pa06.into_push_pull_output());
 
         let (pclk_gps, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
         //info!("here");
         let pads = hal::sercom::uart::Pads::<hal::sercom::Sercom4, IoSet3>::default()
-            .rx(pins.pa13)
-            .tx(pins.pa12);
+            .rx(pins.pa12)
+            .tx(pins.pa13);
 
         let mut gps_uart = GpsUartConfig::new(&mclk, peripherals.SERCOM4, pads, pclk_gps.freq())
             .baud(
-                9600.Hz(),
+                RateExtU32::Hz(9600),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
             )
             .enable();
-        gps_uart.enable_interrupts(hal::sercom::uart::Flags::RXC);
+        // gps_uart.enable_interrupts(hal::sercom::uart::Flags::RXC);
 
         /* Status LED */
-        let led = pins.pa02.into_push_pull_output();
-        let mut gps_enable = pins.pb09.into_push_pull_output();
-        //gps_enable.set_high().ok();
-        gps_enable.set_low().ok();
+        // info!("Setting up LED");
+        // let led = pins.pa02.into_push_pull_output();
+        // let mut gps_enable = pins.pb09.into_push_pull_output();
+        // //gps_enable.set_high().ok();
+        // gps_enable.set_low().ok();
         /* Spawn tasks */
-        sensor_send::spawn().ok();
-        state_send::spawn().ok();
-        blink::spawn().ok();
+        // sensor_send::spawn().ok();
+        // state_send::spawn().ok();
+        info!("RTC");
+        let mut rtc = hal::rtc::Rtc::count32_mode(peripherals.RTC, RateExtU32::Hz(1024), &mut mclk);
+        // let mut rtc = rtc_temp.into_count32_mode();
+        rtc.set_count32(0);
 
-        /* Monotonic clock */
+        cortex_m::interrupt::free(|cs| {
+            RTC.borrow(cs).replace(Some(rtc));
+        });
+        info!("RTC done");
+        let led = pins.pa03.into_push_pull_output();
+        blink::spawn().ok();
+        generate_random_messages::spawn().ok();
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
+        // info!("Init done");
         (
             Shared {
                 em: ErrorManager::new(),
@@ -181,7 +260,10 @@ mod app {
                 radio_manager,
                 can0,
             },
-            Local { led, gps_uart },
+            Local {
+                led,
+                // sd_manager,
+            },
             init::Monotonics(mono),
         )
     }
@@ -192,14 +274,14 @@ mod app {
         loop {}
     }
 
-    #[task(binds = SERCOM2_2, local = [gps_uart], shared = [&em])]
-    fn gps_rx(mut cx: gps_rx::Context) {
-        cx.shared.em.run(|| {
-            let byte = cx.local.gps_uart.read().unwrap();
-            info!("GPS: {}", byte);
-            Ok(())
-        });
-    }
+    // #[task(binds = SERCOM2_2, local = [gps_uart], shared = [&em])]
+    // fn gps_rx(mut cx: gps_rx::Context) {
+    //     cx.shared.em.run(|| {
+    //         let byte = cx.local.gps_uart.read().unwrap();
+    //         info!("GPS: {}", byte);
+    //         Ok(())
+    //     });
+    // }
 
     /// Handles the CAN0 interrupt.
     #[task(priority = 3, binds = CAN0, shared = [can0, data_manager])]
@@ -219,11 +301,14 @@ mod app {
             cx.shared.can0.lock(|can| can.send_message(m))?;
             Ok(())
         });
-    }
+     }
 
     /// Receives a log message from the custom logger so that it can be sent over the radio.
     pub fn queue_gs_message(d: impl Into<Data>) {
-        let message = Message::new(&monotonics::now(), COM_ID, d.into());
+        let message = Message::new(cortex_m::interrupt::free(|cs| {
+            let mut rc = RTC.borrow(cs).borrow_mut();
+            let rtc = rc.as_mut().unwrap();
+            rtc.count32()}), COM_ID, d.into());
 
         send_gs::spawn(message).ok();
     }
@@ -235,14 +320,16 @@ mod app {
     fn send_gs(mut cx: send_gs::Context, m: Message) {
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
+                let mut buf = [0; 255];
+                let data = postcard::to_slice(&m, &mut buf)?;
                 radio_manager
-                    .send_message(postcard::to_slice(&m, &mut [0; 255])?.try_into().unwrap())?;
+                    .send_message(data)?;
                 Ok(())
             })
         });
     }
 
-    //   #[task(capacity = 10, local = [sd_manager], shared = [&em])]
+    // #[task(capacity = 10, local = [sd_manager], shared = [&em])]
     //  fn sd_dump(cx: sd_dump::Context, m: Message) {
     //     let manager = cx.local.sd_manager;
     //    cx.shared.em.run(|| {
@@ -257,7 +344,7 @@ mod app {
     //   }
     //   Ok(())
     // });
-    //}
+    // }
 
     /**
      * Sends information about the sensors.
@@ -293,32 +380,54 @@ mod app {
         }
     }
 
-    #[task(shared = [data_manager, &em])]
-    fn state_send(mut cx: state_send::Context) {
-        let state_data = cx
-            .shared
-            .data_manager
-            .lock(|data_manager| data_manager.state.clone());
+    #[task(shared = [&em])]
+    fn generate_random_messages(cx: generate_random_messages::Context) {
         cx.shared.em.run(|| {
-            if let Some(x) = state_data {
-                let message = Message::new(&monotonics::now(), COM_ID, State::new(x));
-                spawn!(send_gs, message)?;
-            } // if there is none we still return since we simply don't have data yet.
+            let message = Message::new(
+                cortex_m::interrupt::free(|cs| {
+                    let mut rc = RTC.borrow(cs).borrow_mut();
+                    let rtc = rc.as_mut().unwrap();
+                    rtc.count32()}),
+                COM_ID,
+                State::new(StateData::Initializing),
+            );
+            spawn!(send_gs, message)?;
+            // spawn!(send_internal, message)?;
             Ok(())
         });
-        spawn_after!(state_send, ExtU64::secs(5)).ok();
+        spawn!(generate_random_messages).ok();
     }
 
-    #[task(binds = SERCOM5_2, shared = [&em, radio_manager])]
-    fn radio_rx(mut cx: radio_rx::Context) {
-        cx.shared.radio_manager.lock(|radio_manager| {
-            cx.shared.em.run(|| {
-                let msg = radio_manager.receive_message()?;
-                spawn!(send_internal, msg)?; // just broadcast the message throughout the system for now.
-                Ok(())
-            });
-        });
-    }
+    // #[task(shared = [data_manager, &em])]
+    // fn state_send(mut cx: state_send::Context) {
+    //     let state_data = cx
+    //         .shared
+    //         .data_manager
+    //         .lock(|data_manager| data_manager.state.clone());
+    //     cx.shared.em.run(|| {
+    //         if let Some(x) = state_data {
+    //             let message = Message::new(cortex_m::interrupt::free(|cs| {
+    //                 let mut rc = RTC.borrow(cs).borrow_mut();
+    //                 let rtc = rc.as_mut().unwrap();
+    //                 rtc.count32()}), COM_ID, State::new(x));
+    //             // spawn!(send_gs, message)?;
+    //         } // if there is none we still return since we simply don't have data yet.
+    //         Ok(())
+    //     });
+    //     spawn_after!(state_send, ExtU64::secs(5)).ok();
+    // }
+
+    // #[task(binds = SERCOM5_2, shared = [&em, radio_manager])]
+    // fn radio_rx(mut cx: radio_rx::Context) {
+    //     cx.shared.radio_manager.lock(|radio_manager| {
+    //         cx.shared.em.run(|| {
+    //             info!("Interrupt on Sercom5");
+    //             let msg = radio_manager.receive_message()?;
+    //             // spawn!(send_internal, msg)?; // just broadcast the message throughout the system for now.
+    //             Ok(())
+    //         });
+    //     });
+    // }
 
     /**
      * Simple blink task to test the system.

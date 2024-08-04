@@ -20,5 +20,4 @@ embedded-hal = "0.2.7"
 nb = "1.1.0"
 mcan = "0.3.0"
 messages = { path = "../messages" }
-
 ms5611-01ba = { git = "https://github.com/NoahSprenger/ms5611-01ba", branch = "embedded-hal-02" }

@@ -2,14 +2,16 @@ use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
 use atsamd_hal::clock::v2::ahb::AhbClk;
-use atsamd_hal::clock::v2::gclk::Gclk0Id;
+use atsamd_hal::clock::v2::gclk::{Gclk0Id, Gclk1Id};
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::Can0;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::gpio::PA08;
 use atsamd_hal::gpio::PA09;
-use atsamd_hal::gpio::{Alternate, AlternateI, Disabled, Floating, Pin, I, PA22, PA23, PB16, PB17};
+use atsamd_hal::gpio::{
+    Alternate, AlternateI, Disabled, Floating, Pin, I, PA12, PA13, PA22, PA23, PB16, PB17,
+};
 use atsamd_hal::pac::CAN0;
 use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM0;
@@ -21,7 +23,7 @@ use atsamd_hal::sercom::uart;
 use atsamd_hal::sercom::uart::Uart;
 use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
 use atsamd_hal::typelevel::Increment;
-use common_arm::{herror, HydraError};
+use common_arm:: HydraError;
 use common_arm_atsame::mcan;
 use common_arm_atsame::mcan::message::{rx, Raw};
 use common_arm_atsame::mcan::tx_buffers::DynTx;
@@ -43,9 +45,8 @@ use messages::mavlink;
 use messages::ErrorContext;
 use messages::Message;
 use postcard::from_bytes;
-use systick_monotonic::fugit::RateExtU32;
+use systick_monotonic::*;
 use typenum::{U0, U128, U32, U64};
-
 pub struct Capacities;
 
 impl mcan::messageram::Capacities for Capacities {
@@ -91,10 +92,10 @@ impl CanDevice0 {
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
         let mut can =
-            mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, can_memory).unwrap();
+            mcan::bus::CanConfigurable::new(fugit::RateExtU32::kHz(200), can_dependencies, can_memory).unwrap();
         can.config().mode = Mode::Fd {
             allow_bit_rate_switching: false,
-            data_phase_timing: BitTiming::new(500.kHz()),
+            data_phase_timing: BitTiming::new(fugit::RateExtU32::kHz(500)),
         };
 
         if loopback {
@@ -156,8 +157,10 @@ impl CanDevice0 {
                 mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Ground Station filter"));
-
+        
+        // info!("Can Device 0 initialized");
         let can = can.finalize().unwrap();
+        // info!("Can Device 0 finalized");
         (
             CanDevice0 {
                 can,
@@ -193,7 +196,7 @@ impl CanDevice0 {
                                 data_manager.handle_data(data);
                             }
                             Err(_) => {
-                                herror!(Error, ErrorContext::UnkownCanMessage);
+                                // error!("Error, ErrorContext::UnkownCanMessage");
                             }
                         }
                     }
@@ -205,7 +208,7 @@ impl CanDevice0 {
                                 data_manager.handle_data(data);
                             }
                             Err(_) => {
-                                herror!(Error, ErrorContext::UnkownCanMessage);
+                                // error!("Error, ErrorContext::UnkownCanMessage");
                             }
                         }
                     }
@@ -222,37 +225,16 @@ pub struct RadioDevice {
 }
 
 impl RadioDevice {
-    pub fn new<S>(
-        radio_token: PclkToken<SERCOM2>,
-        mclk: &MCLK,
-        sercom: SERCOM2,
-        rx_pin: Pin<PA08, Disabled<Floating>>,
-        tx_pin: Pin<PA09, Disabled<Floating>>,
-        gclk0: S,
-    ) -> (Self, S::Inc)
-    where
-        S: Source<Id = Gclk0Id> + Increment,
-    {
-        let (pclk_radio, gclk0) = Pclk::enable(radio_token, gclk0);
-        let pads = uart::Pads::<sercom::Sercom2, _>::default()
-            .rx(rx_pin)
-            .tx(tx_pin);
-        let uart = GroundStationUartConfig::new(mclk, sercom, pads, pclk_radio.freq())
-            .baud(
-                57600.Hz(),
-                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-            )
-            .enable();
+    pub fn new(mut uart: atsamd_hal::sercom::uart::Uart<GroundStationUartConfig, atsamd_hal::sercom::uart::Duplex>) -> Self {
         let (mut rx, tx) = uart.split();
+
         // setup interrupts
         rx.enable_interrupts(uart::Flags::RXC);
-        (
-            RadioDevice {
-                transmitter: tx,
-                receiver: PeekReader::new(rx),
-            },
-            gclk0,
-        )
+
+        RadioDevice {
+            transmitter: tx,
+            receiver: PeekReader::new(rx),
+        }
     }
 }
 
@@ -271,15 +253,20 @@ impl RadioManager {
             mav_sequence: 0,
         }
     }
-    pub fn send_message(&mut self, payload: [u8; 255]) -> Result<(), HydraError> {
+    pub fn send_message(&mut self, payload: &[u8]) -> Result<(), HydraError> {
         let mav_header = mavlink::MavHeader {
             system_id: 1,
             component_id: 1,
             sequence: self.increment_mav_sequence(),
         };
+                // Create a fixed-size array and copy the payload into it
+        let mut fixed_payload = [0u8; 255];
+        let len = payload.len().min(255);
+        fixed_payload[..len].copy_from_slice(&payload[..len]);
+
 
         let mav_message = mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(
-            mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: payload },
+            mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: fixed_payload },
         );
         mavlink::write_versioned_msg(
             &mut self.radio.transmitter,
@@ -306,7 +293,7 @@ impl RadioManager {
                     // weird Ok syntax to coerce to hydra error type.
                 }
                 _ => {
-                    herror!(Error, ErrorContext::UnkownPostcardMessage);
+                    // error!("Error, ErrorContext::UnkownPostcardMessage");
                     return Err(mavlink::error::MessageReadError::Io.into());
                 }
             }

@@ -32,16 +32,23 @@ use ms5611_01ba::{calibration::OversamplingRatio, MS5611_01BA};
 use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
 use types::COM_ID;
+use cortex_m::interrupt::Mutex;
+use hal::rtc::Count32Mode;
+use core::cell::RefCell;
+pub static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefCell::new(None));
 
 /// Custom panic handler.
 /// Reset the system if a panic occurs.
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
+    info!("Panic");
     atsamd_hal::pac::SCB::sys_reset();
 }
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+    use cortex_m::asm;
+
     use super::*;
 
     #[shared]
@@ -100,7 +107,7 @@ mod app {
 
         // SAFETY: Misusing the PAC API can break the system.
         // This is safe because we only steal the MCLK.
-        let (_, _, _, mclk) = unsafe { clocks.pac.steal() };
+        let (_, _, _, mut mclk) = unsafe { clocks.pac.steal() };
 
         /* CAN config */
         let (pclk_can, gclk0) = Pclk::enable(tokens.pclks.can0, gclk0);
@@ -143,8 +150,18 @@ mod app {
 
         let barometer = MS5611_01BA::new(baro_spi, OversamplingRatio::OSR2048);
 
+        info!("RTC");
+        let mut rtc = hal::rtc::Rtc::count32_mode(peripherals.RTC, 1024.Hz(), &mut mclk);
+        // let mut rtc = rtc_temp.into_count32_mode();
+        rtc.set_count32(0);
+        cortex_m::interrupt::free(|cs| {
+            RTC.borrow(cs).replace(Some(rtc));
+        });
+        // info!("RTC done");
+
         /* Spawn tasks */
         run_sm::spawn().ok();
+        read_barometer::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
         // fire_main::spawn_after(ExtU64::secs(15)).ok();
@@ -173,7 +190,7 @@ mod app {
     /// Idle task for when no other tasks are running.
     #[idle]
     fn idle(_: idle::Context) -> ! {
-        loop {}
+        loop {asm::nop()}
     }
 
     #[task(local = [barometer], shared = [&em])]
@@ -184,6 +201,7 @@ mod app {
             info!("pressure {} temperature {}", p, t);
             Ok(())
         });
+        spawn_after!(read_barometer, ExtU64::secs(1)).ok();
     }
 
     #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
@@ -273,7 +291,10 @@ mod app {
                 return Ok(());
             };
             let board_state = messages::state::State { data: state.into() };
-            let message = Message::new(&monotonics::now(), COM_ID, board_state);
+            let message = Message::new(cortex_m::interrupt::free(|cs| {
+                let mut rc = RTC.borrow(cs).borrow_mut();
+                let rtc = rc.as_mut().unwrap();
+                rtc.count32()}), COM_ID, board_state);
             spawn!(send_internal, message)?;
             spawn_after!(state_send, ExtU64::secs(2))?; // I think this is fine here.
             Ok(())

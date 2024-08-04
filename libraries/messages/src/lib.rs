@@ -34,7 +34,7 @@ pub use logging::{ErrorContext, Event, Log, LogLevel};
 pub struct Message {
     /// Time in milliseconds since epoch. Note that the epoch here can be arbitrary and is not the
     /// Unix epoch.
-    pub timestamp: u64,
+    pub timestamp: u32,
 
     /// The original sender of this message.
     pub sender: Sender,
@@ -55,13 +55,13 @@ pub enum Data {
 }
 
 impl Message {
-    pub fn new<const NOM: u32, const DENOM: u32>(
-        timestamp: &Instant<u64, NOM, DENOM>,
+    pub fn new(
+        timestamp: u32,
         sender: Sender,
         data: impl Into<Data>,
     ) -> Self {
         Message {
-            timestamp: timestamp.duration_since_epoch().to_millis(),
+            timestamp: timestamp,
             sender,
             data: data.into(),
         }

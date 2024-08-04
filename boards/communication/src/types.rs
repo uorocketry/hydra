@@ -18,6 +18,6 @@ pub type GroundStationUartConfig = uart::Config<GroundStationPads, EightBit>;
 // -------
 // GPS UART
 // -------
-pub type GpsPads = uart::PadsFromIds<Sercom4, IoSet3, PA13, PA12>;
+pub type GpsPads = uart::PadsFromIds<Sercom4, IoSet3, PA12, PA13>;
 pub type GpsUartConfig = uart::Config<GpsPads, EightBit>;
 pub type GpsUart = uart::Uart<GpsUartConfig, Duplex>;

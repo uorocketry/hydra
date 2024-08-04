@@ -5,6 +5,47 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Debug Recovery",
+            "chip": "ATSAME51J18A",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/recovery",
+                }
+            ]
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Debug Link (Release)",
+            "chip": "ATSAME51J18A",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false,
+                "formatOptions": {
+                  //!MODIFY (or remove). Valid values are: 'bin', 'hex', 'elf'(default), 'idf'
+                  "binaryFormat": "elf"
+                }
+              },
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/communication",
+                }
+            ]
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Debug nav (Debug)",
+            "chip": "STM32H733VGTx",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/nav",
+                }
+            ]
+        },
+        {
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "openocd",

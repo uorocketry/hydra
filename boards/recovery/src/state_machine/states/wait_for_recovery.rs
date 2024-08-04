@@ -8,6 +8,7 @@ use messages::command::{Command, PowerDown, RadioRate, RadioRateChange};
 use messages::sender::Sender::SensorBoard;
 use messages::Message;
 use rtic::mutex::Mutex;
+use crate::RTC;
 
 #[derive(Debug, Clone)]
 pub struct WaitForRecovery {}
@@ -21,9 +22,15 @@ impl State for WaitForRecovery {
             let radio_rate_change = RadioRateChange {
                 rate: RadioRate::Slow,
             };
-            let message = Message::new(&monotonics::now(), COM_ID, Command::new(sensor_power_down));
+            let message = Message::new(cortex_m::interrupt::free(|cs| {
+                let mut rc = RTC.borrow(cs).borrow_mut();
+                let rtc = rc.as_mut().unwrap();
+                rtc.count32()}), COM_ID, Command::new(sensor_power_down));
             let message_com =
-                Message::new(&monotonics::now(), COM_ID, Command::new(radio_rate_change));
+                Message::new(cortex_m::interrupt::free(|cs| {
+                    let mut rc = RTC.borrow(cs).borrow_mut();
+                    let rtc = rc.as_mut().unwrap();
+                    rtc.count32()}), COM_ID, Command::new(radio_rate_change));
             context.shared_resources.can0.lock(|can| {
                 context.shared_resources.em.run(|| {
                     can.send_message(message)?;
