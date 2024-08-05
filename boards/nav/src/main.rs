@@ -109,7 +109,7 @@ mod app {
 
         c0.set_duty(c0.get_max_duty() / 2);
         // PWM outputs are disabled by default
-        c0.enable();
+        // c0.enable();
 
         info!("PWM enabled");
         // assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 24_000_000); waaat 
@@ -158,6 +158,10 @@ mod app {
         // leds
         let mut led_red = gpioa.pa2.into_push_pull_output();
         let mut led_green = gpioa.pa3.into_push_pull_output();
+
+        // sbg power pin 
+        let mut sbg_power = gpiob.pb4.into_push_pull_output();
+        sbg_power.set_high();
 
         // UART for sbg
         let tx: Pin<'D', 1, Alternate<8>> = gpiod.pd1.into_alternate();
@@ -230,7 +234,7 @@ mod app {
         }
     }
 
-    #[task(local = [led_red, led_green], shared = [&em])]
+    #[task(local = [led_red, led_green], shared = [&em,rtc])]
     fn blink(mut cx: blink::Context) {
         cx.shared.em.run(|| {
             if cx.shared.em.has_error() {
