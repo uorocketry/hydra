@@ -2,7 +2,7 @@
 #![no_main]
 
 mod data_manager;
-// mod sbg_manager;
+mod sbg_manager;
 mod types;
 mod communication;
 
@@ -38,7 +38,7 @@ use stm32h7xx_hal::dma::dma::StreamsTuple;
 // use panic_halt as _;
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    stm32h7xx_hal::pac::SCB::sys_reset();
+    stm32h7xx_hal::pac::SCB::sys_reset()
 }
 
 #[rtic::app(device = stm32h7xx_hal::stm32, dispatchers = [EXTI0, EXTI1])]
@@ -59,7 +59,7 @@ mod app {
     struct LocalResources {
         led_red: PA2<Output<PushPull>>,
         led_green: PA3<Output<PushPull>>,
-        // sbg_manager: sbg_manager::SBGManager,
+        sbg_manager: sbg_manager::SBGManager,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -173,7 +173,7 @@ mod app {
         .UART4
         .serial((tx, rx), 9_800.bps(), ccdr.peripheral.UART4, &ccdr.clocks)
         .unwrap();
-        // let sbg_manager = sbg_manager::SBGManager::new(uart_sbg, stream_tuple);
+        let sbg_manager = sbg_manager::SBGManager::new(uart_sbg, stream_tuple);
         // let serial = ctx
         //     .device
         //     .UART4
@@ -221,7 +221,7 @@ mod app {
             LocalResources {
                 led_red,
                 led_green,
-                // sbg_manager: sbg_manager,
+                sbg_manager: sbg_manager,
             },
             init::Monotonics(mono),
         )
@@ -257,23 +257,23 @@ mod app {
         // Turn off the SBG and CAN
     }
 
-    // extern "Rust" {
-    //     #[task(capacity = 3, shared = [&em, sd_manager])]
-    //     fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
+    extern "Rust" {
+        #[task(capacity = 3, shared = [&em, sd_manager])]
+        fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
 
-    //     #[task(binds = DMA1_STR0, shared = [&em], local = [sbg_manager])]
-    //     fn sbg_dma(context: sbg_dma::Context);
+        #[task(binds = DMA1_STR0, shared = [&em], local = [sbg_manager])]
+        fn sbg_dma(context: sbg_dma::Context);
 
-    //     #[task(capacity = 20, shared = [data_manager])]
-    //     fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
+        #[task(capacity = 20, shared = [data_manager])]
+        fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
 
-    //     #[task(shared = [rtc, &em])]
-    //     fn sbg_get_time(context: sbg_get_time::Context);
+        #[task(shared = [rtc, &em])]
+        fn sbg_get_time(context: sbg_get_time::Context);
 
-    //     #[task()]
-    //     fn sbg_flush(context: sbg_flush::Context);
+        #[task()]
+        fn sbg_flush(context: sbg_flush::Context);
 
-    //     #[task(shared = [&em])]
-    //     fn sbg_write_data(context: sbg_write_data::Context, data: Vec<u8, SBG_BUFFER_SIZE>);
-    // }
+        #[task(shared = [&em])]
+        fn sbg_write_data(context: sbg_write_data::Context, data: Vec<u8, SBG_BUFFER_SIZE>);
+    }
 }

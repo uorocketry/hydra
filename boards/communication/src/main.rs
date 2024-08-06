@@ -5,8 +5,8 @@ mod communication;
 mod data_manager;
 mod types;
 
-use atsamd_hal::rtc::Count32Mode;
 use atsamd_hal as hal;
+use atsamd_hal::rtc::Count32Mode;
 use common_arm::HealthManager;
 use common_arm::HealthMonitor;
 use common_arm::SdManager;
@@ -14,16 +14,33 @@ use common_arm::*;
 use common_arm_atsame::mcan;
 // use panic_halt as _;
 
+use atsamd_hal::time::*;
+use atsamd_hal::{
+    clock::v2::{
+        clock_system_at_reset,
+        xosc::{CrystalCurrent, SafeClockDiv, StartUpDelay, Xosc},
+    },
+    pac::Peripherals,
+};
 use communication::Capacities;
-use communication::{RadioDevice, RadioManager};
+use communication::{CanCommandManager, RadioDevice, RadioManager};
+use core::cell::RefCell;
+use cortex_m::interrupt::Mutex;
+use cortex_m_rt::exception;
+use cortex_m_rt::ExceptionFrame;
 use data_manager::DataManager;
+use defmt::info;
+use defmt_rtt as _; // global logger
+use fugit::ExtU32;
+use fugit::ExtU64;
+use fugit::RateExtU32;
 use hal::adc::Adc;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
 use hal::gpio::Pins;
 use hal::gpio::{
-    Alternate, Output, Pin, PushPull, PushPullOutput, C, D, PA02, PA04, PA05, PA06, PA03, PA07, PB12, PA08, PA09,
-    PB13, PB14, PB15,
+    Alternate, Output, Pin, PushPull, PushPullOutput, C, D, PA02, PA03, PA04, PA05, PA06, PA07,
+    PA08, PA09, PB12, PB13, PB14, PB15,
 };
 use hal::prelude::*;
 use hal::sercom::uart;
@@ -35,26 +52,9 @@ use messages::command::RadioRate;
 use messages::health::Health;
 use messages::state::State;
 use messages::*;
-use systick_monotonic::*;
-use core::cell::RefCell;
-use types::*;
-use atsamd_hal::{
-    clock::v2::{
-        clock_system_at_reset,
-        xosc::{CrystalCurrent, SafeClockDiv, StartUpDelay, Xosc},
-    },
-    pac::Peripherals,
-};
-use cortex_m::interrupt::Mutex;
-use atsamd_hal::time::*;
-use fugit::ExtU64;
-use cortex_m_rt::exception;
-use cortex_m_rt::ExceptionFrame;
-use defmt::info;
-use defmt_rtt as _; // global logger
 use panic_probe as _;
-use fugit::ExtU32;
-use fugit::RateExtU32;
+use systick_monotonic::*;
+use types::*;
 
 #[inline(never)]
 #[defmt::panic_handler]
@@ -69,9 +69,7 @@ fn panic() -> ! {
 /// loop.
 #[cortex_m_rt::exception]
 unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
-    loop {
-        
-    }
+    loop {}
 }
 
 static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefCell::new(None));
@@ -91,6 +89,7 @@ mod app {
         data_manager: DataManager,
         radio_manager: RadioManager,
         can0: communication::CanDevice0,
+        can_command_manager: CanCommandManager,
     }
 
     #[local]
@@ -117,10 +116,11 @@ mod app {
     #[monotonic(binds = SysTick, default = true)]
     type MyMono = Systick<100>; // 100 Hz / 10 ms granularity
 
-
     #[init(local = [
         #[link_section = ".can"]
-        can_memory: SharedMemory<Capacities> = SharedMemory::new()
+        can_memory: SharedMemory<Capacities> = SharedMemory::new(),
+        #[link_section = ".can_command"]
+        can_command_memory: SharedMemory<Capacities> = SharedMemory::new()
     ])]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut peripherals = cx.device;
@@ -162,7 +162,19 @@ mod app {
             true,
         );
 
-        // setup external osc 
+        let (pclk_can_command, gclk0) = Pclk::enable(tokens.pclks.can1, gclk0);
+        let (can_command_manager, gclk0) = CanCommandManager::new(
+            pins.pb15.into_mode(),
+            pins.pb14.into_mode(),
+            pclk_can_command,
+            clocks.ahbs.can1,
+            peripherals.CAN1,
+            gclk0,
+            cx.local.can_command_memory,
+            true,
+        );
+
+        // setup external osc
         // let xosc0 = atsamd_hal::clock::v2::xosc::Xosc::from_crystal(
         //     tokens.xosc0,
         //     pins.pa14,
@@ -177,8 +189,8 @@ mod app {
         // }
 
         // let (mut gclk0, dfll) =
-            // hal::clock::v2::gclk::Gclk::from_source(tokens.gclks.gclk2, xosc0);
-        // let gclk2 = gclk2.div(gclk::GclkDiv8::Div(1)).enable(); 
+        // hal::clock::v2::gclk::Gclk::from_source(tokens.gclks.gclk2, xosc0);
+        // let gclk2 = gclk2.div(gclk::GclkDiv8::Div(1)).enable();
         let (pclk_radio, gclk0) = Pclk::enable(tokens.pclks.sercom2, gclk0);
         /* Radio config */
 
@@ -187,14 +199,15 @@ mod app {
         let pads = uart::Pads::<hal::sercom::Sercom2, _>::default()
             .rx(rx)
             .tx(tx);
-        let mut uart = GroundStationUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_radio.freq())
-            .baud(
-                RateExtU32::Hz(57600),
-                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-            )
-            .enable();
+        let mut uart =
+            GroundStationUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_radio.freq())
+                .baud(
+                    RateExtU32::Hz(57600),
+                    uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+                )
+                .enable();
 
-        let (radio) = RadioDevice::new(uart);
+        let radio = RadioDevice::new(uart);
 
         let radio_manager = RadioManager::new(radio);
 
@@ -259,6 +272,7 @@ mod app {
                 data_manager: DataManager::new(),
                 radio_manager,
                 can0,
+                can_command_manager,
             },
             Local {
                 led,
@@ -284,6 +298,16 @@ mod app {
     // }
 
     /// Handles the CAN0 interrupt.
+    #[task(priority = 3, binds = CAN1, shared = [can_command_manager, data_manager])]
+    fn can_command(mut cx: can_command::Context) {
+        cx.shared.can_command_manager.lock(|can| {
+            cx.shared
+                .data_manager
+                .lock(|data_manager| can.process_data(data_manager));
+        });
+    }
+
+    /// Handles the CAN0 interrupt.
     #[task(priority = 3, binds = CAN0, shared = [can0, data_manager])]
     fn can0(mut cx: can0::Context) {
         cx.shared.can0.lock(|can| {
@@ -295,20 +319,36 @@ mod app {
     /**
      * Sends a message over CAN.
      */
-    #[task(capacity = 10, local = [counter: u16 = 0], shared = [can0, &em])]
+    #[task(capacity = 10, shared = [can0, &em])]
     fn send_internal(mut cx: send_internal::Context, m: Message) {
         cx.shared.em.run(|| {
             cx.shared.can0.lock(|can| can.send_message(m))?;
             Ok(())
         });
-     }
+    }
+
+    /**
+     * Sends a message over CAN.
+     */
+    #[task(capacity = 5, shared = [can_command_manager, &em])]
+    fn send_command(mut cx: send_command::Context, m: Message) {
+        cx.shared.em.run(|| {
+            cx.shared.can_command_manager.lock(|can| can.send_message(m))?;
+            Ok(())
+        });
+    }
 
     /// Receives a log message from the custom logger so that it can be sent over the radio.
     pub fn queue_gs_message(d: impl Into<Data>) {
-        let message = Message::new(cortex_m::interrupt::free(|cs| {
-            let mut rc = RTC.borrow(cs).borrow_mut();
-            let rtc = rc.as_mut().unwrap();
-            rtc.count32()}), COM_ID, d.into());
+        let message = Message::new(
+            cortex_m::interrupt::free(|cs| {
+                let mut rc = RTC.borrow(cs).borrow_mut();
+                let rtc = rc.as_mut().unwrap();
+                rtc.count32()
+            }),
+            COM_ID,
+            d.into(),
+        );
 
         send_gs::spawn(message).ok();
     }
@@ -322,8 +362,7 @@ mod app {
             cx.shared.em.run(|| {
                 let mut buf = [0; 255];
                 let data = postcard::to_slice(&m, &mut buf)?;
-                radio_manager
-                    .send_message(data)?;
+                radio_manager.send_message(data)?;
                 Ok(())
             })
         });
@@ -387,12 +426,13 @@ mod app {
                 cortex_m::interrupt::free(|cs| {
                     let mut rc = RTC.borrow(cs).borrow_mut();
                     let rtc = rc.as_mut().unwrap();
-                    rtc.count32()}),
+                    rtc.count32()
+                }),
                 COM_ID,
                 State::new(StateData::Initializing),
             );
-            spawn!(send_gs, message)?;
-            // spawn!(send_internal, message)?;
+            spawn!(send_gs, message.clone())?;
+            spawn!(send_internal, message)?;
             Ok(())
         });
         spawn!(generate_random_messages).ok();

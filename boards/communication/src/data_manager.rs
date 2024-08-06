@@ -74,6 +74,19 @@ impl DataManager {
     pub fn clone_states(&self) -> [Option<StateData>; 1] {
         [self.state.clone()]
     }
+    pub fn handle_command(&mut self, command: Message) {
+        match command.data {
+            messages::Data::Command(command) => match command.data {
+                messages::command::CommandData::RadioRateChange(command_data) => {
+                    self.logging_rate = Some(command_data.rate);
+                }
+                messages::command::CommandData::DeployDrogue(_) => {}
+                messages::command::CommandData::DeployMain(_) => {}
+                messages::command::CommandData::PowerDown(_) => {}
+            },
+            _ => {}
+        }
+    }
     pub fn handle_data(&mut self, data: Message) {
         match data.data {
             messages::Data::Sensor(ref sensor) => match sensor.data {
@@ -120,14 +133,14 @@ impl DataManager {
             messages::Data::State(state) => {
                 self.state = Some(state.data);
             }
-            messages::Data::Command(command) => match command.data {
-                messages::command::CommandData::RadioRateChange(command_data) => {
-                    self.logging_rate = Some(command_data.rate);
-                }
-                messages::command::CommandData::DeployDrogue(_) => {}
-                messages::command::CommandData::DeployMain(_) => {}
-                messages::command::CommandData::PowerDown(_) => {}
-            },
+            // messages::Data::Command(command) => match command.data {
+            //     messages::command::CommandData::RadioRateChange(command_data) => {
+            //         self.logging_rate = Some(command_data.rate);
+            //     }
+            //     messages::command::CommandData::DeployDrogue(_) => {}
+            //     messages::command::CommandData::DeployMain(_) => {}
+            //     messages::command::CommandData::PowerDown(_) => {}
+            // },
             _ => {}
         }
     }

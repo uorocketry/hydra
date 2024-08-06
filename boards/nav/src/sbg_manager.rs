@@ -42,7 +42,7 @@ pub struct SBGManager {
             StreamX<stm32h7xx_hal::pac::DMA1, 0>,
             Rx<stm32h7xx_hal::pac::UART4>,
             stm32h7xx_hal::dma::PeripheralToMemory,
-            MaybeUninit<[u8;SBG_BUFFER_SIZE]>,
+            MaybeUninit<[u8; SBG_BUFFER_SIZE]>,
             stm32h7xx_hal::dma::DBTransfer,
         >,
     >,
@@ -66,23 +66,29 @@ impl SBGManager {
         let (sbg_tx, sbg_rx) = serial.split();
 
         // TODO: This could be wrong. It's a bit of a guess.
-        let sbg_buffer: &'static mut [u8; SBG_BUFFER_SIZE] = {
-            let buf: &mut [MaybeUninit<u8>; SBG_BUFFER_SIZE] =
-                unsafe { &mut *(core::ptr::addr_of_mut!(SBG_BUFFER) as *mut _) };
-            for (i, value) in buf.iter_mut().enumerate() {
-                unsafe { value.as_mut_ptr().write(i as u8) };
-            }
-            unsafe { SBG_BUFFER.assume_init_mut() }
-        };
+        // let sbg_buffer: &'static mut [u8; SBG_BUFFER_SIZE] = {
+        //     let buf: &mut [MaybeUninit<u8>; SBG_BUFFER_SIZE] =
+        //         unsafe { &mut *(core::ptr::addr_of_mut!(SBG_BUFFER) as *mut _) };
+        //     for (i, value) in buf.iter_mut().enumerate() {
+        //         unsafe { value.as_mut_ptr().write(i as u8) };
+        //     }
+        //     unsafe { SBG_BUFFER.assume_init_mut() }
+        // };
 
         let config = DmaConfig::default().memory_increment(true);
         let transfer: Transfer<
             StreamX<stm32h7xx_hal::pac::DMA1, 0>,
             Rx<stm32h7xx_hal::pac::UART4>,
-            stm32h7xx_hal::dma::PeripheralToMemory,
-            &mut [u8],
+            PeripheralToMemory,
+            MaybeUninit<[u8; SBG_BUFFER_SIZE]>,
             stm32h7xx_hal::dma::DBTransfer,
-        > = Transfer::init(stream_tuple.0, sbg_rx, &mut sbg_buffer[..], None, config);
+        > = Transfer::init(
+            stream_tuple.0,
+            sbg_rx,
+            unsafe { (*core::ptr::addr_of_mut!(TARGET_BUFFER)).assume_init_mut() }, // Uninitialised memory
+            None,
+            config,
+        );
 
         transfer.start(|serial| {
             serial.enable_dma_rx();
@@ -164,7 +170,7 @@ pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
     let sbg = cx.local.sbg_manager;
 
     match &mut sbg.xfer {
-        Some(xfer) => if xfer.complete() {},
+        Some(xfer) => if xfer.get_transfer_complete_flag(){},
         None => {
             // it should be impossible to reach here.
             info!("None");

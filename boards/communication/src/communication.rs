@@ -5,14 +5,14 @@ use atsamd_hal::clock::v2::ahb::AhbClk;
 use atsamd_hal::clock::v2::gclk::{Gclk0Id, Gclk1Id};
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::pclk::PclkToken;
-use atsamd_hal::clock::v2::types::Can0;
+use atsamd_hal::clock::v2::types::{Can0, Can1};
 use atsamd_hal::clock::v2::Source;
-use atsamd_hal::gpio::PA08;
+use atsamd_hal::gpio::{AlternateH, H, PA08, PB14, PB15};
 use atsamd_hal::gpio::PA09;
 use atsamd_hal::gpio::{
     Alternate, AlternateI, Disabled, Floating, Pin, I, PA12, PA13, PA22, PA23, PB16, PB17,
 };
-use atsamd_hal::pac::CAN0;
+use atsamd_hal::pac::{CAN0, CAN1};
 use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM0;
 use atsamd_hal::pac::SERCOM2;
@@ -63,6 +63,18 @@ impl mcan::messageram::Capacities for Capacities {
     type DedicatedTxBuffers = U0;
     type TxEventFifo = U32;
 }
+
+// macro_rules! create_filter {
+//     ($can:expr, $action:expr, $sender:expr) => {
+//         $can.filters_standard()
+//             .push(Filter::Classic {
+//                 action: $action,
+//                 filter: ecan::StandardId::new($sender.into()).unwrap(),
+//                 mask: ecan::StandardId::ZERO,
+//             })
+//             .unwrap_or_else(|_| panic!("Filter Error"));
+//     };
+// }
 
 pub struct CanDevice0 {
     pub can: Can<
@@ -158,9 +170,7 @@ impl CanDevice0 {
             })
             .unwrap_or_else(|_| panic!("Ground Station filter"));
         
-        // info!("Can Device 0 initialized");
         let can = can.finalize().unwrap();
-        // info!("Can Device 0 finalized");
         (
             CanDevice0 {
                 can,
@@ -218,6 +228,165 @@ impl CanDevice0 {
         }
     }
 }
+
+// So I really am not a fan of this can device 0 and can device 1, I think it would be better to have a single generic can manager 
+// that can also take a list of filters and apply them. 
+
+pub struct CanCommandManager {
+    pub can: Can<
+        'static,
+        Can1,
+        Dependencies<Can1, Gclk0Id, Pin<PB15, Alternate<H>>, Pin<PB14, Alternate<H>>, CAN1>,
+        Capacities,
+    >,
+    line_interrupts: OwnedInterruptSet<Can1, EnabledLine0>,
+}
+
+impl CanCommandManager {
+    pub fn new<S>(
+        can_rx: Pin<PB15, AlternateH>,
+        can_tx: Pin<PB14, AlternateH>,
+        pclk_can: Pclk<Can1, Gclk0Id>,
+        ahb_clock: AhbClk<Can1>,
+        peripheral: CAN1,
+        gclk0: S,
+        can_memory: &'static mut SharedMemory<Capacities>,
+        loopback: bool,
+    ) -> (Self, S::Inc)
+    where
+        S: Source<Id = Gclk0Id> + Increment,
+    {
+        let (can_dependencies, gclk0) =
+            Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
+
+        let mut can =
+            mcan::bus::CanConfigurable::new(fugit::RateExtU32::kHz(200), can_dependencies, can_memory).unwrap();
+        can.config().mode = Mode::Fd {
+            allow_bit_rate_switching: false,
+            data_phase_timing: BitTiming::new(fugit::RateExtU32::kHz(500)),
+        };
+
+        if loopback {
+            can.config().loopback = true;
+        }
+
+        let interrupts_to_be_enabled = can
+            .interrupts()
+            .split(
+                [
+                    Interrupt::RxFifo0NewMessage,
+                    Interrupt::RxFifo0Full,
+                    // Interrupt::RxFifo0MessageLost,
+                    Interrupt::RxFifo1NewMessage,
+                    Interrupt::RxFifo1Full,
+                    // Interrupt::RxFifo1MessageLost, 
+                ]
+                .into_iter()
+                .collect(),
+            )
+            .unwrap();
+
+        // Line 0 and 1 are connected to the same interrupt line
+        let line_interrupts = can
+            .interrupt_configuration()
+            .enable_line_0(interrupts_to_be_enabled);
+
+        can.filters_standard()
+            .push(Filter::Classic {
+                action: Action::StoreFifo0,
+                filter: ecan::StandardId::new(messages::sender::Sender::RecoveryBoard.into())
+                    .unwrap(),
+                mask: ecan::StandardId::ZERO,
+            })
+            .unwrap_or_else(|_| panic!("Recovery filter"));
+
+        can.filters_standard()
+            .push(Filter::Classic {
+                action: Action::StoreFifo1,
+                filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
+                    .unwrap(),
+                mask: ecan::StandardId::ZERO,
+            })
+            .unwrap_or_else(|_| panic!("Sensor filter"));
+
+        can.filters_standard()
+            .push(Filter::Classic {
+                action: Action::StoreFifo0,
+                filter: ecan::StandardId::new(messages::sender::Sender::PowerBoard.into()).unwrap(),
+                mask: ecan::StandardId::ZERO,
+            })
+            .unwrap_or_else(|_| panic!("Power filter"));
+
+        can.filters_standard()
+            .push(Filter::Classic {
+                action: Action::StoreFifo0,
+                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into())
+                    .unwrap(),
+                mask: ecan::StandardId::ZERO,
+            })
+            .unwrap_or_else(|_| panic!("Ground Station filter"));
+        
+        let can = can.finalize().unwrap();
+        (
+            CanCommandManager {
+                can,
+                line_interrupts,
+            },
+            gclk0,
+        )
+    }
+    pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
+        let payload: Vec<u8, 64> = postcard::to_vec(&m)?;
+        self.can.tx.transmit_queued(
+            tx::MessageBuilder {
+                id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
+                frame_type: tx::FrameType::FlexibleDatarate {
+                    payload: &payload[..],
+                    bit_rate_switching: false,
+                    force_error_state_indicator: false,
+                },
+                store_tx_event: None,
+            }
+            .build()?,
+        )?;
+        Ok(())
+    }
+    pub fn process_data(&mut self, data_manager: &mut DataManager) {
+        let line_interrupts = &self.line_interrupts;
+        for interrupt in line_interrupts.iter_flagged() {
+            match interrupt {
+                Interrupt::RxFifo0NewMessage => {
+                    for message in &mut self.can.rx_fifo_0 {
+                        match from_bytes::<Message>(message.data()) {
+                            Ok(data) => {
+                                data_manager.handle_command(data);
+                            }
+                            Err(_) => {
+                                // error!("Error, ErrorContext::UnkownCanMessage");
+                            }
+                        }
+                    }
+                }
+                Interrupt::RxFifo1NewMessage => {
+                    for message in &mut self.can.rx_fifo_1 {
+                        match from_bytes::<Message>(message.data()) {
+                            Ok(data) => {
+                                data_manager.handle_command(data);
+                            }
+                            Err(_) => {
+                                // error!("Error, ErrorContext::UnkownCanMessage");
+                            }
+                        }
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+}
+
+
+
 
 pub struct RadioDevice {
     transmitter: Uart<GroundStationUartConfig, TxDuplex>,
