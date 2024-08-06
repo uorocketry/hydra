@@ -1,3 +1,4 @@
+use defmt::info;
 use messages::command::RadioRate;
 use messages::state::StateData;
 use messages::Message;
@@ -75,6 +76,7 @@ impl DataManager {
         [self.state.clone()]
     }
     pub fn handle_command(&mut self, command: Message) {
+        info!("Handling command");
         match command.data {
             messages::Data::Command(command) => match command.data {
                 messages::command::CommandData::RadioRateChange(command_data) => {

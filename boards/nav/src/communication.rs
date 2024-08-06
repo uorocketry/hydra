@@ -1,27 +1,36 @@
-use stm32h7xx_hal as hal;
-use stm32h7xx_hal::prelude::*;
-use fdcan::{
-    Transmit, Receive,
-   config::NominalBitTiming, filter::{StandardFilter, StandardFilterSlot}, frame::{FrameFormat, TxFrameHeader}, id::StandardId, FdCan, Instance
-};
+use crate::data_manager::DataManager;
 use crate::types::COM_ID;
-use messages::Message;
-use postcard::from_bytes;
 use common_arm::HydraError;
 use defmt::info;
-use crate::data_manager::DataManager;
+use fdcan::{
+    config::NominalBitTiming,
+    filter::{StandardFilter, StandardFilterSlot},
+    frame::{FrameFormat, TxFrameHeader},
+    id::StandardId,
+    FdCan, Instance, Receive, Transmit,
+};
+use messages::Message;
+use postcard::from_bytes;
+use stm32h7xx_hal as hal;
+use stm32h7xx_hal::prelude::*;
 
 /// Clock configuration is out of scope for this builder
-/// easiest way to avoid alloc is to use no generics 
+/// easiest way to avoid alloc is to use no generics
 pub struct CanDevice {
-    can: fdcan::FdCan<stm32h7xx_hal::can::Can<stm32h7xx_hal::pac::FDCAN2>, fdcan::NormalOperationMode> ,
+    can: fdcan::FdCan<
+        stm32h7xx_hal::can::Can<stm32h7xx_hal::pac::FDCAN2>,
+        fdcan::NormalOperationMode,
+    >,
 }
 
 impl CanDevice {
-    pub fn new(can:fdcan::FdCan<stm32h7xx_hal::can::Can<stm32h7xx_hal::pac::FDCAN2>, fdcan::NormalOperationMode> ) -> Self {
-        Self {
-            can,
-        }
+    pub fn new(
+        can: fdcan::FdCan<
+            stm32h7xx_hal::can::Can<stm32h7xx_hal::pac::FDCAN2>,
+            fdcan::NormalOperationMode,
+        >,
+    ) -> Self {
+        Self { can }
     }
     pub fn send_message(&mut self, m: Message) -> Result<(), HydraError> {
         let mut buf = [0u8; 64];

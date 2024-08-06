@@ -11,7 +11,18 @@
             "chip": "ATSAME51J18A",
             "coreConfigs": [
                 {
-                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/recovery",
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/recovery",
+                }
+            ]
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "attach",
+            "name": "Probe-rs attach nav (Debug)",
+            "chip": "STM32H733VGTx",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/nav",
                 }
             ]
         },
@@ -39,6 +50,11 @@
             "request": "launch",
             "name": "Probe-rs Debug nav (Debug)",
             "chip": "STM32H733VGTx",
+            "flashingConfig": {
+                "haltAfterReset": true,
+                // "flashingEnabled": true,
+                
+            },
             "coreConfigs": [
                 {
                     "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/nav",

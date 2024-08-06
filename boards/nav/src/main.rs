@@ -1,11 +1,13 @@
 #![no_std]
 #![no_main]
 
-mod data_manager;
-mod sbg_manager;
-mod types;
 mod communication;
+mod data_manager;
+// mod sbg_manager;
+mod types;
 
+use types::COM_ID;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use common_arm::*;
 use core::num::{NonZeroU16, NonZeroU8};
 use data_manager::DataManager;
@@ -16,11 +18,13 @@ use fdcan::{
     frame::{FrameFormat, TxFrameHeader},
     id::StandardId,
 };
-use chrono::NaiveDate;
-use stm32h7xx_hal::prelude::*;
+use messages::Data;
+use fugit::RateExtU32;
+use heapless::Vec;
+// use sbg_manager::{sbg_dma, sbg_flush, sbg_get_time, sbg_handle_data, sbg_write_data};
 use sbg_rs::sbg::CallbackData;
 use sbg_rs::sbg::SBG_BUFFER_SIZE;
-use fugit::RateExtU32;
+use stm32h7xx_hal::dma::dma::StreamsTuple;
 use stm32h7xx_hal::gpio::gpioa::{PA1, PA2, PA3, PA4};
 use stm32h7xx_hal::gpio::gpioc::{PC13, PC3};
 use stm32h7xx_hal::gpio::Input;
@@ -28,22 +32,40 @@ use stm32h7xx_hal::gpio::Speed;
 use stm32h7xx_hal::gpio::{Output, PushPull};
 use stm32h7xx_hal::pac;
 use stm32h7xx_hal::prelude::*;
+use stm32h7xx_hal::prelude::*;
+use stm32h7xx_hal::rtc;
 use stm32h7xx_hal::spi;
 use stm32h7xx_hal::{rcc, rcc::rec};
 use systick_monotonic::*;
+use cortex_m::{asm, interrupt::Mutex};
+use core::cell::RefCell;
 use types::SBGSerial;
-use heapless::Vec;
-use stm32h7xx_hal::rtc::Rtc;
-use stm32h7xx_hal::dma::dma::StreamsTuple;
-// use panic_halt as _;
-#[panic_handler]
-fn panic(info: &core::panic::PanicInfo) -> ! {
-    stm32h7xx_hal::pac::SCB::sys_reset()
+use panic_probe as _;
+use defmt_rtt as _; // global logger
+
+#[inline(never)]
+#[defmt::panic_handler]
+fn panic() -> ! {
+    cortex_m::asm::udf()
 }
 
-#[rtic::app(device = stm32h7xx_hal::stm32, dispatchers = [EXTI0, EXTI1])]
+/// Hardfault handler.
+///
+/// Terminates the application and makes a semihosting-capable debug tool exit
+/// with an error. This seems better than the default, which is to spin in a
+/// loop.
+#[cortex_m_rt::exception]
+unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
+    loop {}
+}
+static RTC: Mutex<RefCell<Option<rtc::Rtc>>> = Mutex::new(RefCell::new(None));
+
+#[rtic::app(device = stm32h7xx_hal::stm32, dispatchers = [SPI1, SPI2, SPI3])]
 mod app {
-    use stm32h7xx_hal::{gpio::{Alternate, Pin}, pac::SPI1};
+    use stm32h7xx_hal::{
+        gpio::{Alternate, Pin},
+        pac::SPI1,
+    };
 
     use super::*;
 
@@ -51,15 +73,17 @@ mod app {
     struct SharedResources {
         data_manager: DataManager,
         em: ErrorManager,
-        sd_manager:
-            SdManager<stm32h7xx_hal::spi::Spi<stm32h7xx_hal::pac::SPI1, stm32h7xx_hal::spi::Enabled>, PA4<Output<PushPull>>>,
-        rtc: Rtc,
+        // sd_manager: SdManager<
+        //     stm32h7xx_hal::spi::Spi<stm32h7xx_hal::pac::SPI1, stm32h7xx_hal::spi::Enabled>,
+        //     PA4<Output<PushPull>>,
+        // >,
+        // rtc: Rtc,
+        // sbg_manager: sbg_manager::SBGManager,
     }
     #[local]
     struct LocalResources {
         led_red: PA2<Output<PushPull>>,
         led_green: PA3<Output<PushPull>>,
-        sbg_manager: sbg_manager::SBGManager,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -68,6 +92,9 @@ mod app {
     #[init]
     fn init(mut ctx: init::Context) -> (SharedResources, LocalResources, init::Monotonics) {
         let core = ctx.core;
+
+        /* Logging Setup */
+        HydraLogging::set_ground_station_callback(queue_gs_message);
 
         let pwr = ctx.device.PWR.constrain();
         // We could use smps, but the board is not designed for it
@@ -112,14 +139,17 @@ mod app {
         // c0.enable();
 
         info!("PWM enabled");
-        // assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 24_000_000); waaat 
+        // assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 24_000_000); waaat
         info!("PLL1Q:");
         let fdcan_prec = ccdr
             .peripheral
             .FDCAN
             .kernel_clk_mux(rec::FdcanClkSel::Pll1Q);
 
-        let can1: fdcan::FdCan<stm32h7xx_hal::can::Can<stm32h7xx_hal::pac::FDCAN2>, fdcan::ConfigMode> = {
+        let can1: fdcan::FdCan<
+            stm32h7xx_hal::can::Can<stm32h7xx_hal::pac::FDCAN2>,
+            fdcan::ConfigMode,
+        > = {
             let rx = gpiob.pb12.into_alternate().speed(Speed::VeryHigh);
             let tx = gpiob.pb13.into_alternate().speed(Speed::VeryHigh);
             ctx.device.FDCAN2.fdcan(tx, rx, fdcan_prec)
@@ -153,27 +183,28 @@ mod app {
 
         let cs_sd = gpioa.pa4.into_push_pull_output();
 
-        let mut sd = SdManager::new(spi_sd, cs_sd);
+        // let mut sd = SdManager::new(spi_sd, cs_sd);
 
         // leds
         let mut led_red = gpioa.pa2.into_push_pull_output();
         let mut led_green = gpioa.pa3.into_push_pull_output();
 
-        // sbg power pin 
+        // sbg power pin
         let mut sbg_power = gpiob.pb4.into_push_pull_output();
         sbg_power.set_high();
 
         // UART for sbg
         let tx: Pin<'D', 1, Alternate<8>> = gpiod.pd1.into_alternate();
-        let rx: Pin<'D', 0, Alternate<8>>  = gpiod.pd0.into_alternate();
+        let rx: Pin<'D', 0, Alternate<8>> = gpiod.pd0.into_alternate();
 
-        let stream_tuple = StreamsTuple::new(ctx.device.DMA1, ccdr.peripheral.DMA1);
-        let uart_sbg = ctx
-        .device
-        .UART4
-        .serial((tx, rx), 9_800.bps(), ccdr.peripheral.UART4, &ccdr.clocks)
-        .unwrap();
-        let sbg_manager = sbg_manager::SBGManager::new(uart_sbg, stream_tuple);
+        // let stream_tuple = StreamsTuple::new(ctx.device.DMA1, ccdr.peripheral.DMA1);
+        // let mut uart_sbg = ctx
+        //     .device
+        //     .UART4
+        //     .serial((tx, rx), 115_200.bps(), ccdr.peripheral.UART4, &ccdr.clocks)
+        //     .unwrap();
+
+        // let sbg_manager = sbg_manager::SBGManager::new(uart_sbg, stream_tuple);
         // let serial = ctx
         //     .device
         //     .UART4
@@ -187,27 +218,24 @@ mod app {
             stm32h7xx_hal::rtc::RtcClock::Lsi,
             &ccdr.clocks,
         );
-    
+
         // TODO: Get current time from some source
         let now = NaiveDate::from_ymd_opt(2001, 1, 1)
             .unwrap()
             .and_hms_opt(0, 0, 0)
             .unwrap();
-    
-        rtc.set_date_time(now);
-        rtc.enable_wakeup(10);
-        rtc.listen(&mut ctx.device.EXTI, stm32h7xx_hal::rtc::Event::Wakeup);
-    
-        unsafe {
-            pac::NVIC::unmask(pac::interrupt::RTC_WKUP);
-        }
-    
-        info!("Time: {}", rtc.date_time().unwrap().and_utc().timestamp_subsec_millis());
 
-        blink::spawn().ok();
+        rtc.set_date_time(now);
+
+        cortex_m::interrupt::free(|cs| {
+            RTC.borrow(cs).replace(Some(rtc));
+        });
+
 
         /* Monotonic clock */
-        let mono = Systick::new(core.SYST, ccdr.clocks.hclk().raw());
+        let mono = Systick::new(core.SYST, ccdr.clocks.sysclk().to_Hz());
+        blink::spawn().ok();
+        display_data::spawn().ok();
 
         info!("Online");
 
@@ -215,14 +243,11 @@ mod app {
             SharedResources {
                 data_manager: DataManager::new(),
                 em: ErrorManager::new(),
-                sd_manager: sd,
-                rtc,
+                // sd_manager: sd,
+                // sbg_manager,
+                // rtc,
             },
-            LocalResources {
-                led_red,
-                led_green,
-                sbg_manager: sbg_manager,
-            },
+            LocalResources { led_red, led_green },
             init::Monotonics(mono),
         )
     }
@@ -230,22 +255,48 @@ mod app {
     #[idle]
     fn idle(mut ctx: idle::Context) -> ! {
         loop {
-            cortex_m::asm::nop(); // do nothing. just keep the MCU running
         }
     }
 
-    #[task(local = [led_red, led_green], shared = [&em,rtc])]
+    #[task(shared = [&em, data_manager])]
+    fn display_data(mut cx: display_data::Context) {
+        let data = cx.shared.data_manager.lock(|manager| manager.clone_sensors());
+        info!("{:?}", data);
+        spawn_after!(display_data, ExtU64::secs(1)).ok();
+    }
+
+    /// Receives a log message from the custom logger so that it can be sent over the radio.
+    pub fn queue_gs_message(d: impl Into<Data>) {
+        let message = messages::Message::new(
+            cortex_m::interrupt::free(|cs| {
+                let mut rc = RTC.borrow(cs).borrow_mut();
+                let rtc = rc.as_mut().unwrap();
+                rtc.date_time()
+                    .unwrap_or(NaiveDateTime::new(
+                        NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                        NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
+                    ))
+                    .and_utc()
+                    .timestamp_subsec_millis()
+            }),
+            COM_ID,
+            d.into(),
+        );
+        info!("{:?}", message);
+        // send_in::spawn(message).ok();
+    }
+
+    #[task(local = [led_red, led_green], shared = [&em])]
     fn blink(mut cx: blink::Context) {
+        info!("Blinking");
         cx.shared.em.run(|| {
             if cx.shared.em.has_error() {
                 cx.local.led_red.toggle();
+                info!("Error");
                 spawn_after!(blink, ExtU64::millis(200))?;
             } else {
                 cx.local.led_green.toggle();
                 info!("Blinking");
-                cx.shared.rtc.lock(|rtc| {
-                    info!("Time: {}", rtc.date_time().unwrap().and_utc().timestamp_subsec_millis());
-                });
                 spawn_after!(blink, ExtU64::secs(1))?;
             }
             Ok(())
@@ -257,23 +308,23 @@ mod app {
         // Turn off the SBG and CAN
     }
 
-    extern "Rust" {
-        #[task(capacity = 3, shared = [&em, sd_manager])]
-        fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
+    // extern "Rust" {
+    //     // #[task(capacity = 3, shared = [&em, sd_manager])]
+    //     // fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
 
-        #[task(binds = DMA1_STR0, shared = [&em], local = [sbg_manager])]
-        fn sbg_dma(context: sbg_dma::Context);
+    //     #[task(binds = DMA1_STR1, shared = [&em, sbg_manager])]
+    //     fn sbg_dma(mut context: sbg_dma::Context);
 
-        #[task(capacity = 20, shared = [data_manager])]
-        fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
+    //     #[task(capacity = 10, shared = [data_manager])]
+    //     fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
 
-        #[task(shared = [rtc, &em])]
-        fn sbg_get_time(context: sbg_get_time::Context);
+    //     // #[task(shared = [ &em])]
+    //     // fn sbg_get_time(context: sbg_get_time::Context);
 
-        #[task()]
-        fn sbg_flush(context: sbg_flush::Context);
+    //     #[task(shared = [&em, sbg_manager])]
+    //     fn sbg_flush(context: sbg_flush::Context);
 
-        #[task(shared = [&em])]
-        fn sbg_write_data(context: sbg_write_data::Context, data: Vec<u8, SBG_BUFFER_SIZE>);
-    }
+    //     #[task(shared = [&em, sbg_manager])]
+    //     fn sbg_write_data(context: sbg_write_data::Context, data: Vec<u8, SBG_BUFFER_SIZE>);
+    // }
 }

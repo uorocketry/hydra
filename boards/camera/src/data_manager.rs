@@ -64,7 +64,7 @@ impl DataManager {
             Some(air) => match air.altitude {
                 Some(altitude) => altitude > HEIGHT_MIN,
                 None => false,
-            }
+            },
             None => false,
         }
     }
@@ -105,8 +105,8 @@ impl DataManager {
         match self.air.as_ref() {
             Some(air) => match air.altitude {
                 Some(altitude) => altitude < MAIN_HEIGHT,
-                None => false
-            }
+                None => false,
+            },
             None => false,
         }
     }

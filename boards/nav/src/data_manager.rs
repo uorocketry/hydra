@@ -1,6 +1,7 @@
 use common_arm::{spawn, HydraError};
 use messages::sensor::{
-    Air, EkfNav1, EkfNav2, EkfNavAcc, EkfQuat, GpsPos1, GpsPos2, GpsPosAcc, GpsVel, GpsVelAcc, Imu1, Imu2, SensorData, UtcTime
+    Air, EkfNav1, EkfNav2, EkfNavAcc, EkfQuat, GpsPos1, GpsPos2, GpsPosAcc, GpsVel, GpsVelAcc,
+    Imu1, Imu2, SensorData, UtcTime,
 };
 use messages::Message;
 
@@ -28,6 +29,7 @@ impl DataManager {
         }
     }
 
+    // TODO: stop cloning so much this is a waste of resources.
     pub fn clone_sensors(&self) -> [Option<SensorData>; 11] {
         [
             self.air.clone().map(|x| x.into()),
@@ -38,7 +40,7 @@ impl DataManager {
             self.imu.clone().map(|x| x.1.into()),
             self.utc_time.clone().map(|x| x.into()),
             self.gps_vel.clone().map(|x| x.0.into()),
-            self.gps_vel_acc.clone().map(|x| x.1.into()),
+            self.gps_vel.clone().map(|x| x.1.into()),
             self.gps_pos.clone().map(|x| x.0.into()),
             self.gps_pos.clone().map(|x| x.1.into()),
         ]

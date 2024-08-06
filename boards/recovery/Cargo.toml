@@ -20,5 +20,6 @@ messages = { path = "../../libraries/messages" }
 typenum = "1.16.0"
 enum_dispatch = "0.3.11"
 ms5611-01ba = { git = "https://github.com/NoahSprenger/ms5611-01ba", branch = "embedded-hal-02" }
-
+defmt-rtt = "0.4"
+panic-probe = { version = "0.3", features = ["print-defmt"] }
 embedded-hal = "0.2.7"

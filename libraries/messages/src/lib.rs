@@ -11,7 +11,6 @@ use crate::sender::Sender;
 use crate::sensor::Sensor;
 use crate::state::State;
 use derive_more::From;
-use fugit::Instant;
 /// This is to help control versions.
 pub use mavlink;
 use messages_proc_macros_lib::common_derives;
@@ -55,11 +54,7 @@ pub enum Data {
 }
 
 impl Message {
-    pub fn new(
-        timestamp: u32,
-        sender: Sender,
-        data: impl Into<Data>,
-    ) -> Self {
+    pub fn new(timestamp: u32, sender: Sender, data: impl Into<Data>) -> Self {
         Message {
             timestamp: timestamp,
             sender,

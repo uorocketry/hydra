@@ -4,16 +4,19 @@ use core::ffi::c_void;
 use core::mem::size_of;
 use core::ptr;
 // use atsamd_hal::time::*;
+use crate::app::sbg_dma;
 use crate::app::sbg_flush;
-use crate::app::sbg_get_time;
 use crate::app::sbg_handle_data;
-use crate::app::sbg_sd_task as sbg_sd;
+// use crate::app::sbg_sd_task as sbg_sd;
 use crate::app::sbg_write_data;
+use crate::RTC;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use common_arm::spawn;
 use core::{mem, mem::MaybeUninit};
 use defmt::info;
 use embedded_alloc::Heap;
-use rtic::Mutex;
+use heapless::Vec;
+use messages::mavlink::embedded::Write;
 use sbg_rs::sbg;
 use sbg_rs::sbg::{CallbackData, SBG, SBG_BUFFER_SIZE};
 use stm32h7xx_hal::dma::dma::StreamX;
@@ -23,8 +26,11 @@ use stm32h7xx_hal::dma::{
 };
 use stm32h7xx_hal::gpio::Alternate;
 use stm32h7xx_hal::gpio::Pin;
+use stm32h7xx_hal::pac::UART4;
 use stm32h7xx_hal::rtc::Rtc;
-use stm32h7xx_hal::serial::Rx;
+use stm32h7xx_hal::serial::{Rx, Tx};
+// use cortex_m::{asm};
+use rtic::Mutex;
 
 //#[link_section = ".axisram.buffers"]
 //static mut SBG_BUFFER: MayberUninit<[u8; SBG_BUFFER_SIZE]> = MaybeUninit::uninit();
@@ -39,13 +45,14 @@ pub struct SBGManager {
     sbg_device: SBG,
     xfer: Option<
         Transfer<
-            StreamX<stm32h7xx_hal::pac::DMA1, 0>,
+            StreamX<stm32h7xx_hal::pac::DMA1, 1>,
             Rx<stm32h7xx_hal::pac::UART4>,
             stm32h7xx_hal::dma::PeripheralToMemory,
-            MaybeUninit<[u8; SBG_BUFFER_SIZE]>,
+            &'static mut [u8; SBG_BUFFER_SIZE],
             stm32h7xx_hal::dma::DBTransfer,
         >,
     >,
+    sbg_tx: Tx<UART4>,
 }
 
 impl SBGManager {
@@ -75,24 +82,24 @@ impl SBGManager {
         //     unsafe { SBG_BUFFER.assume_init_mut() }
         // };
 
-        let config = DmaConfig::default().memory_increment(true);
-        let transfer: Transfer<
-            StreamX<stm32h7xx_hal::pac::DMA1, 0>,
+        let config = DmaConfig::default().memory_increment(true).transfer_complete_interrupt(true);
+        let mut transfer: Transfer<
+            StreamX<stm32h7xx_hal::pac::DMA1, 1>,
             Rx<stm32h7xx_hal::pac::UART4>,
             PeripheralToMemory,
-            MaybeUninit<[u8; SBG_BUFFER_SIZE]>,
+            &mut [u8; SBG_BUFFER_SIZE],
             stm32h7xx_hal::dma::DBTransfer,
         > = Transfer::init(
-            stream_tuple.0,
+            stream_tuple.1,
             sbg_rx,
-            unsafe { (*core::ptr::addr_of_mut!(TARGET_BUFFER)).assume_init_mut() }, // Uninitialised memory
+            unsafe { SBG_BUFFER.assume_init_mut() }, // Uninitialised memory
             None,
             config,
         );
 
-        transfer.start(|serial| {
-            serial.enable_dma_rx();
-        });
+        // transfer.start(|serial| {
+        //     serial.enable_dma_rx();
+        // });
 
         let sbg: sbg::SBG = sbg::SBG::new(
             |data| {
@@ -101,7 +108,7 @@ impl SBGManager {
             |data| {
                 sbg_write_data::spawn(data).ok();
             },
-            || sbg_get_time::spawn(),
+            || sbg_get_time(),
             || {
                 sbg_flush::spawn().ok();
             },
@@ -110,27 +117,34 @@ impl SBGManager {
         SBGManager {
             sbg_device: sbg,
             xfer: Some(transfer),
+            sbg_tx,
         }
     }
 }
 
 pub fn sbg_flush(mut cx: sbg_flush::Context) {
-    cx.shared.sbg_manager.lock(|sbg| {
-        sbg.sbg_device.flush();
-    });
+    // cx.shared.sbg_manager.lock(|sbg| {
+    // sbg.sbg_tx
+    // });
 }
-pub fn sbg_write_data(mut cx: sbg_write_data::Context, data: &[u8]) {
+pub fn sbg_write_data(mut cx: sbg_write_data::Context, data: Vec<u8, SBG_BUFFER_SIZE>) {
     cx.shared.sbg_manager.lock(|sbg| {
-        for byte in data {
-            sbg.sbg_device.write(*byte);
-        }
+        sbg.sbg_tx.write_all(data.as_slice());
     });
 }
 
-pub fn sbg_get_time(mut cx: sbg_get_time::Context) -> u32 {
-    cx.shared
-        .rtc
-        .lock(|rtc| rtc.date_time().unwrap().and_utc().timestamp_subsec_millis())
+pub fn sbg_get_time() -> u32 {
+    cortex_m::interrupt::free(|cs| {
+        let mut rc = RTC.borrow(cs).borrow_mut();
+        let rtc = rc.as_mut().unwrap();
+        rtc.date_time()
+            .unwrap_or(NaiveDateTime::new(
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
+            ))
+            .and_utc()
+            .timestamp_subsec_millis()
+    })
 }
 
 pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
@@ -145,37 +159,47 @@ pub fn sbg_handle_data(mut cx: sbg_handle_data::Context, data: CallbackData) {
     });
 }
 
-pub fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]) {
-    cx.shared.sd_manager.lock(|manager| {
-        if let Some(mut file) = manager.file.take() {
-            cx.shared.em.run(|| {
-                manager.write(&mut file, &data)?;
-                Ok(())
-            });
-            manager.file = Some(file); // give the file back after use
-        } else if let Ok(mut file) = manager.open_file("sbg.txt") {
-            cx.shared.em.run(|| {
-                manager.write(&mut file, &data)?;
-                Ok(())
-            });
-            manager.file = Some(file);
-        }
-    });
-}
+// pub fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]) {
+//     cx.shared.sd_manager.lock(|manager| {
+//         if let Some(mut file) = manager.file.take() {
+//             cx.shared.em.run(|| {
+//                 manager.write(&mut file, &data)?;
+//                 Ok(())
+//             });
+//             manager.file = Some(file); // give the file back after use
+//         } else if let Ok(mut file) = manager.open_file("sbg.txt") {
+//             cx.shared.em.run(|| {
+//                 manager.write(&mut file, &data)?;
+//                 Ok(())
+//             });
+//             manager.file = Some(file);
+//         }
+//     });
+// }
 /**
  * Handles the DMA interrupt.
  * Handles the SBG data.
  */
-pub fn sbg_dma(cx: crate::app::sbg_dma::Context) {
-    let sbg = cx.local.sbg_manager;
-
-    match &mut sbg.xfer {
-        Some(xfer) => if xfer.get_transfer_complete_flag(){},
-        None => {
-            // it should be impossible to reach here.
-            info!("None");
+pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
+    info!("DMA");
+    cx.shared.sbg_manager.lock(|sbg| {
+        match &mut sbg.xfer {
+            Some(xfer) => {
+                if xfer.get_transfer_complete_flag() {
+                    let data = unsafe { SBG_BUFFER.assume_init_read() };
+                    xfer.clear_transfer_complete_interrupt();
+                    xfer.next_transfer(
+                        unsafe { (*core::ptr::addr_of_mut!(SBG_BUFFER)).assume_init_mut() }, // Uninitialised memory
+                    );
+                    sbg.sbg_device.read_data(&data);
+                }
+            }
+            None => {
+                // it should be impossible to reach here.
+                info!("None");
+            }
         }
-    }
+    });
 }
 
 /// Stored right before an allocation. Stores information that is needed to deallocate memory.

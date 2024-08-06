@@ -78,7 +78,9 @@ static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefC
 mod app {
 
     use atsamd_hal::clock::v2::gclk::{self, Gclk};
+    use command::{Command, CommandData, RadioRateChange};
     use fugit::RateExtU64;
+    use sender::Sender;
     use state::StateData;
 
     use super::*;
@@ -94,7 +96,8 @@ mod app {
 
     #[local]
     struct Local {
-        led: Pin<PA03, PushPullOutput>,
+        led_green: Pin<PA03, PushPullOutput>,
+        led_red: Pin<PA02, PushPullOutput>,
         // gps_uart: GpsUart,
         // sd_manager: SdManager<
         //     Spi<
@@ -131,7 +134,7 @@ mod app {
         // let dmaChannels = dmac.split();
 
         /* Logging Setup */
-        // HydraLogging::set_ground_station_callback(queue_gs_message);
+        HydraLogging::set_ground_station_callback(queue_gs_message);
 
         /* Clock setup */
         let (_, clocks, tokens) = atsamd_hal::clock::v2::clock_system_at_reset(
@@ -159,7 +162,7 @@ mod app {
             peripherals.CAN0,
             gclk0,
             cx.local.can_memory,
-            true,
+            false,
         );
 
         let (pclk_can_command, gclk0) = Pclk::enable(tokens.pclks.can1, gclk0);
@@ -171,7 +174,7 @@ mod app {
             peripherals.CAN1,
             gclk0,
             cx.local.can_command_memory,
-            true,
+            false,
         );
 
         // setup external osc
@@ -251,18 +254,23 @@ mod app {
         /* Spawn tasks */
         // sensor_send::spawn().ok();
         // state_send::spawn().ok();
-        info!("RTC");
-        let mut rtc = hal::rtc::Rtc::count32_mode(peripherals.RTC, RateExtU32::Hz(1024), &mut mclk);
-        // let mut rtc = rtc_temp.into_count32_mode();
+        let mut rtc = hal::rtc::Rtc::clock_mode(
+            peripherals.RTC,
+            atsamd_hal::fugit::RateExtU32::Hz(1024),
+            &mut mclk,
+        );
+        let mut rtc = rtc.into_count32_mode(); // hal bug this must be done
         rtc.set_count32(0);
-
         cortex_m::interrupt::free(|cs| {
             RTC.borrow(cs).replace(Some(rtc));
         });
-        info!("RTC done");
-        let led = pins.pa03.into_push_pull_output();
+        let mut led_green = pins.pa03.into_push_pull_output();
+        let mut led_red = pins.pa02.into_push_pull_output();
+        led_green.set_low();
+        led_red.set_low();
         blink::spawn().ok();
         generate_random_messages::spawn().ok();
+        generate_random_command::spawn().ok();
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
         // info!("Init done");
@@ -275,7 +283,8 @@ mod app {
                 can_command_manager,
             },
             Local {
-                led,
+                led_green,
+                led_red,
                 // sd_manager,
             },
             init::Monotonics(mono),
@@ -333,7 +342,9 @@ mod app {
     #[task(capacity = 5, shared = [can_command_manager, &em])]
     fn send_command(mut cx: send_command::Context, m: Message) {
         cx.shared.em.run(|| {
-            cx.shared.can_command_manager.lock(|can| can.send_message(m))?;
+            cx.shared
+                .can_command_manager
+                .lock(|can| can.send_message(m))?;
             Ok(())
         });
     }
@@ -438,6 +449,26 @@ mod app {
         spawn!(generate_random_messages).ok();
     }
 
+    #[task(shared = [&em])]
+    fn generate_random_command(cx: generate_random_command::Context) {
+        cx.shared.em.run(|| {
+            let message = Message::new(
+                cortex_m::interrupt::free(|cs| {
+                    let mut rc = RTC.borrow(cs).borrow_mut();
+                    let rtc = rc.as_mut().unwrap();
+                    rtc.count32()
+                }),
+                COM_ID,
+                Command::new(CommandData::PowerDown(command::PowerDown {
+                    board: Sender::BeaconBoard,
+                })),
+            );
+            spawn!(send_command, message)?;
+            Ok(())
+        });
+        spawn!(generate_random_command).ok();
+    }
+
     // #[task(shared = [data_manager, &em])]
     // fn state_send(mut cx: state_send::Context) {
     //     let state_data = cx
@@ -473,13 +504,14 @@ mod app {
      * Simple blink task to test the system.
      * Acts as a heartbeat for the system.
      */
-    #[task(local = [led], shared = [&em])]
+    #[task(local = [led_green, led_red], shared = [&em])]
     fn blink(cx: blink::Context) {
         cx.shared.em.run(|| {
-            cx.local.led.toggle()?;
             if cx.shared.em.has_error() {
+                cx.local.led_red.toggle()?;
                 spawn_after!(blink, ExtU64::millis(200))?;
             } else {
+                cx.local.led_green.toggle()?;
                 spawn_after!(blink, ExtU64::secs(1))?;
             }
             Ok(())

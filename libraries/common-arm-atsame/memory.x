@@ -12,5 +12,9 @@ SECTIONS
   {
     *(.can .can.*);
   } > CAN
+  .can_command (NOLOAD) : 
+  {
+    *(.can_command .can_command.*);
+  } > CAN_COMMAND
 }  
 /* _stack_start is optional and we can define this later */

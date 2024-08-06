@@ -23,6 +23,7 @@ use hal::sercom::uart::Duplex;
 use hal::sercom::uart::{self, EightBit, Uart};
 use hal::sercom::{IoSet1, IoSet6, Sercom5};
 use heapless::Deque;
+use heapless::Vec;
 use messages::sensor::*;
 
 /**
@@ -43,7 +44,7 @@ static mut DEQ: Deque<u8, 4096> = Deque::new();
 
 static mut DATA_CALLBACK: Option<fn(CallbackData)> = None;
 
-static mut SERIAL_WRITE_CALLBACK: Option<fn(&[u8])> = None;
+static mut SERIAL_WRITE_CALLBACK: Option<fn(Vec<u8, SBG_BUFFER_SIZE>)> = None;
 
 static mut RTC_GET_TIME: Option<fn() -> u32> = None;
 
@@ -76,7 +77,7 @@ impl SBG {
      */
     pub fn new(
         callback: fn(CallbackData),
-        serial_write_callback: fn(&[u8]),
+        serial_write_callback: fn(Vec<u8, SBG_BUFFER_SIZE>),
         rtc_get_time: fn() -> u32,
         serial_flush_callback: fn(),
     ) -> Self {
@@ -144,7 +145,7 @@ impl SBG {
     /**
      * Reads SBG data frames for a buffer and returns the most recent data.
      */
-    pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) {
+    pub fn read_data(&mut self, buffer: &[u8; SBG_BUFFER_SIZE]) {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
         // unsafe { BUF = buffer };
@@ -322,18 +323,23 @@ impl SBG {
         // This is safe because we ensure pBuffer is valid, pBuffer is not accessed during the lifetime of this function,
         // and the SBGECom library ensures the buffer given is of the correct size.
         let array: &[u8] = unsafe { from_raw_parts(pBuffer as *const u8, bytesToWrite) };
-        let mut counter: usize = 0;
-        loop {
-            if bytesToWrite == counter {
-                break;
-            }
-            // SAFETY: We are accessing a Uart Peripheral pointer.
-            // This is safe because we ensure that the pointer is not accessed during the lifetime of this function.
-            match unsafe { SERIAL_WRITE_CALLBACK } {
-                Some(callback) => callback(&array[counter..counter + 1]),
-                None => return _SbgErrorCode_SBG_WRITE_ERROR,
-            }
+        let vec = array.iter().copied().collect::<Vec<u8, SBG_BUFFER_SIZE>>();
+        match unsafe { SERIAL_WRITE_CALLBACK } {
+            Some(callback) => callback(vec),
+            None => return _SbgErrorCode_SBG_WRITE_ERROR,
         }
+        // let mut counter: usize = 0;
+        // loop {
+        //     if bytesToWrite == counter {
+        //         break;
+        //     }
+        //     // SAFETY: We are accessing a Uart Peripheral pointer.
+        //     // This is safe because we ensure that the pointer is not accessed during the lifetime of this function.
+        //     match unsafe { SERIAL_WRITE_CALLBACK } {
+        //         Some(callback) => callback(&array[counter..counter + 1]),
+        //         None => return _SbgErrorCode_SBG_WRITE_ERROR,
+        //     }
+        // }
         _SbgErrorCode_SBG_NO_ERROR
     }
 
@@ -482,7 +488,9 @@ pub extern "C" fn sbgGetTime() -> u32 {
     // SAFETY: We are accessing a static mut variable.
     // This is safe because this is the only place where we access the RTC.
     match unsafe { RTC_GET_TIME } {
-        Some(get_time) => get_time(),
+        Some(get_time) => {
+            get_time()
+        }
         None => 0,
     }
 }

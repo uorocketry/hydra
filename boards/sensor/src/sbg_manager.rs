@@ -79,7 +79,7 @@ impl SBGManager {
 
         let sbg: sbg::SBG = sbg::SBG::new(sbg_tx, rtc, |data| {
             sbg_handle_data::spawn(data).ok();
-        }, );
+        });
 
         SBGManager {
             sbg_device: sbg,

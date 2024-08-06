@@ -4,12 +4,12 @@
 use atsamd_hal as hal;
 use atsamd_hal::prelude::*;
 use cortex_m_rt::entry;
+use defmt::println;
 use defmt_rtt as _;
 use hal::gpio::Pins;
 use hal::pac;
 use pac::Peripherals;
 use panic_halt as _;
-use defmt::println;
 
 #[entry]
 fn main() -> ! {

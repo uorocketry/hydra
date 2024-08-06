@@ -31,7 +31,7 @@ pub enum HydraErrorType {
     CanMessageError(mcan::message::TooMuchData),
     /// Error from the MS5611 barometer library.
     BarometerError(DeviceError),
-    NbError(NbError<Infallible>),    
+    NbError(NbError<Infallible>),
 }
 
 impl defmt::Format for HydraErrorType {

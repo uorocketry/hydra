@@ -1,4 +1,4 @@
-use atsamd_hal::gpio::{Pin, PushPullOutput, PA06, PA09, PB11, PB12};
+use atsamd_hal::gpio::{Pin, PushPullOutput, PB11, PB12};
 use atsamd_hal::prelude::*;
 
 pub struct GPIOManager {

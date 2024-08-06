@@ -1,14 +1,13 @@
-use crate::app::monotonics;
 use crate::state_machine::states::descent::Descent;
 use crate::state_machine::states::wait_for_takeoff::WaitForTakeoff;
 use crate::state_machine::{RocketStates, State, StateMachineContext, TransitionInto};
 use crate::types::COM_ID;
+use crate::RTC;
 use crate::{no_transition, transition};
 use defmt::{write, Format, Formatter};
 use messages::command::{Command, RadioRate, RadioRateChange};
 use messages::Message;
 use rtic::mutex::Mutex;
-use crate::RTC;
 
 #[derive(Debug, Clone)]
 pub struct Ascent {}
@@ -19,11 +18,15 @@ impl State for Ascent {
             let radio_rate_change = RadioRateChange {
                 rate: RadioRate::Fast,
             };
-            let message_com =
-                Message::new(cortex_m::interrupt::free(|cs| {
+            let message_com = Message::new(
+                cortex_m::interrupt::free(|cs| {
                     let mut rc = RTC.borrow(cs).borrow_mut();
                     let rtc = rc.as_mut().unwrap();
-                    rtc.count32()}), COM_ID, Command::new(radio_rate_change));
+                    rtc.count32()
+                }),
+                COM_ID,
+                Command::new(radio_rate_change),
+            );
             context.shared_resources.can0.lock(|can| {
                 context.shared_resources.em.run(|| {
                     can.send_message(message_com)?;

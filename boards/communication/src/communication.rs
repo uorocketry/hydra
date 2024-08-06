@@ -7,26 +7,27 @@ use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::{Can0, Can1};
 use atsamd_hal::clock::v2::Source;
-use atsamd_hal::gpio::{AlternateH, H, PA08, PB14, PB15};
 use atsamd_hal::gpio::PA09;
 use atsamd_hal::gpio::{
     Alternate, AlternateI, Disabled, Floating, Pin, I, PA12, PA13, PA22, PA23, PB16, PB17,
 };
-use atsamd_hal::pac::{CAN0, CAN1};
+use atsamd_hal::gpio::{AlternateH, H, PA08, PB14, PB15};
 use atsamd_hal::pac::MCLK;
 use atsamd_hal::pac::SERCOM0;
 use atsamd_hal::pac::SERCOM2;
 use atsamd_hal::pac::SERCOM4;
 use atsamd_hal::pac::SERCOM5;
+use atsamd_hal::pac::{CAN0, CAN1};
 use atsamd_hal::sercom;
 use atsamd_hal::sercom::uart;
 use atsamd_hal::sercom::uart::Uart;
 use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
 use atsamd_hal::typelevel::Increment;
-use common_arm:: HydraError;
+use common_arm::HydraError;
 use common_arm_atsame::mcan;
 use common_arm_atsame::mcan::message::{rx, Raw};
 use common_arm_atsame::mcan::tx_buffers::DynTx;
+use defmt::error;
 use heapless::HistoryBuffer;
 use heapless::Vec;
 use mavlink::embedded::Read;
@@ -103,8 +104,12 @@ impl CanDevice0 {
         let (can_dependencies, gclk0) =
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
-        let mut can =
-            mcan::bus::CanConfigurable::new(fugit::RateExtU32::kHz(200), can_dependencies, can_memory).unwrap();
+        let mut can = mcan::bus::CanConfigurable::new(
+            fugit::RateExtU32::kHz(200),
+            can_dependencies,
+            can_memory,
+        )
+        .unwrap();
         can.config().mode = Mode::Fd {
             allow_bit_rate_switching: false,
             data_phase_timing: BitTiming::new(fugit::RateExtU32::kHz(500)),
@@ -169,7 +174,7 @@ impl CanDevice0 {
                 mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Ground Station filter"));
-        
+
         let can = can.finalize().unwrap();
         (
             CanDevice0 {
@@ -229,8 +234,8 @@ impl CanDevice0 {
     }
 }
 
-// So I really am not a fan of this can device 0 and can device 1, I think it would be better to have a single generic can manager 
-// that can also take a list of filters and apply them. 
+// So I really am not a fan of this can device 0 and can device 1, I think it would be better to have a single generic can manager
+// that can also take a list of filters and apply them.
 
 pub struct CanCommandManager {
     pub can: Can<
@@ -259,8 +264,12 @@ impl CanCommandManager {
         let (can_dependencies, gclk0) =
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
-        let mut can =
-            mcan::bus::CanConfigurable::new(fugit::RateExtU32::kHz(200), can_dependencies, can_memory).unwrap();
+        let mut can = mcan::bus::CanConfigurable::new(
+            fugit::RateExtU32::kHz(200),
+            can_dependencies,
+            can_memory,
+        )
+        .unwrap();
         can.config().mode = Mode::Fd {
             allow_bit_rate_switching: false,
             data_phase_timing: BitTiming::new(fugit::RateExtU32::kHz(500)),
@@ -279,7 +288,7 @@ impl CanCommandManager {
                     // Interrupt::RxFifo0MessageLost,
                     Interrupt::RxFifo1NewMessage,
                     Interrupt::RxFifo1Full,
-                    // Interrupt::RxFifo1MessageLost, 
+                    // Interrupt::RxFifo1MessageLost,
                 ]
                 .into_iter()
                 .collect(),
@@ -325,7 +334,7 @@ impl CanCommandManager {
                 mask: ecan::StandardId::ZERO,
             })
             .unwrap_or_else(|_| panic!("Ground Station filter"));
-        
+
         let can = can.finalize().unwrap();
         (
             CanCommandManager {
@@ -362,7 +371,7 @@ impl CanCommandManager {
                                 data_manager.handle_command(data);
                             }
                             Err(_) => {
-                                // error!("Error, ErrorContext::UnkownCanMessage");
+                                error!("Error, ErrorContext::UnkownCanMessage");
                             }
                         }
                     }
@@ -374,7 +383,7 @@ impl CanCommandManager {
                                 data_manager.handle_command(data);
                             }
                             Err(_) => {
-                                // error!("Error, ErrorContext::UnkownCanMessage");
+                                error!("Error, ErrorContext::UnkownCanMessage");
                             }
                         }
                     }
@@ -385,16 +394,18 @@ impl CanCommandManager {
     }
 }
 
-
-
-
 pub struct RadioDevice {
     transmitter: Uart<GroundStationUartConfig, TxDuplex>,
     receiver: PeekReader<Uart<GroundStationUartConfig, RxDuplex>>,
 }
 
 impl RadioDevice {
-    pub fn new(mut uart: atsamd_hal::sercom::uart::Uart<GroundStationUartConfig, atsamd_hal::sercom::uart::Duplex>) -> Self {
+    pub fn new(
+        mut uart: atsamd_hal::sercom::uart::Uart<
+            GroundStationUartConfig,
+            atsamd_hal::sercom::uart::Duplex,
+        >,
+    ) -> Self {
         let (mut rx, tx) = uart.split();
 
         // setup interrupts
@@ -428,14 +439,15 @@ impl RadioManager {
             component_id: 1,
             sequence: self.increment_mav_sequence(),
         };
-                // Create a fixed-size array and copy the payload into it
+        // Create a fixed-size array and copy the payload into it
         let mut fixed_payload = [0u8; 255];
         let len = payload.len().min(255);
         fixed_payload[..len].copy_from_slice(&payload[..len]);
 
-
         let mav_message = mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(
-            mavlink::uorocketry::POSTCARD_MESSAGE_DATA { message: fixed_payload },
+            mavlink::uorocketry::POSTCARD_MESSAGE_DATA {
+                message: fixed_payload,
+            },
         );
         mavlink::write_versioned_msg(
             &mut self.radio.transmitter,
