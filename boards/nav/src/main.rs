@@ -6,20 +6,22 @@ mod data_manager;
 mod sbg_manager;
 mod types;
 
-use types::COM_ID;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use common_arm::*;
+use core::cell::RefCell;
 use core::num::{NonZeroU16, NonZeroU8};
+use cortex_m::interrupt::Mutex;
 use data_manager::DataManager;
 use defmt::info;
+use defmt_rtt as _;
 use fdcan::{
     config::NominalBitTiming,
     filter::{StandardFilter, StandardFilterSlot},
 };
-use messages::Data;
-use fugit::RateExtU32;
 use heapless::Vec;
-use sbg_manager::{sbg_dma, sbg_flush, sbg_sd_task, sbg_handle_data, sbg_write_data};
+use messages::Data;
+use panic_probe as _;
+use sbg_manager::{sbg_dma, sbg_flush, sbg_handle_data, sbg_sd_task, sbg_write_data};
 use sbg_rs::sbg::CallbackData;
 use sbg_rs::sbg::SBG_BUFFER_SIZE;
 use stm32h7xx_hal::dma::dma::StreamsTuple;
@@ -30,11 +32,10 @@ use stm32h7xx_hal::prelude::*;
 use stm32h7xx_hal::rtc;
 use stm32h7xx_hal::spi;
 use stm32h7xx_hal::{rcc, rcc::rec};
-use systick_monotonic::*;
-use cortex_m::interrupt::Mutex;
-use core::cell::RefCell;
-use panic_probe as _;
-use defmt_rtt as _; // global logger
+use types::COM_ID; // global logger
+use rtic_monotonics::systick::prelude::*;
+
+systick_monotonic!(Mono, 100);
 
 #[inline(never)]
 #[defmt::panic_handler]
@@ -42,19 +43,9 @@ fn panic() -> ! {
     cortex_m::asm::udf()
 }
 
-/// Hardfault handler.
-///
-/// Terminates the application and makes a semihosting-capable debug tool exit
-/// with an error. This seems better than the default, which is to spin in a
-/// loop.
-#[cortex_m_rt::exception]
-unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
-    loop {}
-}
-
 static RTC: Mutex<RefCell<Option<rtc::Rtc>>> = Mutex::new(RefCell::new(None));
 
-#[rtic::app(device = stm32h7xx_hal::stm32, dispatchers = [SPI1, SPI2, SPI3])]
+#[rtic::app(device = stm32h7xx_hal::stm32, peripherals = true, dispatchers = [EXTI0, EXTI1, EXTI2])]
 mod app {
     use stm32h7xx_hal::gpio::{Alternate, Pin};
 
@@ -76,11 +67,8 @@ mod app {
         led_green: PA3<Output<PushPull>>,
     }
 
-    #[monotonic(binds = SysTick, default = true)]
-    type SysMono = Systick<500>; // 100 Hz / 10 ms granularity
-
     #[init]
-    fn init(ctx: init::Context) -> (SharedResources, LocalResources, init::Monotonics) {
+    fn init(ctx: init::Context) -> (SharedResources, LocalResources) {
         let core = ctx.core;
 
         /* Logging Setup */
@@ -98,8 +86,8 @@ mod app {
         let rcc = ctx.device.RCC.constrain();
         info!("RCC enabled");
         let ccdr = rcc
-            .use_hse(48.MHz()) // check the clock hardware 
-            .sys_ck(200.MHz())
+            .use_hse(48.MHz()) // check the clock hardware
+            .sys_ck(100.MHz())
             .pll1_strategy(rcc::PllConfigStrategy::Iterative)
             .pll1_q_ck(24.MHz())
             .freeze(pwrcfg, &ctx.device.SYSCFG);
@@ -173,7 +161,7 @@ mod app {
 
         let cs_sd = gpioa.pa4.into_push_pull_output();
 
-        let sd = SdManager::new(spi_sd, cs_sd);
+        let sd_manager = SdManager::new(spi_sd, cs_sd);
 
         // leds
         let led_red = gpioa.pa2.into_push_pull_output();
@@ -186,6 +174,7 @@ mod app {
         // UART for sbg
         let tx: Pin<'D', 1, Alternate<8>> = gpiod.pd1.into_alternate();
         let rx: Pin<'D', 0, Alternate<8>> = gpiod.pd0.into_alternate();
+    
 
         let stream_tuple = StreamsTuple::new(ctx.device.DMA1, ccdr.peripheral.DMA1);
         let uart_sbg = ctx
@@ -193,7 +182,6 @@ mod app {
             .UART4
             .serial((tx, rx), 115_200.bps(), ccdr.peripheral.UART4, &ccdr.clocks)
             .unwrap();
-
         let sbg_manager = sbg_manager::SBGManager::new(uart_sbg, stream_tuple);
 
         let mut rtc = stm32h7xx_hal::rtc::Rtc::open_or_init(
@@ -215,41 +203,53 @@ mod app {
             RTC.borrow(cs).replace(Some(rtc));
         });
 
-
         /* Monotonic clock */
-        let mono = Systick::new(core.SYST, ccdr.clocks.sysclk().to_Hz());
-        blink::spawn().ok();
-        display_data::spawn().ok();
+        // let mono = Systick::new(core.SYST, ccdr.clocks.sysclk().to_Hz());
+        // blink::spawn().ok();
+        // display_data::spawn().ok();
+        Mono::start(core.SYST, 100_000_000); 
 
         info!("Online");
+        let data_manager = DataManager::new();
+        let em = ErrorManager::new();
+        // let mono_token = rtic_monotonics::create_systick_token!();
+        // let mono = Systick::start(ctx.core.SYST, 36_000_000, mono_token);
+        blink::spawn().ok();
 
         (
             SharedResources {
-                data_manager: DataManager::new(),
-                em: ErrorManager::new(),
-                sd_manager: sd,
+                data_manager,
+                em,
+                sd_manager,
                 sbg_manager,
             },
             LocalResources { led_red, led_green },
-            init::Monotonics(mono),
         )
     }
 
     #[idle]
     fn idle(ctx: idle::Context) -> ! {
         loop {
+            // info!("Idle");
+            cortex_m::asm::wfi();
         }
     }
 
-    #[task(shared = [&em, data_manager])]
-    fn display_data(mut cx: display_data::Context) {
-        let data = cx.shared.data_manager.lock(|manager| manager.clone_sensors());
+    #[task(priority = 2, shared = [&em, data_manager])]
+    async fn display_data(mut cx: display_data::Context) {
+        info!("Displaying data");
+        let data = cx
+            .shared
+            .data_manager
+            .lock(|manager| manager.clone_sensors());
         info!("{:?}", data);
-        spawn_after!(display_data, ExtU64::secs(1)).ok();
+        Mono::delay(1000.millis()).await;
+        // spawn_after!(display_data, ExtU64::secs(1)).ok();
     }
 
     /// Receives a log message from the custom logger so that it can be sent over the radio.
     pub fn queue_gs_message(d: impl Into<Data>) {
+        info!("Queueing message");
         let message = messages::Message::new(
             cortex_m::interrupt::free(|cs| {
                 let mut rc = RTC.borrow(cs).borrow_mut();
@@ -269,42 +269,43 @@ mod app {
         // send_in::spawn(message).ok();
     }
 
-    #[task(local = [led_red, led_green], shared = [&em])]
-    fn blink(cx: blink::Context) {
-        info!("Blinking");
-        cx.shared.em.run(|| {
-            if cx.shared.em.has_error() {
-                cx.local.led_red.toggle();
-                info!("Error");
-                spawn_after!(blink, ExtU64::millis(200))?;
-            } else {
-                cx.local.led_green.toggle();
-                info!("Blinking");
-                spawn_after!(blink, ExtU64::secs(1))?;
-            }
-            Ok(())
-        });
+    #[task(priority = 1, local = [led_red, led_green], shared = [&em])]
+    async fn blink(cx: blink::Context) {
+        loop {
+            info!("Blinking");
+            cx.shared.em.run(|| {
+                if cx.shared.em.has_error() {
+                    cx.local.led_red.toggle();
+                    info!("Error");
+                } else {
+                    cx.local.led_green.toggle();
+                    info!("Blinking");
+                }
+                Ok(())
+            });
+            Mono::delay(1000.millis()).await;
+        }
     }
 
-    #[task(shared = [&em])]
-    fn sleep_system(cx: sleep_system::Context) {
+    #[task(priority = 1, shared = [&em])]
+    async fn sleep_system(cx: sleep_system::Context) {
         // Turn off the SBG and CAN
     }
 
     extern "Rust" {
-        #[task(capacity = 3, shared = [&em, sd_manager])]
-        fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
+        #[task(priority = 1, shared = [&em, sd_manager])]
+        async fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
 
         #[task(priority = 3, binds = DMA1_STR1, shared = [&em, sbg_manager])]
         fn sbg_dma(mut context: sbg_dma::Context);
 
-        #[task(capacity = 10, shared = [data_manager])]
-        fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
+        #[task(priority = 1, shared = [data_manager])]
+        async fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
 
-        #[task(shared = [&em, sbg_manager])]
-        fn sbg_flush(context: sbg_flush::Context);
+        #[task(priority = 1, shared = [&em, sbg_manager])]
+        async fn sbg_flush(context: sbg_flush::Context);
 
-        #[task(shared = [&em, sbg_manager])]
-        fn sbg_write_data(context: sbg_write_data::Context, data: Vec<u8, SBG_BUFFER_SIZE>);
+        #[task(priority = 1, shared = [&em, sbg_manager])]
+        async fn sbg_write_data(context: sbg_write_data::Context, data: Vec<u8, SBG_BUFFER_SIZE>);
     }
 }

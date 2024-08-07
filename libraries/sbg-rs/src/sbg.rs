@@ -11,19 +11,15 @@ use crate::bindings::{
     _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA,
     _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol, _SbgErrorCode, _SbgInterface,
 };
-use atsamd_hal as hal;
 use core::ffi::c_void;
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
-use defmt::{flush, warn};
+use defmt::{flush, debug, info, warn, error};
 use embedded_hal::serial::Write;
-use hal::gpio::{PB02, PB03, PB16, PB17};
-use hal::sercom::uart::Duplex;
-use hal::sercom::uart::{self, EightBit, Uart};
-use hal::sercom::{IoSet1, IoSet6, Sercom5};
 use heapless::Deque;
 use heapless::Vec;
+use core::ffi::CStr;
 use messages::sensor::*;
 
 /**
@@ -81,11 +77,17 @@ impl SBG {
         rtc_get_time: fn() -> u32,
         serial_flush_callback: fn(),
     ) -> Self {
+        unsafe {
+            DATA_CALLBACK = Some(callback);
+            SERIAL_WRITE_CALLBACK = Some(serial_write_callback);
+            RTC_GET_TIME = Some(rtc_get_time);
+            SERIAL_FLUSH_CALLBACK = Some(serial_flush_callback);
+        }
         // SAFETY: We are assigning the RTC instance to a static variable.
         // This is safe because we are the only ones who have access to it.
         let interface = UARTSBGInterface {
             interface: &mut _SbgInterface {
-                handle: null_mut() as *mut c_void, // SAFEY: No idea what I just did.
+                handle: null_mut(), // SAFEY: No idea what I just did.
                 type_: 0,
                 name: [0; 48],
                 pDestroyFunc: Some(SBG::SbgDestroyFunc),
@@ -120,12 +122,7 @@ impl SBG {
             cmdDefaultTimeOut: 500,
         };
 
-        unsafe {
-            DATA_CALLBACK = Some(callback);
-            SERIAL_WRITE_CALLBACK = Some(serial_write_callback);
-            RTC_GET_TIME = Some(rtc_get_time);
-            SERIAL_FLUSH_CALLBACK = Some(serial_flush_callback);
-        }
+
 
         let isInitialized = false;
 
@@ -149,6 +146,7 @@ impl SBG {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
         // unsafe { BUF = buffer };
+        info!("Reading SBG Data");
         for i in buffer {
             unsafe {
                 match DEQ.push_back(*i) {
@@ -450,31 +448,33 @@ unsafe impl Send for SBG {}
  */
 #[no_mangle]
 pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
-    _pFileName: *const ::core::ffi::c_char,
-    _pFunctionName: *const ::core::ffi::c_char,
-    _line: u32,
-    _pCategory: *const ::core::ffi::c_char,
+    pFileName: *const ::core::ffi::c_char,
+    pFunctionName: *const ::core::ffi::c_char,
+    line: u32,
+    pCategory: *const ::core::ffi::c_char,
     logType: _SbgDebugLogType,
-    _errorCode: _SbgErrorCode,
-    _pFormat: *const ::core::ffi::c_char,
+    errorCode: _SbgErrorCode,
+    pFormat: *const ::core::ffi::c_char,
 ) {
-    // if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
-    //     return;
-    // }
+    if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
+        return;
+    }
     // // SAFETY: We are converting a raw pointer to a CStr and then to a str.
     // // This is safe because we check if the pointers are null and
     // // the pointers can only be accessed during the lifetime of this function.
-    // let file = unsafe { CStr::from_ptr(pFileName).to_str().unwrap() };
-    // let function = unsafe { CStr::from_ptr(pFunctionName).to_str().unwrap() };
-    // let _category = unsafe { CStr::from_ptr(pCategory).to_str().unwrap() };
-    // let _format = unsafe { CStr::from_ptr(pFormat).to_str().unwrap() };
+    let file = unsafe { CStr::from_ptr(pFileName).to_str().unwrap() };
+    let function = unsafe { CStr::from_ptr(pFunctionName).to_str().unwrap() };
+    let category = unsafe { CStr::from_ptr(pCategory).to_str().unwrap() };
+    let format = unsafe { CStr::from_ptr(pFormat).to_str().unwrap() };
+
+    info!("{}:{}:{}:{}:{}:{}", file, function, line, category, errorCode, format);
 
     match logType {
         // silently handle errors
-        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
-        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
-        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info "),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug "),
         _ => (),
     };
     flush();
