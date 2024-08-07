@@ -3,15 +3,11 @@ use crate::types::COM_ID;
 use common_arm::HydraError;
 use defmt::info;
 use fdcan::{
-    config::NominalBitTiming,
-    filter::{StandardFilter, StandardFilterSlot},
     frame::{FrameFormat, TxFrameHeader},
     id::StandardId,
-    FdCan, Instance, Receive, Transmit,
 };
 use messages::Message;
 use postcard::from_bytes;
-use stm32h7xx_hal as hal;
 use stm32h7xx_hal::prelude::*;
 
 /// Clock configuration is out of scope for this builder

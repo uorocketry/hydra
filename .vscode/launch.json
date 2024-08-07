@@ -62,6 +62,23 @@
             ]
         },
         {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Probe-rs Release nav",
+            "chip": "STM32H733VGTx",
+            "flashingConfig": {
+                "haltAfterReset": true,
+                "flashingEnabled": true,
+            },
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/nav",
+                    "rttEnabled": true,
+                    "coreIndex": 0,
+                }
+            ]
+        },
+        {
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "openocd",

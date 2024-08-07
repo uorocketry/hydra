@@ -1,4 +1,4 @@
-use common_arm::{spawn, HydraError};
+use common_arm::HydraError;
 use messages::sensor::{
     Air, EkfNav1, EkfNav2, EkfNavAcc, EkfQuat, GpsPos1, GpsPos2, GpsPosAcc, GpsVel, GpsVelAcc,
     Imu1, Imu2, SensorData, UtcTime,

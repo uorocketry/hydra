@@ -40,27 +40,23 @@ features = ["critical-section-single-core"]
 lto = false
 panic = 'abort'
 
-# Only optimize dependencies for size in debug, keeping the top crate debug friendly
-[profile.dev.package."*"]
-opt-level = "s"
-
-[profile.dev.package.sbg-rs]
-opt-level = 0
-debug = true
-
-# Try to remove this 
-[profile.dev.build-override]
-#opt-level = 0 Commenting this may cause issues. 
-debug = true
+# # Try to remove this 
+# [profile.dev.build-override]
+# #opt-level = 0 Commenting this may cause issues. 
+# debug = true
 
 [profile.release]
 codegen-units = 1
 debug = 2
 debug-assertions = false # <-
 incremental = false
-lto = 'thin'
+# lto = 'thin'
 opt-level = 3            # <-
 overflow-checks = false  # <-
+
+[profile.dev.package.sbg-rs]
+opt-level = 0
+debug = true
 
 [profile.release.package.sbg-rs]
 debug = true
