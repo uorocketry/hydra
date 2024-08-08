@@ -91,6 +91,9 @@ impl SBGManager {
             config,
         );
         info!("Starting transfer");
+
+        // Could this be unsafe because what happens if the interrupt fires before the object is created which is used in the interrupt handler. 
+        
         transfer.start(|serial| {
             serial.enable_dma_rx();
         

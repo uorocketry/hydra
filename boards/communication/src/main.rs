@@ -306,7 +306,7 @@ mod app {
     //     });
     // }
 
-    /// Handles the CAN0 interrupt.
+    /// Handles the CAN1 interrupt.
     #[task(priority = 3, binds = CAN1, shared = [can_command_manager, data_manager])]
     fn can_command(mut cx: can_command::Context) {
         cx.shared.can_command_manager.lock(|can| {

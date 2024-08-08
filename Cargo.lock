@@ -537,6 +537,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "embedded-hal-bus"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57b4e6ede84339ebdb418cd986e6320a34b017cdf99b5cc3efceec6450b06886"
+dependencies = [
+ "critical-section",
+ "embedded-hal 1.0.0",
+ "embedded-hal-async",
+]
+
+[[package]]
 name = "embedded-io"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -969,6 +980,7 @@ dependencies = [
  "postcard",
  "rtic",
  "rtic-monotonics",
+ "rtic-sync",
  "sbg-rs",
  "stm32h7xx-hal",
  "systick-monotonic",
@@ -1401,6 +1413,21 @@ dependencies = [
  "quote 1.0.36",
  "rtic-time",
  "stm32-metapac",
+]
+
+[[package]]
+name = "rtic-sync"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49b1200137ccb2bf272a1801fa6e27264535facd356cb2c1d5bc8e12aa211bad"
+dependencies = [
+ "critical-section",
+ "embedded-hal 1.0.0",
+ "embedded-hal-async",
+ "embedded-hal-bus",
+ "heapless 0.8.0",
+ "portable-atomic",
+ "rtic-common",
 ]
 
 [[package]]

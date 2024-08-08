@@ -48,8 +48,23 @@ impl DataManager {
 
     pub fn handle_data(&mut self, data: Message) -> Result<(), HydraError> {
         match data.data {
+            messages::Data::Sensor(sensor) => match sensor.data {
+                _ => {
+                }
+            },
+            _ => {
+                // we can disregard all other messages for now.
+            }
+        }
+        Ok(())
+    }
+
+    pub fn handle_command(&mut self, data: Message) -> Result<(), HydraError> {
+        match data.data {
             messages::Data::Command(command) => match command.data {
-                messages::command::CommandData::PowerDown(_) => {}
+                messages::command::CommandData::PowerDown(_) => {
+                    crate::app::sleep_system::spawn().ok();
+                }
                 _ => {
                     // We don't care atm about these other commands.
                 }
