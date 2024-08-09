@@ -161,7 +161,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("Sender: {:?}", data.sender);
+                                info!("Sender: {:?}", data.clone());
                                 data_manager.handle_data(data)?;
                             }
                             Err(e) => {
@@ -174,6 +174,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
+                                info!("CAN Command: {:?}", data.clone());
                                 data_manager.handle_data(data)?;
                             }
                             Err(e) => {
@@ -316,6 +317,7 @@ impl CanCommandManager {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
+                                info!("CAN Command: {:?}", data.clone());
                                 data_manager.handle_command(data);
                             }
                             Err(_) => {
@@ -328,6 +330,7 @@ impl CanCommandManager {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
+                                info!("CAN Command: {:?}", data.clone());
                                 data_manager.handle_command(data);
                             }
                             Err(_) => {

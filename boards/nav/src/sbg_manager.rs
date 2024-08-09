@@ -28,8 +28,8 @@ use rtic::Mutex;
 
 //#[link_section = ".axisram.buffers"]
 //static mut SBG_BUFFER: MayberUninit<[u8; SBG_BUFFER_SIZE]> = MaybeUninit::uninit();
-
-// #[link_section = ".axisram.buffers"]
+// must have this link section.
+#[link_section = ".axisram.buffers"]
 pub static mut SBG_BUFFER: MaybeUninit<[u8; SBG_BUFFER_SIZE]> = MaybeUninit::uninit();
 
 // Simple heap required by the SBG library
@@ -75,6 +75,12 @@ impl SBGManager {
         //     }
         //     unsafe { SBG_BUFFER.assume_init_mut() }
         // };
+        unsafe {
+            // Convert an uninitialised array into an array of uninitialised
+            let buf: &mut [core::mem::MaybeUninit<u8>; SBG_BUFFER_SIZE] =
+                &mut *(core::ptr::addr_of_mut!(SBG_BUFFER) as *mut _);
+            buf.iter_mut().for_each(|x| x.as_mut_ptr().write(0));
+        }
 
         let config = DmaConfig::default().memory_increment(true).transfer_complete_interrupt(true);
         let mut transfer: Transfer<
@@ -90,6 +96,8 @@ impl SBGManager {
             None,
             config,
         );
+
+
         info!("Starting transfer");
 
         // Could this be unsafe because what happens if the interrupt fires before the object is created which is used in the interrupt handler. 
@@ -100,13 +108,13 @@ impl SBGManager {
         });
         info!("Transfer started");
 
-        // while !transfer.get_transfer_complete_flag() {
+        while !transfer.get_transfer_complete_flag() {
 
-        // }
+        }
         // info!("Transfer complete");
         // info!("{}", unsafe { SBG_BUFFER.assume_init_read() });
 
-        let sbg: sbg::SBG = sbg::SBG::new(
+        let mut sbg: sbg::SBG = sbg::SBG::new(
             |data| {
                 sbg_handle_data::spawn(data).ok();
             },
@@ -118,7 +126,8 @@ impl SBGManager {
                 sbg_flush::spawn().ok();
             },
         );
-        
+        sbg.read_data(&unsafe { SBG_BUFFER.assume_init_read() });
+
         SBGManager {
             sbg_device: sbg,
             xfer: Some(transfer),
@@ -186,7 +195,6 @@ pub async fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context<'_>, data: [u8
  * Handles the SBG data.
  */
 pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
-    info!("DMA");
     cx.shared.sbg_manager.lock(|sbg| {
         match &mut sbg.xfer {
             Some(xfer) => {

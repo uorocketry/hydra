@@ -16,10 +16,11 @@ use data_manager::DataManager;
 use defmt::info;
 use defmt_rtt as _;
 use fdcan::{
-    config::NominalBitTiming,
+    config::{NominalBitTiming, DataBitTiming},
     filter::{StandardFilter, StandardFilterSlot},
 };
 use heapless::Vec;
+use messages::sensor::Sensor;
 use messages::Data;
 use panic_probe as _;
 use rtic_monotonics::systick::prelude::*;
@@ -35,13 +36,12 @@ use stm32h7xx_hal::gpio::{Output, PushPull};
 use stm32h7xx_hal::prelude::*;
 use stm32h7xx_hal::rtc;
 use stm32h7xx_hal::spi;
-use messages::sensor::Sensor;
 use stm32h7xx_hal::{rcc, rcc::rec};
 use types::COM_ID; // global logger
 
-const DATA_CHANNEL_CAPACITY: usize = 15;
+const DATA_CHANNEL_CAPACITY: usize = 10;
 
-systick_monotonic!(Mono, 100);
+systick_monotonic!(Mono, 500);
 
 #[inline(never)]
 #[defmt::panic_handler]
@@ -51,7 +51,7 @@ fn panic() -> ! {
 
 static RTC: Mutex<RefCell<Option<rtc::Rtc>>> = Mutex::new(RefCell::new(None));
 
-#[rtic::app(device = stm32h7xx_hal::stm32, peripherals = true, dispatchers = [EXTI0, EXTI1, EXTI2])]
+#[rtic::app(device = stm32h7xx_hal::stm32, peripherals = true, dispatchers = [EXTI0, EXTI1, EXTI2, SPI3, SPI2])]
 mod app {
     use messages::Message;
     use stm32h7xx_hal::gpio::{Alternate, Pin};
@@ -115,11 +115,21 @@ mod app {
             .kernel_clk_mux(rec::FdcanClkSel::Pll1Q);
 
         let btr = NominalBitTiming {
-            prescaler: NonZeroU16::new(4).unwrap(),
+            prescaler: NonZeroU16::new(3).unwrap(),
             seg1: NonZeroU8::new(13).unwrap(),
             seg2: NonZeroU8::new(2).unwrap(),
-            sync_jump_width: NonZeroU8::new(1).unwrap(),
+            sync_jump_width: NonZeroU8::new(0x4).unwrap(),
         };
+
+        // let data_bit_timing = DataBitTiming {
+        //     prescaler: NonZeroU8::new(48).unwrap(),
+        //     seg1: NonZeroU8::new(0xB).unwrap(),
+        //     seg2: NonZeroU8::new(0x4).unwrap(),
+        //     sync_jump_width: NonZeroU8::new(0x4).unwrap(),
+        //     transceiver_delay_compensation: true,
+        // };
+
+
         info!("CAN enabled");
         // GPIO
         let gpioc = ctx.device.GPIOC.split(ccdr.peripheral.GPIOC);
@@ -151,22 +161,27 @@ mod app {
             ctx.device.FDCAN2.fdcan(tx, rx, fdcan_prec)
         };
 
-        let mut can_command = can2;
-        can_command.set_protocol_exception_handling(false);
+        let mut can_data = can2;
+        can_data.set_protocol_exception_handling(false);
 
-        can_command.set_nominal_bit_timing(btr);
+        can_data.set_nominal_bit_timing(btr);
 
-        can_command.set_standard_filter(
+        // can_command.set_data_bit_timing(data_bit_timing);
+
+        can_data.set_standard_filter(
             StandardFilterSlot::_0,
             StandardFilter::accept_all_into_fifo0(),
         );
 
-        let config = can_command
+        let config = can_data
             .get_config()
-            .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCanAndBRS);
-        can_command.apply_config(config);
+            .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCan);
+        can_data.apply_config(config);
 
-        let can_command_manager = CanCommandManager::new(can_command.into_normal());
+        can_data.enable_interrupt(fdcan::interrupt::Interrupt::RxFifo0NewMsg);
+
+        can_data.enable_interrupt_line(fdcan::interrupt::InterruptLine::_0, true);
+        let can_data_manager = CanDataManager::new(can_data.into_normal());
 
         /// SAFETY: This is done as a result of a single memory mapped bit in hardware. Safe in this context.
         let can1: fdcan::FdCan<
@@ -178,22 +193,28 @@ mod app {
             ctx.device.FDCAN1.fdcan(tx, rx, fdcan_prec_unsafe)
         };
 
-        let mut can_data = can1;
-        can_data.set_protocol_exception_handling(false);
+        let mut can_command = can1;
+        can_command.set_protocol_exception_handling(true);
 
-        can_data.set_nominal_bit_timing(btr);
+        can_command.set_nominal_bit_timing(btr);
 
-        can_data.set_standard_filter(
+        can_command.set_standard_filter(
             StandardFilterSlot::_0,
             StandardFilter::accept_all_into_fifo0(),
         );
-
-        let config = can_data
+        // can_data.set_data_bit_timing(data_bit_timing);
+        
+        let config = can_command
             .get_config()
             .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCanAndBRS); // check this maybe don't bit switch allow.
-        can_data.apply_config(config);
+        can_command.apply_config(config);
+        can_command.enable_interrupt(fdcan::interrupt::Interrupt::RxFifo0NewMsg);
 
-        let can_data_manager = CanDataManager::new(can_data.into_normal());
+        can_command.enable_interrupt_line(fdcan::interrupt::InterruptLine::_0, true);
+        
+        let can_command_manager = CanCommandManager::new(can_command.into_normal());
+
+
 
         let spi_sd: stm32h7xx_hal::spi::Spi<
             stm32h7xx_hal::stm32::SPI1,
@@ -266,8 +287,8 @@ mod app {
         // let mono_token = rtic_monotonics::create_systick_token!();
         // let mono = Systick::start(ctx.core.SYST, 36_000_000, mono_token);
         blink::spawn().ok();
+        send_data_internal::spawn(r).ok();
         display_data::spawn(s).ok();
-
         (
             SharedResources {
                 data_manager,
@@ -289,7 +310,7 @@ mod app {
     fn idle(ctx: idle::Context) -> ! {
         loop {
             // info!("Idle");
-            cortex_m::asm::wfi(); // could case issue with CAN Bus. Was an issue with ATSAME51.
+            // cortex_m::asm::wfi(); // could case issue with CAN Bus. Was an issue with ATSAME51.
         }
     }
 
@@ -299,12 +320,11 @@ mod app {
         mut sender: Sender<'static, Message, DATA_CHANNEL_CAPACITY>,
     ) {
         loop {
-            info!("Displaying data");
             let data = cx
                 .shared
                 .data_manager
                 .lock(|manager| manager.clone_sensors());
-            info!("{:?}", data.clone());
+            // info!("{:?}", data.clone());
             let messages = data.into_iter().flatten().map(|x| {
                 Message::new(
                     cortex_m::interrupt::free(|cs| {
@@ -323,9 +343,9 @@ mod app {
                 )
             });
             for msg in messages {
-                sender.send(msg).await.ok();
+                sender.send(msg).await;
             }
-            Mono::delay(1000.millis()).await; // what if there was no delay and we used chanenls to control the rate of messages.
+            Mono::delay(100.millis()).await; // what if there was no delay and we used chanenls to control the rate of messages.
         }
     }
 
@@ -353,6 +373,8 @@ mod app {
 
     #[task(priority = 3, binds = FDCAN1_IT0, shared = [can_command_manager, data_manager])]
     fn can_command(mut cx: can_command::Context) {
+        info!("CAN Command");
+        panic!("CAN Command");
         cx.shared.can_command_manager.lock(|can| {
             cx.shared
                 .data_manager
@@ -363,6 +385,8 @@ mod app {
     // Might be the wrong interrupt
     #[task(priority = 3, binds = FDCAN2_IT0, shared = [can_data_manager, data_manager])]
     fn can_data(mut cx: can_data::Context) {
+        info!("CAN Data");
+        panic!("CAN Data");
         cx.shared.can_data_manager.lock(|can| {
             cx.shared
                 .data_manager
@@ -371,15 +395,25 @@ mod app {
     }
 
     #[task(priority = 2, shared = [can_data_manager, data_manager])]
-    async fn send_data_internal(mut cx: send_data_internal::Context, m: Message) {
-        cx.shared.can_data_manager.lock(|can| {
-            can.send_message(m);
-        });
+    async fn send_data_internal(
+        mut cx: send_data_internal::Context,
+        mut receiver: Receiver<'static, Message, DATA_CHANNEL_CAPACITY>,
+    ) {
+        loop {
+            if let Ok(m) = receiver.recv().await {
+                cx.shared.can_data_manager.lock(|can| {
+                    can.send_message(m);
+                });
+            }
+        }
     }
 
-    #[task(priority = 3, shared = [can_command_manager, data_manager])]
-    async fn send_command_internal(mut cx: send_command_internal::Context, mut receiver: Receiver<'static, Message, DATA_CHANNEL_CAPACITY>) {
-        while let Ok(m) = receiver.recv().await {    
+    #[task(priority = 2, shared = [can_command_manager, data_manager])]
+    async fn send_command_internal(
+        mut cx: send_command_internal::Context,
+        mut receiver: Receiver<'static, Message, DATA_CHANNEL_CAPACITY>,
+    ) {
+        while let Ok(m) = receiver.recv().await {
             cx.shared.can_command_manager.lock(|can| {
                 can.send_message(m);
             });
@@ -401,7 +435,7 @@ mod app {
         }
     }
 
-    #[task(priority = 1, local = [sbg_power], shared = [&em])]
+    #[task(priority = 3, local = [sbg_power], shared = [&em])]
     async fn sleep_system(cx: sleep_system::Context) {
         // Turn off the SBG and CAN, also start a timer to wake up the system. Put the chip in sleep mode.
         cx.local.sbg_power.set_low();
@@ -411,10 +445,10 @@ mod app {
         #[task(priority = 1, shared = [&em, sd_manager])]
         async fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
 
-        #[task(priority = 3, binds = DMA1_STR1, shared = [&em, sbg_manager])]
+        #[task(priority = 1, binds = DMA1_STR1, shared = [&em, sbg_manager])]
         fn sbg_dma(mut context: sbg_dma::Context);
 
-        #[task(priority = 1, shared = [data_manager])]
+        #[task(priority = 3, shared = [data_manager])]
         async fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
 
         #[task(priority = 1, shared = [&em, sbg_manager])]

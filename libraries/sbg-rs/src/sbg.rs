@@ -146,7 +146,6 @@ impl SBG {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
         // unsafe { BUF = buffer };
-        info!("Reading SBG Data");
         for i in buffer {
             unsafe {
                 match DEQ.push_back(*i) {

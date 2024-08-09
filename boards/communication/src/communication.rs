@@ -8,6 +8,7 @@ use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::{Can0, Can1};
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::gpio::PA09;
+use defmt::info;
 use atsamd_hal::gpio::{
     Alternate, AlternateI, Disabled, Floating, Pin, I, PA12, PA13, PA22, PA23, PB16, PB17,
 };
@@ -208,6 +209,8 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
+                                info!("Received message {}", data.clone());
+
                                 data_manager.handle_data(data);
                             }
                             Err(_) => {
@@ -220,6 +223,8 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
+                                info!("Received message {}", data.clone());
+
                                 data_manager.handle_data(data);
                             }
                             Err(_) => {
@@ -368,6 +373,7 @@ impl CanCommandManager {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
+                                info!("Received message {}", data.clone());
                                 data_manager.handle_command(data);
                             }
                             Err(_) => {
@@ -380,6 +386,7 @@ impl CanCommandManager {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
+                                info!("Received message {}", data.clone());
                                 data_manager.handle_command(data);
                             }
                             Err(_) => {

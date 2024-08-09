@@ -221,6 +221,7 @@ mod app {
     /// Handles the CAN0 interrupt.
     #[task(priority = 3, binds = CAN1, shared = [can_command_manager, data_manager])]
     fn can_command(mut cx: can_command::Context) {
+        info!("CAN1 interrupt");
         cx.shared.can_command_manager.lock(|can| {
             cx.shared
                 .data_manager
@@ -320,6 +321,7 @@ mod app {
     /// Handles the CAN0 interrupt.
     #[task(binds = CAN0, shared = [can0, data_manager, &em])]
     fn can0(mut cx: can0::Context) {
+        info!("CAN0 interrupt");
         cx.shared.can0.lock(|can| {
             cx.shared.data_manager.lock(|data_manager| {
                 cx.shared.em.run(|| {
