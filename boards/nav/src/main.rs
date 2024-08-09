@@ -106,7 +106,7 @@ mod app {
             .use_hse(48.MHz()) // check the clock hardware
             .sys_ck(100.MHz())
             .pll1_strategy(rcc::PllConfigStrategy::Iterative)
-            .pll1_q_ck(24.MHz())
+            .pll1_q_ck(32.MHz())
             .freeze(pwrcfg, &ctx.device.SYSCFG);
         info!("RCC configured");
         let fdcan_prec = ccdr
@@ -115,10 +115,10 @@ mod app {
             .kernel_clk_mux(rec::FdcanClkSel::Pll1Q);
 
         let btr = NominalBitTiming {
-            prescaler: NonZeroU16::new(3).unwrap(),
+            prescaler: NonZeroU16::new(10).unwrap(),
             seg1: NonZeroU8::new(13).unwrap(),
             seg2: NonZeroU8::new(2).unwrap(),
-            sync_jump_width: NonZeroU8::new(0x4).unwrap(),
+            sync_jump_width: NonZeroU8::new(4).unwrap(),
         };
 
         // let data_bit_timing = DataBitTiming {
@@ -148,7 +148,7 @@ mod app {
         // c0.enable();
 
         info!("PWM enabled");
-        // assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 24_000_000); waaat
+        assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 32_000_000);
         info!("PLL1Q:");
         // https://github.com/stm32-rs/stm32h7xx-hal/issues/369 This needs to be stolen. Grrr I hate the imaturity of the stm32-hal
 
