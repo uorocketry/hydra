@@ -87,17 +87,9 @@ impl CanDataManager {
             bit_rate_switching: false,
             marker: None,
         };
-        self.can.abort(fdcan::Mailbox::_2);
-        // info!("{}", self.can.);
-        match stm32h7xx_hal::nb::block!(self.can.transmit(header, &payload)) { // must block or messages can fail to send. 
-            Ok(_) => {
-                // info!("Message sent");
-                
-            }
-            Err(e) => {
-                info!("Error {}", m);
-            }
-        }
+        // self.can.abort(fdcan::Mailbox::_2); // this is needed if boards are not in sync (if they are not in sync that is a bigger problem)
+
+        stm32h7xx_hal::nb::block!(self.can.transmit(header, &payload))?;
 
         Ok(())
     }

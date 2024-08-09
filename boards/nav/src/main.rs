@@ -166,6 +166,8 @@ mod app {
 
         can_data.set_nominal_bit_timing(btr);
 
+        can_data.set_automatic_retransmit(false); // data can be dropped due to its volume. 
+
         // can_command.set_data_bit_timing(data_bit_timing);
 
         can_data.set_standard_filter(
@@ -324,7 +326,7 @@ mod app {
                 .shared
                 .data_manager
                 .lock(|manager| manager.clone_sensors());
-            // info!("{:?}", data.clone());
+            // info!("{:?}", data[4].clone());
             let messages = data.into_iter().flatten().map(|x| {
                 Message::new(
                     cortex_m::interrupt::free(|cs| {
@@ -385,8 +387,6 @@ mod app {
     // Might be the wrong interrupt
     #[task(priority = 3, binds = FDCAN2_IT0, shared = [can_data_manager, data_manager])]
     fn can_data(mut cx: can_data::Context) {
-        info!("CAN Data");
-        panic!("CAN Data");
         cx.shared.can_data_manager.lock(|can| {
             cx.shared
                 .data_manager
@@ -445,7 +445,7 @@ mod app {
         #[task(priority = 1, shared = [&em, sd_manager])]
         async fn sbg_sd_task(context: sbg_sd_task::Context, data: [u8; SBG_BUFFER_SIZE]);
 
-        #[task(priority = 1, binds = DMA1_STR1, shared = [&em, sbg_manager])]
+        #[task(priority = 3, binds = DMA1_STR1, shared = [&em, sbg_manager])]
         fn sbg_dma(mut context: sbg_dma::Context);
 
         #[task(priority = 3, shared = [data_manager])]
