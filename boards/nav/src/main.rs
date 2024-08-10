@@ -118,14 +118,14 @@ mod app {
             prescaler: NonZeroU16::new(10).unwrap(),
             seg1: NonZeroU8::new(13).unwrap(),
             seg2: NonZeroU8::new(2).unwrap(),
-            sync_jump_width: NonZeroU8::new(4).unwrap(),
+            sync_jump_width: NonZeroU8::new(1).unwrap(),
         };
 
         // let data_bit_timing = DataBitTiming {
-        //     prescaler: NonZeroU8::new(48).unwrap(),
-        //     seg1: NonZeroU8::new(0xB).unwrap(),
-        //     seg2: NonZeroU8::new(0x4).unwrap(),
-        //     sync_jump_width: NonZeroU8::new(0x4).unwrap(),
+        //     prescaler: NonZeroU8::new(10).unwrap(),
+        //     seg1: NonZeroU8::new(13).unwrap(),
+        //     seg2: NonZeroU8::new(2).unwrap(),
+        //     sync_jump_width: NonZeroU8::new(4).unwrap(),
         //     transceiver_delay_compensation: true,
         // };
 
@@ -166,7 +166,7 @@ mod app {
 
         can_data.set_nominal_bit_timing(btr);
 
-        can_data.set_automatic_retransmit(false); // data can be dropped due to its volume. 
+        // can_data.set_automatic_retransmit(false); // data can be dropped due to its volume. 
 
         // can_command.set_data_bit_timing(data_bit_timing);
 
@@ -196,7 +196,7 @@ mod app {
         };
 
         let mut can_command = can1;
-        can_command.set_protocol_exception_handling(true);
+        can_command.set_protocol_exception_handling(false);
 
         can_command.set_nominal_bit_timing(btr);
 
@@ -376,7 +376,6 @@ mod app {
     #[task(priority = 3, binds = FDCAN1_IT0, shared = [can_command_manager, data_manager])]
     fn can_command(mut cx: can_command::Context) {
         info!("CAN Command");
-        panic!("CAN Command");
         cx.shared.can_command_manager.lock(|can| {
             cx.shared
                 .data_manager
@@ -387,6 +386,7 @@ mod app {
     // Might be the wrong interrupt
     #[task(priority = 3, binds = FDCAN2_IT0, shared = [can_data_manager, data_manager])]
     fn can_data(mut cx: can_data::Context) {
+        info!("CAN Data");
         cx.shared.can_data_manager.lock(|can| {
             cx.shared
                 .data_manager

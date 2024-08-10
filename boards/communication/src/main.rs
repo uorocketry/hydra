@@ -269,6 +269,7 @@ mod app {
         led_green.set_low();
         led_red.set_low();
         blink::spawn().ok();
+        sensor_send::spawn().ok();
         // generate_random_messages::spawn().ok();
         // generate_random_command::spawn().ok();
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());

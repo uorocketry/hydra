@@ -144,7 +144,7 @@ impl CanDevice0 {
                 id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
                 frame_type: tx::FrameType::FlexibleDatarate {
                     payload: &payload[..],
-                    bit_rate_switching: false,
+                    bit_rate_switching: true,
                     force_error_state_indicator: false,
                 },
                 store_tx_event: None,
