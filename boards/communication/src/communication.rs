@@ -1,3 +1,6 @@
+use core::any::Any;
+use core::fmt::Debug;
+
 use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
@@ -108,7 +111,7 @@ impl CanDevice0 {
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
         let mut can = mcan::bus::CanConfigurable::new(
-            BitTiming {sjw: 1, phase_seg_1: 13, phase_seg_2: 2, bitrate: 500.kHz()},
+            200.kHz(),
             can_dependencies,
             can_memory,
         )
@@ -272,7 +275,7 @@ impl CanCommandManager {
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
         let mut can = mcan::bus::CanConfigurable::new(
-            BitTiming {sjw: 1, phase_seg_1: 13, phase_seg_2: 2, bitrate: 500.kHz()}, // needs a prescaler of 6 to be changed in the mcan source because mcan is meh. 
+            200.kHz(), // needs a prescaler of 6 to be changed in the mcan source because mcan is meh. 
             can_dependencies,
             can_memory,
         )
@@ -471,16 +474,22 @@ impl RadioManager {
         self.mav_sequence
     }
     pub fn receive_message(&mut self) -> Result<Message, HydraError> {
-        let (_header, msg) =
+        let (_header, msg): (_, MavMessage) =
             mavlink::read_versioned_msg(&mut self.radio.receiver, mavlink::MavlinkVersion::V2)?;
+        
+        // info!("{:?}", );
         // Do we need the header?
         match msg {
             mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(msg) => {
                 return Ok(postcard::from_bytes::<Message>(&msg.message)?);
                 // weird Ok syntax to coerce to hydra error type.
             }
+            mavlink::uorocketry::MavMessage::COMMAND_MESSAGE(command) => {
+                info!("{}", command.command);
+                return Ok(postcard::from_bytes::<Message>(&command.command)?);
+            }
             _ => {
-                // error!("Error, ErrorContext::UnkownPostcardMessage");
+                error!("Error, ErrorContext::UnkownPostcardMessage");
                 return Err(mavlink::error::MessageReadError::Io.into());
             }
         }

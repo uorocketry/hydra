@@ -270,6 +270,7 @@ mod app {
 
     #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
     fn fire_drogue(mut cx: fire_drogue::Context) {
+        info!("Firing drogue");
         cx.shared.em.run(|| {
             if !(*cx.local.fired) {
                 cx.shared.gpio.lock(|gpio| {
@@ -288,6 +289,7 @@ mod app {
 
     #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
     fn fire_main(mut cx: fire_main::Context) {
+        info!("Firing main");
         cx.shared.em.run(|| {
             if !(*cx.local.fired) {
                 cx.shared.gpio.lock(|gpio| {

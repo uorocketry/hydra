@@ -206,7 +206,7 @@ pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
                         unsafe { (*core::ptr::addr_of_mut!(SBG_BUFFER)).assume_init_mut() }, // Uninitialised memory
                     );
                     sbg.sbg_device.read_data(&data);
-                    crate::app::sbg_sd_task::spawn(data).ok();
+                    // crate::app::sbg_sd_task::spawn(data).ok();
                 }
             }
             None => {

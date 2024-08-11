@@ -182,7 +182,7 @@ impl DataManager {
         match command.data {
             messages::Data::Command(command) => match command.data {
                 messages::command::CommandData::DeployDrogue(_) => {
-                    spawn!(fire_drogue)?; // need someway to capture this error.
+                    spawn!(fire_drogue)?;
                 }
                 messages::command::CommandData::DeployMain(_) => {
                     spawn!(fire_main)?;

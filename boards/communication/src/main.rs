@@ -344,8 +344,9 @@ mod app {
     /**
      * Sends a message over CAN.
      */
-    #[task(capacity = 5, shared = [can_command_manager, &em])]
+    #[task(priority = 3, capacity = 5, shared = [can_command_manager, &em])]
     fn send_command(mut cx: send_command::Context, m: Message) {
+        info!("{}", m.clone());
         cx.shared.em.run(|| {
             cx.shared
                 .can_command_manager
@@ -499,14 +500,14 @@ mod app {
     /// We use a critical section to ensure that we are not interrupted while servicing the mavlink message. 
     #[task(priority = 3, binds = SERCOM2_2, shared = [&em, radio_manager])]
     fn radio_rx(mut cx: radio_rx::Context) {
-        info!("Interrupt on Sercom2");
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
-                let msg = cortex_m::interrupt::free(|cs| {
-                    radio_manager.receive_message()
+               cortex_m::interrupt::free(|cs| {
+                    let m = radio_manager.receive_message()?;
+                    info!("Received message {}", m.clone());
+                    spawn!(send_command, m) 
+
                 })?;
-                spawn!(send_command, msg.clone())?; 
-                info!("Reading message {}", msg);
                 Ok(())
             });
         });
