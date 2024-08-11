@@ -188,7 +188,7 @@ mod app {
         read_barometer::spawn().ok();
         state_send::spawn().ok();
         blink::spawn().ok();
-        // fire_main::spawn_after(ExtU64::secs(15)).ok();
+        // fire_main::spawn_after(ExtU64::secs(1000)).ok();
         // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
 
         /* Monotonic clock */

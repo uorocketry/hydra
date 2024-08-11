@@ -9,6 +9,7 @@ use atsamd_hal::clock::v2::types::{Can0, Can1};
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::gpio::PA09;
 use defmt::info;
+use atsamd_hal::prelude::*;
 use atsamd_hal::gpio::{
     Alternate, AlternateI, Disabled, Floating, Pin, I, PA12, PA13, PA22, PA23, PB16, PB17,
 };
@@ -469,14 +470,18 @@ impl RadioManager {
         self.mav_sequence
     }
     pub fn receive_message(&mut self) -> Result<Message, HydraError> {
-        if let Ok(data) = self.radio.receiver.read_u8() {
+        // if let Ok(data) = self.radio.receiver.read_u8() {
             // lets add this data to the buffer and see if we can parse it
-            self.buf.write(data);
+            // info!("Received data {}", data);
+            // self.buf.write(data);
+            // self.buf.write(nb::block!(self.radio.receiver.read()?)?);
+
             let (_header, msg) =
                 mavlink::read_versioned_msg(&mut self.radio.receiver, mavlink::MavlinkVersion::V2)?;
             // Do we need the header?
             match msg {
                 mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(msg) => {
+    
                     return Ok(postcard::from_bytes::<Message>(&msg.message)?);
                     // weird Ok syntax to coerce to hydra error type.
                 }
@@ -485,16 +490,16 @@ impl RadioManager {
                     return Err(mavlink::error::MessageReadError::Io.into());
                 }
             }
-        } else {
-            return Err(mavlink::error::MessageReadError::Io.into());
-        }
+        // } else {
+            // return Err(mavlink::error::MessageReadError::Io.into());
+        // }
     }
 }
 
-impl Read for RadioManager {
-    fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), mavlink::error::MessageReadError> {
-        let len = buf.len().min(self.buf.len());
-        buf[..len].copy_from_slice(&self.buf[..len]);
-        Ok(())
-    }
-}
+// impl Read for RadioManager {
+//     fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), mavlink::error::MessageReadError> {
+//         let len = buf.len().min(self.buf.len());
+//         buf[..len].copy_from_slice(&self.buf[..len]);
+//         Ok(())
+//     }
+// }

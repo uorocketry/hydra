@@ -39,6 +39,17 @@
         },
         {
             "type": "probe-rs-debug",
+            "request": "attach",
+            "name": "Probe-rs attach com (Release)",
+            "chip": "ATSAME51J18A",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/communication",
+                }
+            ]
+        },
+        {
+            "type": "probe-rs-debug",
             "request": "launch",
             "name": "Probe-rs Debug Link (Release)",
             "chip": "ATSAME51J18A",

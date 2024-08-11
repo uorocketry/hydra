@@ -80,6 +80,7 @@ mod app {
     use atsamd_hal::clock::v2::gclk::{self, Gclk};
     use command::{Command, CommandData, RadioRateChange};
     use fugit::RateExtU64;
+    use mavlink::embedded::Read;
     use sender::Sender;
     use state::StateData;
 
@@ -269,7 +270,8 @@ mod app {
         led_green.set_low();
         led_red.set_low();
         blink::spawn().ok();
-        sensor_send::spawn().ok();
+        // sensor_send::spawn().ok();
+        // radio_rx::spawn().ok();
         // generate_random_messages::spawn().ok();
         // generate_random_command::spawn().ok();
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -426,33 +428,33 @@ mod app {
         });
         match logging_rate {
             RadioRate::Fast => {
-                spawn_after!(sensor_send, ExtU64::millis(250)).ok();
+                spawn_after!(sensor_send, ExtU64::millis(100)).ok();
             }
             RadioRate::Slow => {
-                spawn_after!(sensor_send, ExtU64::millis(2000)).ok();
+                spawn_after!(sensor_send, ExtU64::millis(250)).ok();
             }
         }
     }
 
-    #[task(shared = [&em])]
-    fn generate_random_messages(cx: generate_random_messages::Context) {
-        cx.shared.em.run(|| {
-            let message = Message::new(
-                cortex_m::interrupt::free(|cs| {
-                    let mut rc = RTC.borrow(cs).borrow_mut();
-                    let rtc = rc.as_mut().unwrap();
-                    rtc.count32()
-                }),
-                COM_ID,
-                State::new(StateData::Initializing),
-            );
-            // spawn!(send_gs, message.clone())?;
-            spawn!(send_internal, message)?;
-            Ok(())
-        });
-        spawn_after!(generate_random_messages, ExtU64::millis(200)).ok();
+    // #[task(shared = [&em])]
+    // fn generate_random_messages(cx: generate_random_messages::Context) {
+    //     cx.shared.em.run(|| {
+    //         let message = Message::new(
+    //             cortex_m::interrupt::free(|cs| {
+    //                 let mut rc = RTC.borrow(cs).borrow_mut();
+    //                 let rtc = rc.as_mut().unwrap();
+    //                 rtc.count32()
+    //             }),
+    //             COM_ID,
+    //             State::new(StateData::Initializing),
+    //         );
+    //         // spawn!(send_gs, message.clone())?;
+    //         spawn!(send_internal, message)?;
+    //         Ok(())
+    //     });
+    //     spawn_after!(generate_random_messages, ExtU64::millis(200)).ok();
 
-    }
+    // }
 
     #[task(shared = [&em])]
     fn generate_random_command(cx: generate_random_command::Context) {
@@ -493,17 +495,26 @@ mod app {
     //     spawn_after!(state_send, ExtU64::secs(5)).ok();
     // }
 
-    // #[task(binds = SERCOM5_2, shared = [&em, radio_manager])]
-    // fn radio_rx(mut cx: radio_rx::Context) {
-    //     cx.shared.radio_manager.lock(|radio_manager| {
-    //         cx.shared.em.run(|| {
-    //             info!("Interrupt on Sercom5");
-    //             let msg = radio_manager.receive_message()?;
-    //             // spawn!(send_internal, msg)?; // just broadcast the message throughout the system for now.
-    //             Ok(())
-    //         });
-    //     });
-    // }
+    #[task(priority = 3, binds = SERCOM2_2, shared = [&em, radio_manager])]
+    fn radio_rx(mut cx: radio_rx::Context) {
+        info!("Interrupt on Sercom2");
+        cx.shared.radio_manager.lock(|radio_manager| {
+            cx.shared.em.run(|| {
+                // info!("Interrupt on Sercom5");
+                // let mut buf = [0; 255];
+                // radio_manager.read_exact(&mut buf)?;
+                // info!("Read data: {:?}", buf);
+                info!("Reading message {}", radio_manager.receive_message()?);
+                
+
+                // let msg = radio_manager.receive_message();
+                // info!("Received message: {:?}", msg);
+                // spawn!(send_internal, msg)?; // just broadcast the message throughout the system for now.
+                // spawn_after!(radio_rx, ExtU64::millis(200)).ok();
+                Ok(())
+            });
+        });
+    }
 
     /**
      * Simple blink task to test the system.
