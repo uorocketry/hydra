@@ -270,8 +270,7 @@ mod app {
         led_green.set_low();
         led_red.set_low();
         blink::spawn().ok();
-        // sensor_send::spawn().ok();
-        // radio_rx::spawn().ok();
+        sensor_send::spawn().ok();
         // generate_random_messages::spawn().ok();
         // generate_random_command::spawn().ok();
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -476,41 +475,38 @@ mod app {
         spawn!(generate_random_command).ok();
     }
 
-    // #[task(shared = [data_manager, &em])]
-    // fn state_send(mut cx: state_send::Context) {
-    //     let state_data = cx
-    //         .shared
-    //         .data_manager
-    //         .lock(|data_manager| data_manager.state.clone());
-    //     cx.shared.em.run(|| {
-    //         if let Some(x) = state_data {
-    //             let message = Message::new(cortex_m::interrupt::free(|cs| {
-    //                 let mut rc = RTC.borrow(cs).borrow_mut();
-    //                 let rtc = rc.as_mut().unwrap();
-    //                 rtc.count32()}), COM_ID, State::new(x));
-    //             // spawn!(send_gs, message)?;
-    //         } // if there is none we still return since we simply don't have data yet.
-    //         Ok(())
-    //     });
-    //     spawn_after!(state_send, ExtU64::secs(5)).ok();
-    // }
+    #[task(shared = [data_manager, &em])]
+    fn state_send(mut cx: state_send::Context) {
+        let state_data = cx
+            .shared
+            .data_manager
+            .lock(|data_manager| data_manager.state.clone());
+        cx.shared.em.run(|| {
+            if let Some(x) = state_data {
+                let message = Message::new(cortex_m::interrupt::free(|cs| {
+                    let mut rc = RTC.borrow(cs).borrow_mut();
+                    let rtc = rc.as_mut().unwrap();
+                    rtc.count32()}), COM_ID, State::new(x));
+                // spawn!(send_gs, message)?;
+            } // if there is none we still return since we simply don't have data yet.
+            Ok(())
+        });
+        spawn_after!(state_send, ExtU64::secs(5)).ok();
+    }
 
+    /// Handles the radio interrupt.
+    /// This only needs to be called when the radio has data to read, this is why an interrupt handler is used above polling which would waste resources. 
+    /// We use a critical section to ensure that we are not interrupted while servicing the mavlink message. 
     #[task(priority = 3, binds = SERCOM2_2, shared = [&em, radio_manager])]
     fn radio_rx(mut cx: radio_rx::Context) {
         info!("Interrupt on Sercom2");
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
-                // info!("Interrupt on Sercom5");
-                // let mut buf = [0; 255];
-                // radio_manager.read_exact(&mut buf)?;
-                // info!("Read data: {:?}", buf);
-                info!("Reading message {}", radio_manager.receive_message()?);
-                
-
-                // let msg = radio_manager.receive_message();
-                // info!("Received message: {:?}", msg);
-                // spawn!(send_internal, msg)?; // just broadcast the message throughout the system for now.
-                // spawn_after!(radio_rx, ExtU64::millis(200)).ok();
+                let msg = cortex_m::interrupt::free(|cs| {
+                    radio_manager.receive_message()
+                })?;
+                spawn!(send_command, msg.clone())?; 
+                info!("Reading message {}", msg);
                 Ok(())
             });
         });

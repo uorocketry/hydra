@@ -77,7 +77,7 @@ impl CanDevice0 {
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
         let mut can =
-            mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, can_memory).unwrap();
+            mcan::bus::CanConfigurable::new(BitTiming {sjw: 1, phase_seg_1: 13, phase_seg_2: 2, bitrate: 500.kHz()}, can_dependencies, can_memory).unwrap();
         can.config().mode = Mode::Fd {
             allow_bit_rate_switching: false,
             data_phase_timing: BitTiming::new(500.kHz()),
@@ -218,7 +218,7 @@ impl CanCommandManager {
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
         let mut can =
-            mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, can_memory).unwrap();
+            mcan::bus::CanConfigurable::new(BitTiming {sjw: 1, phase_seg_1: 13, phase_seg_2: 2, bitrate: 500.kHz()}, can_dependencies, can_memory).unwrap();
         can.config().mode = Mode::Fd {
             allow_bit_rate_switching: false,
             data_phase_timing: BitTiming::new(500.kHz()),

@@ -104,7 +104,7 @@ mod app {
         info!("RCC enabled");
         let ccdr = rcc
             .use_hse(48.MHz()) // check the clock hardware
-            .sys_ck(100.MHz())
+            .sys_ck(300.MHz())
             .pll1_strategy(rcc::PllConfigStrategy::Iterative)
             .pll1_q_ck(32.MHz())
             .freeze(pwrcfg, &ctx.device.SYSCFG);
@@ -115,7 +115,7 @@ mod app {
             .kernel_clk_mux(rec::FdcanClkSel::Pll1Q);
 
         let btr = NominalBitTiming {
-            prescaler: NonZeroU16::new(10).unwrap(),
+            prescaler: NonZeroU16::new(4).unwrap(),
             seg1: NonZeroU8::new(13).unwrap(),
             seg2: NonZeroU8::new(2).unwrap(),
             sync_jump_width: NonZeroU8::new(1).unwrap(),
@@ -281,7 +281,7 @@ mod app {
         // let mono = Systick::new(core.SYST, ccdr.clocks.sysclk().to_Hz());
         // blink::spawn().ok();
         // display_data::spawn().ok();
-        Mono::start(core.SYST, 100_000_000);
+        Mono::start(core.SYST, 300_000_000);
 
         info!("Online");
         let data_manager = DataManager::new();
@@ -291,6 +291,7 @@ mod app {
         blink::spawn().ok();
         send_data_internal::spawn(r).ok();
         display_data::spawn(s).ok();
+        
         (
             SharedResources {
                 data_manager,

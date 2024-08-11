@@ -8,8 +8,6 @@ use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::{Can0, Can1};
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::gpio::PA09;
-use defmt::info;
-use atsamd_hal::prelude::*;
 use atsamd_hal::gpio::{
     Alternate, AlternateI, Disabled, Floating, Pin, I, PA12, PA13, PA22, PA23, PB16, PB17,
 };
@@ -20,6 +18,7 @@ use atsamd_hal::pac::SERCOM2;
 use atsamd_hal::pac::SERCOM4;
 use atsamd_hal::pac::SERCOM5;
 use atsamd_hal::pac::{CAN0, CAN1};
+use atsamd_hal::prelude::*;
 use atsamd_hal::sercom;
 use atsamd_hal::sercom::uart;
 use atsamd_hal::sercom::uart::Uart;
@@ -30,6 +29,7 @@ use common_arm_atsame::mcan;
 use common_arm_atsame::mcan::message::{rx, Raw};
 use common_arm_atsame::mcan::tx_buffers::DynTx;
 use defmt::error;
+use defmt::info;
 use heapless::HistoryBuffer;
 use heapless::Vec;
 use mavlink::embedded::Read;
@@ -44,7 +44,8 @@ use mcan::{
     config::{BitTiming, Mode},
     filter::{Action, Filter},
 };
-use messages::mavlink;
+use messages::mavlink::uorocketry::MavMessage;
+use messages::mavlink::{self, MessageData};
 use messages::ErrorContext;
 use messages::Message;
 use postcard::from_bytes;
@@ -107,7 +108,7 @@ impl CanDevice0 {
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
         let mut can = mcan::bus::CanConfigurable::new(
-            fugit::RateExtU32::kHz(200),
+            BitTiming {sjw: 1, phase_seg_1: 13, phase_seg_2: 2, bitrate: 500.kHz()},
             can_dependencies,
             can_memory,
         )
@@ -271,7 +272,7 @@ impl CanCommandManager {
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
         let mut can = mcan::bus::CanConfigurable::new(
-            fugit::RateExtU32::kHz(200),
+            BitTiming {sjw: 1, phase_seg_1: 13, phase_seg_2: 2, bitrate: 500.kHz()}, // needs a prescaler of 6 to be changed in the mcan source because mcan is meh. 
             can_dependencies,
             can_memory,
         )
@@ -470,29 +471,19 @@ impl RadioManager {
         self.mav_sequence
     }
     pub fn receive_message(&mut self) -> Result<Message, HydraError> {
-        // if let Ok(data) = self.radio.receiver.read_u8() {
-            // lets add this data to the buffer and see if we can parse it
-            // info!("Received data {}", data);
-            // self.buf.write(data);
-            // self.buf.write(nb::block!(self.radio.receiver.read()?)?);
-
-            let (_header, msg) =
-                mavlink::read_versioned_msg(&mut self.radio.receiver, mavlink::MavlinkVersion::V2)?;
-            // Do we need the header?
-            match msg {
-                mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(msg) => {
-    
-                    return Ok(postcard::from_bytes::<Message>(&msg.message)?);
-                    // weird Ok syntax to coerce to hydra error type.
-                }
-                _ => {
-                    // error!("Error, ErrorContext::UnkownPostcardMessage");
-                    return Err(mavlink::error::MessageReadError::Io.into());
-                }
+        let (_header, msg) =
+            mavlink::read_versioned_msg(&mut self.radio.receiver, mavlink::MavlinkVersion::V2)?;
+        // Do we need the header?
+        match msg {
+            mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(msg) => {
+                return Ok(postcard::from_bytes::<Message>(&msg.message)?);
+                // weird Ok syntax to coerce to hydra error type.
             }
-        // } else {
-            // return Err(mavlink::error::MessageReadError::Io.into());
-        // }
+            _ => {
+                // error!("Error, ErrorContext::UnkownPostcardMessage");
+                return Err(mavlink::error::MessageReadError::Io.into());
+            }
+        }
     }
 }
 

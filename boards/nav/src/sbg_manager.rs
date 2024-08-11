@@ -82,7 +82,9 @@ impl SBGManager {
             buf.iter_mut().for_each(|x| x.as_mut_ptr().write(0));
         }
 
-        let config = DmaConfig::default().memory_increment(true).transfer_complete_interrupt(true);
+        let config = DmaConfig::default()
+            .memory_increment(true)
+            .transfer_complete_interrupt(true);
         let mut transfer: Transfer<
             StreamX<stm32h7xx_hal::pac::DMA1, 1>,
             Rx<stm32h7xx_hal::pac::UART4>,
@@ -97,20 +99,16 @@ impl SBGManager {
             config,
         );
 
-
         info!("Starting transfer");
 
-        // Could this be unsafe because what happens if the interrupt fires before the object is created which is used in the interrupt handler. 
-        
+        // Could this be unsafe because what happens if the interrupt fires before the object is created which is used in the interrupt handler.
+
         transfer.start(|serial| {
             serial.enable_dma_rx();
-        
         });
         info!("Transfer started");
 
-        while !transfer.get_transfer_complete_flag() {
-
-        }
+        while !transfer.get_transfer_complete_flag() {}
         // info!("Transfer complete");
         // info!("{}", unsafe { SBG_BUFFER.assume_init_read() });
 
@@ -173,7 +171,10 @@ pub async fn sbg_handle_data(mut cx: sbg_handle_data::Context<'_>, data: Callbac
     });
 }
 
-pub async fn sbg_sd_task(mut cx: crate::app::sbg_sd_task::Context<'_>, data: [u8; SBG_BUFFER_SIZE]) {
+pub async fn sbg_sd_task(
+    mut cx: crate::app::sbg_sd_task::Context<'_>,
+    data: [u8; SBG_BUFFER_SIZE],
+) {
     cx.shared.sd_manager.lock(|manager| {
         if let Some(mut file) = manager.file.take() {
             cx.shared.em.run(|| {
@@ -205,6 +206,7 @@ pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
                         unsafe { (*core::ptr::addr_of_mut!(SBG_BUFFER)).assume_init_mut() }, // Uninitialised memory
                     );
                     sbg.sbg_device.read_data(&data);
+                    crate::app::sbg_sd_task::spawn(data).ok();
                 }
             }
             None => {
