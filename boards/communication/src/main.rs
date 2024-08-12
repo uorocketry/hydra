@@ -322,7 +322,7 @@ mod app {
     /// Handles the CAN0 interrupt.
     #[task(priority = 3, binds = CAN0, shared = [can0, data_manager])]
     fn can0(mut cx: can0::Context) {
-        info!("CAN0 interrupt");
+        // info!("CAN0 interrupt");
         cx.shared.can0.lock(|can| {
             cx.shared
                 .data_manager

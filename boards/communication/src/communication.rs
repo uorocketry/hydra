@@ -214,7 +214,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("Received message {}", data.clone());
+                                // info!("Received message {}", data.clone());
 
                                 data_manager.handle_data(data);
                             }

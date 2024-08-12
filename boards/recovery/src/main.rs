@@ -149,9 +149,13 @@ mod app {
         /* GPIO config */
         let led_green = pins.pa03.into_push_pull_output();
         let led_red = pins.pb04.into_push_pull_output();
+        let mut main_ematch = pins.pb12.into_push_pull_output();
+        main_ematch.set_high().ok();
+        loop {}
+
         let gpio = GPIOManager::new(
             // pins switched from schematic
-            pins.pb12.into_push_pull_output(),
+            main_ematch,
             pins.pb11.into_push_pull_output(),
         );
         /* State Machine config */
@@ -323,7 +327,6 @@ mod app {
     /// Handles the CAN0 interrupt.
     #[task(binds = CAN0, shared = [can0, data_manager, &em])]
     fn can0(mut cx: can0::Context) {
-        info!("CAN0 interrupt");
         cx.shared.can0.lock(|can| {
             cx.shared.data_manager.lock(|data_manager| {
                 cx.shared.em.run(|| {

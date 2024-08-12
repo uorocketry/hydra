@@ -46,6 +46,7 @@ systick_monotonic!(Mono, 500);
 #[inline(never)]
 #[defmt::panic_handler]
 fn panic() -> ! {
+    // stm32h7xx_hal::pac::SCB::sys_reset()
     cortex_m::asm::udf()
 }
 
@@ -69,12 +70,13 @@ mod app {
         sbg_manager: sbg_manager::SBGManager,
         can_command_manager: CanCommandManager,
         can_data_manager: CanDataManager,
+        sbg_power: PB4<Output<PushPull>>,
+
     }
     #[local]
     struct LocalResources {
         led_red: PA2<Output<PushPull>>,
         led_green: PA3<Output<PushPull>>,
-        sbg_power: PB4<Output<PushPull>>,
     }
 
     #[init]
@@ -96,12 +98,22 @@ mod app {
         let backup = pwrcfg.backup().unwrap();
         info!("Backup domain enabled");
         // RCC
-        let rcc = ctx.device.RCC.constrain();
+        let mut rcc = ctx.device.RCC.constrain();
+        let reset = rcc.get_reset_reason();
+        info!("Reset reason: {:?}", reset);
+        // match reset {
+        //     // rcc::ResetReason::PowerOnReset => {
+        //     //     stm32h7xx_hal::pac::SCB::sys_reset();
+        //     //     info!("Power on reset");
+        //     // }
+        //     _ => {
+        //         info!("Reset reason: {:?}", reset);
+        //     }
+        // }
         let fdcan_prec_unsafe = unsafe { rcc.steal_peripheral_rec() }
             .FDCAN
             .kernel_clk_mux(rec::FdcanClkSel::Pll1Q);
 
-        info!("RCC enabled");
         let ccdr = rcc
             .use_hse(48.MHz()) // check the clock hardware
             .sys_ck(200.MHz())
@@ -148,7 +160,7 @@ mod app {
         // c0.enable();
 
         info!("PWM enabled");
-        assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 32_000_000);
+        // assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 32_000_000);
         info!("PLL1Q:");
         // https://github.com/stm32-rs/stm32h7xx-hal/issues/369 This needs to be stolen. Grrr I hate the imaturity of the stm32-hal
 
@@ -291,6 +303,7 @@ mod app {
         blink::spawn().ok();
         send_data_internal::spawn(r).ok();
         display_data::spawn(s).ok();
+        // sbg_power_on::spawn().ok();
         
         (
             SharedResources {
@@ -300,11 +313,12 @@ mod app {
                 sbg_manager,
                 can_command_manager,
                 can_data_manager,
+                sbg_power,
+
             },
             LocalResources {
                 led_red,
                 led_green,
-                sbg_power,
             },
         )
     }
@@ -384,6 +398,16 @@ mod app {
         });
     }
 
+    #[task(priority = 3, shared = [sbg_power])]
+    async fn sbg_power_on(mut cx: sbg_power_on::Context) {
+        loop {
+            cx.shared.sbg_power.lock(|sbg| {
+                sbg.set_high();
+            });
+            Mono::delay(10000.millis()).await;
+        }
+    }
+
     // Might be the wrong interrupt
     #[task(priority = 3, binds = FDCAN2_IT0, shared = [can_data_manager, data_manager])]
     fn can_data(mut cx: can_data::Context) {
@@ -436,10 +460,12 @@ mod app {
         }
     }
 
-    #[task(priority = 3, local = [sbg_power], shared = [&em])]
-    async fn sleep_system(cx: sleep_system::Context) {
+    #[task(priority = 3, shared = [&em, sbg_power])]
+    async fn sleep_system(mut cx: sleep_system::Context) {
         // Turn off the SBG and CAN, also start a timer to wake up the system. Put the chip in sleep mode.
-        cx.local.sbg_power.set_low();
+        cx.shared.sbg_power.lock(|sbg| {
+            sbg.set_low();
+        });
     }
 
     extern "Rust" {

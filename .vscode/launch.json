@@ -94,8 +94,8 @@
             "coreConfigs": [
                 {
                     "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/release/nav",
-                    "rttEnabled": true,
-                    "coreIndex": 0,
+                    // "rttEnabled": true,
+                    // "coreIndex": 0,
                 }
             ]
         },

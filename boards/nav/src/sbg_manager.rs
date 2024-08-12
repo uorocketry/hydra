@@ -108,7 +108,7 @@ impl SBGManager {
         });
         info!("Transfer started");
 
-        while !transfer.get_transfer_complete_flag() {}
+        // while !transfer.get_transfer_complete_flag() {}
         // info!("Transfer complete");
         // info!("{}", unsafe { SBG_BUFFER.assume_init_read() });
 
@@ -196,6 +196,7 @@ pub async fn sbg_sd_task(
  * Handles the SBG data.
  */
 pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
+    info!("DMA interrupt");
     cx.shared.sbg_manager.lock(|sbg| {
         match &mut sbg.xfer {
             Some(xfer) => {
