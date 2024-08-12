@@ -1,28 +1,18 @@
-use core::any::Any;
-use core::fmt::Debug;
 
 use crate::data_manager::DataManager;
 use crate::types::*;
 use atsamd_hal::can::Dependencies;
 use atsamd_hal::clock::v2::ahb::AhbClk;
-use atsamd_hal::clock::v2::gclk::{Gclk0Id, Gclk1Id};
+use atsamd_hal::clock::v2::gclk::{Gclk0Id};
 use atsamd_hal::clock::v2::pclk::Pclk;
-use atsamd_hal::clock::v2::pclk::PclkToken;
 use atsamd_hal::clock::v2::types::{Can0, Can1};
 use atsamd_hal::clock::v2::Source;
-use atsamd_hal::gpio::PA09;
 use atsamd_hal::gpio::{
-    Alternate, AlternateI, Disabled, Floating, Pin, I, PA12, PA13, PA22, PA23, PB16, PB17,
+    Alternate, AlternateI, Pin, I, PA22, PA23,
 };
-use atsamd_hal::gpio::{AlternateH, H, PA08, PB14, PB15};
-use atsamd_hal::pac::MCLK;
-use atsamd_hal::pac::SERCOM0;
-use atsamd_hal::pac::SERCOM2;
-use atsamd_hal::pac::SERCOM4;
-use atsamd_hal::pac::SERCOM5;
+use atsamd_hal::gpio::{AlternateH, H, PB14, PB15};
 use atsamd_hal::pac::{CAN0, CAN1};
 use atsamd_hal::prelude::*;
-use atsamd_hal::sercom;
 use atsamd_hal::sercom::uart;
 use atsamd_hal::sercom::uart::Uart;
 use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
@@ -35,7 +25,6 @@ use defmt::error;
 use defmt::info;
 use heapless::HistoryBuffer;
 use heapless::Vec;
-use mavlink::embedded::Read;
 use mavlink::peek_reader::PeekReader;
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
@@ -48,8 +37,7 @@ use mcan::{
     filter::{Action, Filter},
 };
 use messages::mavlink::uorocketry::MavMessage;
-use messages::mavlink::{self, MessageData};
-use messages::ErrorContext;
+use messages::mavlink::{self};
 use messages::Message;
 use postcard::from_bytes;
 use systick_monotonic::*;
@@ -413,7 +401,7 @@ pub struct RadioDevice {
 
 impl RadioDevice {
     pub fn new(
-        mut uart: atsamd_hal::sercom::uart::Uart<
+        uart: atsamd_hal::sercom::uart::Uart<
             GroundStationUartConfig,
             atsamd_hal::sercom::uart::Duplex,
         >,

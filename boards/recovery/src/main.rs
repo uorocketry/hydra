@@ -54,7 +54,8 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
-    use atsamd_hal::gpio::{PA03, PB04};
+
+    use atsamd_hal::gpio::{B, PA03, PB04, PB06, PB07, PB08, PB09};
 
     use super::*;
 
@@ -71,6 +72,11 @@ mod app {
     struct Local {
         led_green: Pin<PA03, PushPullOutput>,
         led_red: Pin<PB04, PushPullOutput>,
+        drogue_current_sense: Pin<PB06, Alternate<B>>,
+        main_current_sense: Pin<PB07, Alternate<B>>,
+        drogue_sense: Pin<PB08, Alternate<B>>,
+        main_sense: Pin<PB09, Alternate<B>>,
+        adc1: hal::adc::Adc<hal::pac::ADC1>,
         state_machine: StateMachine,
         barometer: MS5611_01BA<
             Spi<
@@ -149,15 +155,10 @@ mod app {
         /* GPIO config */
         let led_green = pins.pa03.into_push_pull_output();
         let led_red = pins.pb04.into_push_pull_output();
-        let mut main_ematch = pins.pb12.into_push_pull_output();
-        main_ematch.set_high().ok();
-        loop {}
+        let main_ematch = pins.pb12.into_push_pull_output();
+        let drogue_ematch = pins.pb11.into_push_pull_output();
 
-        let gpio = GPIOManager::new(
-            // pins switched from schematic
-            main_ematch,
-            pins.pb11.into_push_pull_output(),
-        );
+        let gpio = GPIOManager::new(main_ematch, drogue_ematch);
         /* State Machine config */
         let state_machine = StateMachine::new();
 
@@ -187,10 +188,20 @@ mod app {
         });
         // info!("RTC done");
 
+        // ADC sensing setup
+        let (pclk_adc, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
+        let adc1 = hal::adc::Adc::adc1(peripherals.ADC1, &mut mclk);
+        let drogue_current_sense = pins.pb06.into_alternate();
+        let main_current_sense = pins.pb07.into_alternate();
+        let drogue_sense = pins.pb08.into_alternate();
+        let main_sense = pins.pb09.into_alternate();
+        // let data = adc1.read(&mut drogue_sense);
+
         /* Spawn tasks */
         run_sm::spawn().ok();
         read_barometer::spawn().ok();
         state_send::spawn().ok();
+        ejection_sense::spawn().ok();
         blink::spawn().ok();
         // fire_main::spawn_after(ExtU64::secs(1000)).ok();
         // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
@@ -210,6 +221,11 @@ mod app {
                 led_green,
                 led_red,
                 state_machine,
+                adc1,
+                drogue_current_sense,
+                main_current_sense,
+                drogue_sense,
+                main_sense,
                 barometer,
             },
             init::Monotonics(mono),
@@ -220,6 +236,41 @@ mod app {
     #[idle]
     fn idle(_: idle::Context) -> ! {
         loop {}
+    }
+
+    #[task(local = [adc1, main_sense, drogue_sense, main_current_sense, drogue_current_sense], shared = [&em])]
+    fn ejection_sense(mut cx: ejection_sense::Context) {
+        cx.shared.em.run(|| {
+            let data_drogue_current: u16 =
+                cx.local.adc1.read(cx.local.drogue_current_sense).unwrap();
+            let data_main_current: u16 = cx.local.adc1.read(cx.local.main_current_sense).unwrap();
+            let data_drogue_sense: u16 = cx.local.adc1.read(cx.local.drogue_sense).unwrap();
+            let data_main_sense: u16 = cx.local.adc1.read(cx.local.main_sense).unwrap();
+            let sensing = messages::sensor::Sensor {
+                data: messages::sensor::SensorData::RecoverySensing(
+                    messages::sensor::RecoverySensing {
+                        drogue_current: data_drogue_current,
+                        main_current: data_main_current,
+                        drogue_voltage: data_drogue_sense,
+                        main_voltage: data_main_sense,
+                    },
+                ),
+            };
+
+            let message = Message::new(
+                cortex_m::interrupt::free(|cs| {
+                    let mut rc = RTC.borrow(cs).borrow_mut();
+                    let rtc = rc.as_mut().unwrap();
+                    rtc.count32()
+                }),
+                COM_ID,
+                sensing,
+            );
+            // info!("Drogue current: {} Main current: {} Drogue sense: {} Main sense: {}", data_drogue_current, data_main_current, data_drogue_sense, data_main_sense);
+            spawn!(send_internal, message).ok();
+            spawn_after!(ejection_sense, ExtU64::secs(1)).ok();
+            Ok(())
+        });
     }
 
     /// Handles the CAN0 interrupt.

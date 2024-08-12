@@ -7,49 +7,33 @@ mod types;
 
 use atsamd_hal as hal;
 use atsamd_hal::rtc::Count32Mode;
-use common_arm::HealthManager;
-use common_arm::HealthMonitor;
-use common_arm::SdManager;
 use common_arm::*;
 use common_arm_atsame::mcan;
 // use panic_halt as _;
 
-use atsamd_hal::time::*;
-use atsamd_hal::{
-    clock::v2::{
-        clock_system_at_reset,
-        xosc::{CrystalCurrent, SafeClockDiv, StartUpDelay, Xosc},
-    },
-    pac::Peripherals,
-};
 use communication::Capacities;
 use communication::{CanCommandManager, RadioDevice, RadioManager};
 use core::cell::RefCell;
 use cortex_m::interrupt::Mutex;
-use cortex_m_rt::exception;
-use cortex_m_rt::ExceptionFrame;
 use data_manager::DataManager;
 use defmt::info;
 use defmt_rtt as _; // global logger
-use fugit::ExtU32;
 use fugit::ExtU64;
 use fugit::RateExtU32;
-use hal::adc::Adc;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
 use hal::gpio::Pins;
 use hal::gpio::{
-    Alternate, Output, Pin, PushPull, PushPullOutput, C, D, PA02, PA03, PA04, PA05, PA06, PA07,
-    PA08, PA09, PB12, PB13, PB14, PB15,
+    Alternate, Pin, PushPullOutput, C, PA02, PA03,
+    PA08, PA09,
 };
 use hal::prelude::*;
 use hal::sercom::uart;
 use hal::sercom::{
-    spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet1, IoSet3, Sercom0, Sercom2, Sercom4,
+    IoSet3,
 };
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
-use messages::health::Health;
 use messages::state::State;
 use messages::*;
 use panic_probe as _;
@@ -77,12 +61,12 @@ static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefC
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
 
-    use atsamd_hal::clock::v2::gclk::{self, Gclk};
-    use command::{Command, CommandData, RadioRateChange};
-    use fugit::RateExtU64;
-    use mavlink::embedded::Read;
+    
+    use command::{Command, CommandData};
+    
+    
     use sender::Sender;
-    use state::StateData;
+    
 
     use super::*;
 
@@ -128,7 +112,7 @@ mod app {
     ])]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut peripherals = cx.device;
-        let mut core = cx.core;
+        let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
 
         // let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
@@ -203,7 +187,7 @@ mod app {
         let pads = uart::Pads::<hal::sercom::Sercom2, _>::default()
             .rx(rx)
             .tx(tx);
-        let mut uart =
+        let uart =
             GroundStationUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_radio.freq())
                 .baud(
                     RateExtU32::Hz(57600),
@@ -238,7 +222,7 @@ mod app {
             .rx(pins.pa12)
             .tx(pins.pa13);
 
-        let mut gps_uart = GpsUartConfig::new(&mclk, peripherals.SERCOM4, pads, pclk_gps.freq())
+        let gps_uart = GpsUartConfig::new(&mclk, peripherals.SERCOM4, pads, pclk_gps.freq())
             .baud(
                 RateExtU32::Hz(9600),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
@@ -255,7 +239,7 @@ mod app {
         /* Spawn tasks */
         // sensor_send::spawn().ok();
         // state_send::spawn().ok();
-        let mut rtc = hal::rtc::Rtc::clock_mode(
+        let rtc = hal::rtc::Rtc::clock_mode(
             peripherals.RTC,
             atsamd_hal::fugit::RateExtU32::Hz(1024),
             &mut mclk,

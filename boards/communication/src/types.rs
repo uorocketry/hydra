@@ -1,6 +1,6 @@
 use atsamd_hal::gpio::*;
 use atsamd_hal::sercom::uart::EightBit;
-use atsamd_hal::sercom::{uart, uart::Duplex, IoSet1, IoSet3, Sercom0, Sercom2, Sercom4, Sercom5};
+use atsamd_hal::sercom::{uart, uart::Duplex, IoSet3, Sercom2, Sercom4};
 use messages::sender::Sender;
 use messages::sender::Sender::CommunicationBoard;
 

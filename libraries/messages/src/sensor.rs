@@ -27,31 +27,7 @@ pub enum SensorData {
     GpsPos1(GpsPos1),
     GpsPos2(GpsPos2),
     GpsPosAcc(GpsPosAcc),
-}
-
-/* Replace with new health monitor */
-
-#[common_derives]
-pub struct Regulator {
-    pub status: bool,
-}
-
-#[common_derives]
-pub struct Voltage {
-    pub voltage: f32,
-    pub rolling_avg: f32,
-}
-
-#[common_derives]
-pub struct Current {
-    pub current: f32,
-    pub rolling_avg: f32,
-}
-
-#[common_derives]
-pub struct Temperature {
-    pub temperature: f32,
-    pub rolling_avg: f32,
+    RecoverySensing(RecoverySensing),
 }
 
 /* Replace with new health monitor */
@@ -216,6 +192,14 @@ pub struct GpsVelAcc {
     pub course_acc: Option<f32>,
     #[doc = "< GPS North, East, Down velocity 1 sigma accuracy in m.s^-1."]
     pub velocity_acc: Option<[f32; 3usize]>,
+}
+
+#[common_derives]
+pub struct RecoverySensing {
+    pub drogue_current: u16, 
+    pub main_current: u16,
+    pub drogue_voltage: u16,
+    pub main_voltage: u16,
 }
 
 impl Sensor {
