@@ -155,7 +155,7 @@ mod app {
             .TIM12
             .pwm(pins, 4.kHz(), ccdr.peripheral.TIM12, &ccdr.clocks);
 
-        c0.set_duty(c0.get_max_duty() / 2);
+        c0.set_duty(c0.get_max_duty() / 4);
         // PWM outputs are disabled by default
         // c0.enable();
 
@@ -268,7 +268,7 @@ mod app {
             .UART4
             .serial((tx, rx), 115_200.bps(), ccdr.peripheral.UART4, &ccdr.clocks)
             .unwrap();
-        let sbg_manager = sbg_manager::SBGManager::new(uart_sbg, stream_tuple);
+        let mut sbg_manager = sbg_manager::SBGManager::new(uart_sbg, stream_tuple);
 
         let mut rtc = stm32h7xx_hal::rtc::Rtc::open_or_init(
             ctx.device.RTC,
@@ -341,7 +341,7 @@ mod app {
                 .shared
                 .data_manager
                 .lock(|manager| manager.clone_sensors());
-            // info!("{:?}", data[4].clone());
+            info!("{:?}", data.clone());
             let messages = data.into_iter().flatten().map(|x| {
                 Message::new(
                     cortex_m::interrupt::free(|cs| {
@@ -411,7 +411,6 @@ mod app {
     // Might be the wrong interrupt
     #[task(priority = 3, binds = FDCAN2_IT0, shared = [can_data_manager, data_manager])]
     fn can_data(mut cx: can_data::Context) {
-        info!("CAN Data");
         cx.shared.can_data_manager.lock(|can| {
             cx.shared
                 .data_manager

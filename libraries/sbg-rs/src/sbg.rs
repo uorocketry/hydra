@@ -1,10 +1,5 @@
 use crate::bindings::{
-    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
-    _SbgEComLog_SBG_ECOM_LOG_EKF_NAV, _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
-    _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL, _SbgEComLog_SBG_ECOM_LOG_UTC_TIME,
-    _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgErrorCode_SBG_NO_ERROR,
-    _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
-    sbgEComCmdOutputSetConf, sbgEComHandle,
+    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA, _SbgEComLog_SBG_ECOM_LOG_EKF_NAV, _SbgEComLog_SBG_ECOM_LOG_GPS1_POS, _SbgEComLog_SBG_ECOM_LOG_GPS1_RAW, _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL, _SbgEComLog_SBG_ECOM_LOG_UTC_TIME, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComCmdOutputSetConf, sbgEComHandle
 };
 use crate::bindings::{
     _SbgBinaryLogData, _SbgDebugLogType, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComHandle,
@@ -183,6 +178,19 @@ impl SBG {
                 _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
                 _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
                 _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+            )
+        };
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+            warn!("Unable to configure UTC Time logs to 40 cycles");
+        }
+
+        let errorCode: _SbgErrorCode = unsafe {
+            sbgEComCmdOutputSetConf(
+                &mut self.handle,
+                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+                _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
                 _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
             )
         };
@@ -374,9 +382,18 @@ impl SBG {
                             callback(CallbackData::EkfNav((*pLogData).ekfNavData.into()))
                         }
                         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS => {
+                            info!("GPS Data");
                             callback(CallbackData::GpsPos((*pLogData).gpsPosData.into()))
                         }
-                        _ => (),
+                        _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL => {
+
+                            callback(CallbackData::GpsVel((*pLogData).gpsVelData.into()))
+                        }
+                        _SbgEComLog_SBG_ECOM_LOG_GPS1_HDT => {
+                            // info!("Heading Data");
+                        }
+                        _ => {
+                        },
                     }
                 }
             }

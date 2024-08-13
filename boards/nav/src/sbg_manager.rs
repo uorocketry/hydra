@@ -36,7 +36,7 @@ pub static mut SBG_BUFFER: MaybeUninit<[u8; SBG_BUFFER_SIZE]> = MaybeUninit::uni
 static HEAP: Heap = Heap::empty();
 
 pub struct SBGManager {
-    sbg_device: SBG,
+    pub sbg_device: SBG,
     xfer: Option<
         Transfer<
             StreamX<stm32h7xx_hal::pac::DMA1, 1>,
@@ -84,7 +84,7 @@ impl SBGManager {
 
         let config = DmaConfig::default()
             .memory_increment(true)
-            .transfer_complete_interrupt(true);
+            .transfer_complete_interrupt(true).peripheral_burst(stm32h7xx_hal::dma::config::BurstMode::Burst4);
         let mut transfer: Transfer<
             StreamX<stm32h7xx_hal::pac::DMA1, 1>,
             Rx<stm32h7xx_hal::pac::UART4>,
@@ -124,7 +124,8 @@ impl SBGManager {
                 sbg_flush::spawn().ok();
             },
         );
-        sbg.read_data(&unsafe { SBG_BUFFER.assume_init_read() });
+        // sbg.setup();
+        // sbg.read_data(&unsafe { SBG_BUFFER.assume_init_read() });
 
         SBGManager {
             sbg_device: sbg,
@@ -160,6 +161,7 @@ pub fn sbg_get_time() -> u32 {
 }
 
 pub async fn sbg_handle_data(mut cx: sbg_handle_data::Context<'_>, data: CallbackData) {
+
     cx.shared.data_manager.lock(|manager| match data {
         CallbackData::UtcTime(x) => manager.utc_time = Some(x),
         CallbackData::Air(x) => manager.air = Some(x),
@@ -167,7 +169,11 @@ pub async fn sbg_handle_data(mut cx: sbg_handle_data::Context<'_>, data: Callbac
         CallbackData::EkfNav(x) => manager.ekf_nav = Some(x),
         CallbackData::Imu(x) => manager.imu = Some(x),
         CallbackData::GpsVel(x) => manager.gps_vel = Some(x),
-        CallbackData::GpsPos(x) => manager.gps_pos = Some(x),
+        CallbackData::GpsPos(x) => {
+            info!("{}", x.0.latitude.unwrap());
+            panic!("fucl");
+            manager.gps_pos = Some(x)
+        },
     });
 }
 
@@ -196,16 +202,16 @@ pub async fn sbg_sd_task(
  * Handles the SBG data.
  */
 pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
-    info!("DMA interrupt");
     cx.shared.sbg_manager.lock(|sbg| {
         match &mut sbg.xfer {
             Some(xfer) => {
                 if xfer.get_transfer_complete_flag() {
-                    let data = unsafe { SBG_BUFFER.assume_init_read() };
-                    xfer.clear_transfer_complete_interrupt();
+                    let data = unsafe { SBG_BUFFER.assume_init_read() }.clone();
                     xfer.next_transfer(
                         unsafe { (*core::ptr::addr_of_mut!(SBG_BUFFER)).assume_init_mut() }, // Uninitialised memory
                     );
+                    // info!("{}", data);
+                    xfer.clear_transfer_complete_interrupt();
                     sbg.sbg_device.read_data(&data);
                     // crate::app::sbg_sd_task::spawn(data).ok();
                 }
