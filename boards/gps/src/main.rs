@@ -23,7 +23,7 @@ use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
 use hal::gpio::Pins;
 use hal::gpio::{
-    Pin, PushPullOutput, PA02, PA03,
+    Pin, PushPullOutput, PA02, PA03, PA08, PA09, Alternate, C,
 };
 use hal::prelude::*;
 use hal::sercom::uart;
@@ -34,7 +34,7 @@ use panic_probe as _;
 use systick_monotonic::*;
 use types::*;
 use mavlink::embedded::Read;
-
+use ublox::{CfgPrtUartBuilder, UartPortId, UartMode, DataBits, Parity, StopBits, InProtoMask, OutProtoMask};    
 
 #[inline(never)]
 #[defmt::panic_handler]
@@ -60,7 +60,7 @@ static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefC
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
 
-    use ublox::PacketRef;
+    use ublox::{CfgMsgAllPortsBuilder, CfgMsgSinglePortBuilder, NavPosLlh, NavPvt, PacketRef, UbxPacketRequest};
 
     use super::*;
 
@@ -195,27 +195,114 @@ mod app {
         //     .spi_mode(spi::MODE_0)
         //     .enable();
         // let sd_manager = SdManager::new(sdmmc_spi, pins.pa06.into_push_pull_output());
+        // let (pclk_radio, gclk0) = Pclk::enable(tokens.pclks.sercom2, gclk0);
+        // /* Radio config */
+
+        // let rx: Pin<PA08, Alternate<C>> = pins.pa08.into_alternate();
+        // let tx: Pin<PA09, Alternate<C>> = pins.pa09.into_alternate();
+        // let pads = uart::Pads::<hal::sercom::Sercom2, _>::default()
+        //     .rx(rx)
+        //     .tx(tx);
+        // let mut uart =
+        //     GroundStationUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_radio.freq())
+        //         .baud(
+        //             RateExtU32::Hz(57600),
+        //             uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+        //         )
+        //         .enable();
+
+        // loop {
+        //     nb::block!(uart.write(0x55)).unwrap();
+        // }
+
 
         let (pclk_gps, gclk0) = Pclk::enable(tokens.pclks.sercom2, gclk0);
         //info!("here");
+        // let mut rx = pins.pa13.into_push_pull_output();
+        // loop {
+        //     rx.set_high().ok();
+        //     cortex_m::asm::delay(300_000);
+        //     rx.set_low().ok();
+        //     cortex_m::asm::delay(300_000);
+        // }
+
         let pads = hal::sercom::uart::Pads::<hal::sercom::Sercom2, IoSet1>::default()
             .rx(pins.pa13)
             .tx(pins.pa12);
 
-        let mut gps_uart = GpsUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_gps.freq())
+        let mut gps_uart_config = GpsUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_gps.freq())
             .baud(
                 RateExtU32::Hz(9600),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-            )
-            .enable();
-        gps_uart.enable_interrupts(hal::sercom::uart::Flags::RXC);
+            );
 
+        // loop {
+        //     let (x,y) = gps_uart_config.get_baud(); 
+        //     info!("Baud: {}", x);
+        // }
+
+        gps_uart_config.set_bit_order(uart::BitOrder::LsbFirst);
+        gps_uart_config.set_parity(uart::Parity::None);
+        gps_uart_config.set_stop_bits(uart::StopBits::OneBit);
+
+        let mut gps_uart = gps_uart_config.enable(); 
+
+            // .enable();
+        // gps_uart.enable_interrupts(hal::sercom::uart::Flags::RXC);
+        
         /* Status LED */
         // info!("Setting up LED");
         // let led = pins.pa02.into_push_pull_output();
         let mut gps_enable = pins.pb09.into_push_pull_output();
-        gps_enable.set_high().ok();
-        // gps_enable.set_low().ok();
+        let mut gps_reset = pins.pb07.into_push_pull_output();
+        gps_reset.set_low().ok();
+        cortex_m::asm::delay(300_000); 
+        gps_reset.set_high().ok();
+
+        // gps_reset.set_low().ok();
+        // gps_enable.set_high().ok();
+        gps_enable.set_low().ok();
+        let packet: [u8; 28] = CfgPrtUartBuilder {
+            portid: UartPortId::Uart1,
+            reserved0: 0,
+            tx_ready: 1,
+            mode: UartMode::new(DataBits::Eight, Parity::None, StopBits::One),
+            baud_rate: 9600,
+            in_proto_mask: InProtoMask::all(),
+            out_proto_mask: OutProtoMask::UBLOX,
+            flags: 0,
+            reserved5: 0,
+         }.into_packet_bytes();
+
+        loop {
+            for byte in packet {
+                info!("Byte: {}", byte);
+                nb::block!(gps_uart.write(byte)).unwrap();
+            }
+        }
+
+
+        // let packet_two = CfgMsgAllPortsBuilder::set_rate_for::<NavPvt>([1, 0, 0, 0, 0, 0]).into_packet_bytes();
+        // for byte in packet_two {
+        //     nb::block!(gps_uart.write(byte)).unwrap();
+        // }
+
+        let request = UbxPacketRequest::request_for::<ublox::NavPosLlh>().into_packet_bytes();
+        for byte in request {
+            nb::block!(gps_uart.write(byte)).unwrap();
+        }
+        loop {
+            info!("reading" );
+            let byte = nb::block!(gps_uart.read());
+            match byte {
+                Ok(byte) => {
+                    info!("Byte: {}", byte);
+                }
+                Err(e) => {
+                    info!("Error {}", e);
+                }
+            }
+        }
         /* Spawn tasks */
         // sensor_send::spawn().ok();
         // state_send::spawn().ok();
@@ -259,8 +346,10 @@ mod app {
         loop {}
     }
 
+
     #[task(binds = SERCOM2_2, local = [gps_uart], shared = [&em])]
     fn gps_rx(cx: gps_rx::Context) {
+        info!("GPS interrupt");
         cx.shared.em.run(|| {
             cortex_m::interrupt::free(|cs| {
                 let mut buf: [u8; 256] = [0; 256];

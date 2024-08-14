@@ -382,11 +382,11 @@ impl SBG {
                             callback(CallbackData::EkfNav((*pLogData).ekfNavData.into()))
                         }
                         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS => {
-                            info!("GPS Data");
+                            panic!("GPS Data");
                             callback(CallbackData::GpsPos((*pLogData).gpsPosData.into()))
                         }
                         _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL => {
-
+                            panic!("GPS Velocity Data");
                             callback(CallbackData::GpsVel((*pLogData).gpsVelData.into()))
                         }
                         _SbgEComLog_SBG_ECOM_LOG_GPS1_HDT => {
@@ -483,13 +483,13 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
     let category = unsafe { CStr::from_ptr(pCategory).to_str().unwrap() };
     let format = unsafe { CStr::from_ptr(pFormat).to_str().unwrap() };
 
-    info!("{}:{}:{}:{}:{}:{}", file, function, line, category, errorCode, format);
+    // info!("{}:{}:{}:{}:{}:{}", file, function, line, category, errorCode, format);
 
     match logType {
         // silently handle errors
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info "),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info "),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug "),
         _ => (),
     };

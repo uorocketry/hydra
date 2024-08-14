@@ -359,9 +359,9 @@ mod app {
                     Sensor::new(x),
                 )
             });
-            for msg in messages {
-                sender.send(msg).await;
-            }
+            // for msg in messages {
+            //     sender.send(msg).await;
+            // }
             Mono::delay(100.millis()).await; // what if there was no delay and we used chanenls to control the rate of messages.
         }
     }
