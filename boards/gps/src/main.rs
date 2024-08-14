@@ -6,12 +6,14 @@ mod data_manager;
 mod types;
 
 use atsamd_hal as hal;
+use atsamd_hal::dmac;
+use atsamd_hal::dmac::DmaController;
+use atsamd_hal::dmac::Transfer;
 use atsamd_hal::rtc::Count32Mode;
 use common_arm::*;
 use common_arm_atsame::mcan;
-
-use communication::Capacities;
 use communication::CanCommandManager;
+use communication::Capacities;
 use core::cell::RefCell;
 use cortex_m::interrupt::Mutex;
 use data_manager::DataManager;
@@ -22,19 +24,22 @@ use fugit::RateExtU32;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
 use hal::gpio::Pins;
-use hal::gpio::{
-    Pin, PushPullOutput, PA02, PA03, PA08, PA09, Alternate, C,
-};
+use hal::gpio::{Alternate, Pin, PushPullOutput, C, PA02, PA03, PA08, PA09};
 use hal::prelude::*;
 use hal::sercom::uart;
 use hal::sercom::IoSet1;
+use mavlink::embedded::Read;
 use mcan::messageram::SharedMemory;
 use messages::*;
 use panic_probe as _;
 use systick_monotonic::*;
+use types::GPSBUFFER;
 use types::*;
-use mavlink::embedded::Read;
-use ublox::{CfgPrtUartBuilder, UartPortId, UartMode, DataBits, Parity, StopBits, InProtoMask, OutProtoMask};    
+use ublox::{
+    CfgPrtUartBuilder, DataBits, InProtoMask, OutProtoMask, Parity, StopBits, UartMode, UartPortId,
+};
+
+pub static mut BUF_DST: GPSBUFFER = &mut [0; 256];
 
 #[inline(never)]
 #[defmt::panic_handler]
@@ -60,7 +65,12 @@ static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefC
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
 
-    use ublox::{CfgMsgAllPortsBuilder, CfgMsgSinglePortBuilder, NavPosLlh, NavPvt, PacketRef, UbxPacketRequest};
+    use atsamd_hal::sercom::Sercom;
+    use cortex_m::asm;
+    use ublox::{
+        CfgMsgAllPortsBuilder, CfgMsgSinglePortBuilder, NavPosLlh, NavPvt, PacketRef,
+        UbxPacketRequest,
+    };
 
     use super::*;
 
@@ -114,8 +124,8 @@ mod app {
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
 
-        // let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
-        // let dmaChannels = dmac.split();
+        let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
+        let dmaChannels = dmac.split();
 
         /* Logging Setup */
         HydraLogging::set_ground_station_callback(queue_gs_message);
@@ -197,7 +207,6 @@ mod app {
         // let sd_manager = SdManager::new(sdmmc_spi, pins.pa06.into_push_pull_output());
         // let (pclk_radio, gclk0) = Pclk::enable(tokens.pclks.sercom2, gclk0);
         // /* Radio config */
-
         // let rx: Pin<PA08, Alternate<C>> = pins.pa08.into_alternate();
         // let tx: Pin<PA09, Alternate<C>> = pins.pa09.into_alternate();
         // let pads = uart::Pads::<hal::sercom::Sercom2, _>::default()
@@ -215,7 +224,6 @@ mod app {
         //     nb::block!(uart.write(0x55)).unwrap();
         // }
 
-
         let (pclk_gps, gclk0) = Pclk::enable(tokens.pclks.sercom2, gclk0);
         //info!("here");
         // let mut rx = pins.pa13.into_push_pull_output();
@@ -230,33 +238,30 @@ mod app {
             .rx(pins.pa13)
             .tx(pins.pa12);
 
-        let mut gps_uart_config = GpsUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_gps.freq())
-            .baud(
+        let mut gps_uart_config =
+            GpsUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_gps.freq()).baud(
                 RateExtU32::Hz(9600),
                 uart::BaudMode::Fractional(uart::Oversampling::Bits16),
             );
 
+        gps_uart_config = gps_uart_config.immediate_overflow_notification(false);
+
         // loop {
-        //     let (x,y) = gps_uart_config.get_baud(); 
+        //     let (x,y) = gps_uart_config.get_baud();
         //     info!("Baud: {}", x);
         // }
 
-        gps_uart_config.set_bit_order(uart::BitOrder::LsbFirst);
-        gps_uart_config.set_parity(uart::Parity::None);
-        gps_uart_config.set_stop_bits(uart::StopBits::OneBit);
-
-        let mut gps_uart = gps_uart_config.enable(); 
-
-            // .enable();
+        let mut gps_uart = gps_uart_config.enable();
+        let (mut gps_rx, mut gps_tx) = gps_uart.split();
         // gps_uart.enable_interrupts(hal::sercom::uart::Flags::RXC);
-        
+
         /* Status LED */
         // info!("Setting up LED");
         // let led = pins.pa02.into_push_pull_output();
         let mut gps_enable = pins.pb09.into_push_pull_output();
         let mut gps_reset = pins.pb07.into_push_pull_output();
         gps_reset.set_low().ok();
-        cortex_m::asm::delay(300_000); 
+        cortex_m::asm::delay(300_000);
         gps_reset.set_high().ok();
 
         // gps_reset.set_low().ok();
@@ -265,41 +270,95 @@ mod app {
         let packet: [u8; 28] = CfgPrtUartBuilder {
             portid: UartPortId::Uart1,
             reserved0: 0,
-            tx_ready: 1,
+            tx_ready: 0,
             mode: UartMode::new(DataBits::Eight, Parity::None, StopBits::One),
             baud_rate: 9600,
             in_proto_mask: InProtoMask::all(),
             out_proto_mask: OutProtoMask::UBLOX,
             flags: 0,
             reserved5: 0,
-         }.into_packet_bytes();
-
-        loop {
-            for byte in packet {
-                info!("Byte: {}", byte);
-                nb::block!(gps_uart.write(byte)).unwrap();
-            }
         }
+        .into_packet_bytes();
 
+        for byte in packet {
+            // info!("Byte: {}", byte);
+            nb::block!(gps_tx.write(byte)).unwrap();
+        }
 
         // let packet_two = CfgMsgAllPortsBuilder::set_rate_for::<NavPvt>([1, 0, 0, 0, 0, 0]).into_packet_bytes();
         // for byte in packet_two {
         //     nb::block!(gps_uart.write(byte)).unwrap();
         // }
+        let mut dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
+        /* DMAC config */
+        dmaCh0
+            .as_mut()
+            .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
+        let mut xfer = Transfer::new(dmaCh0, gps_rx, unsafe { &mut *BUF_DST }, false)
+            .expect("DMA err")
+            .begin(
+                atsamd_hal::sercom::Sercom2::DMA_RX_TRIGGER,
+                dmac::TriggerAction::BURST,
+            );
 
-        let request = UbxPacketRequest::request_for::<ublox::NavPosLlh>().into_packet_bytes();
-        for byte in request {
-            nb::block!(gps_uart.write(byte)).unwrap();
-        }
         loop {
-            info!("reading" );
-            let byte = nb::block!(gps_uart.read());
-            match byte {
-                Ok(byte) => {
-                    info!("Byte: {}", byte);
+            if xfer.complete() {
+                let (chan0, source, buf) = xfer.stop();
+                xfer = dmac::Transfer::new(chan0, source, unsafe { &mut *BUF_DST }, false)
+                    .unwrap()
+                    .begin(
+                        atsamd_hal::sercom::Sercom2::DMA_RX_TRIGGER,
+                        dmac::TriggerAction::BURST,
+                    );
+                let buf_clone = buf.clone();
+
+                unsafe { BUF_DST.copy_from_slice(&[0; 256]) };
+                xfer.block_transfer_interrupt();
+                let request =
+                    UbxPacketRequest::request_for::<ublox::NavPosLlh>().into_packet_bytes();
+                for byte in request {
+                    nb::block!(gps_tx.write(byte)).unwrap();
                 }
-                Err(e) => {
-                    info!("Error {}", e);
+                cortex_m::asm::delay(300_000);
+                let mut buf: [u8; 256] = [0; 256];
+                let mut bytes: [u8; 256] = [0; 256];
+                // for i in 0..buf.len() {
+                //     let item = nb::block!(gps_uart.read()).unwrap();
+                //     // info!("Byte: {}", item);
+                //     bytes[i] = item;
+                // }
+                let buf = ublox::FixedLinearBuffer::new(&mut buf[..]);
+                let mut parser = ublox::Parser::new(buf);
+                let mut msgs = parser.consume(&buf_clone);
+                while let Some(msg) = msgs.next() {
+                    match msg {
+                        Ok(msg) => match msg {
+                            ublox::PacketRef::NavPosLlh(x) => {
+                                info!("GPS latitude: {:?}, longitude {:?}", x.lat_degrees(), x.lon_degrees());
+                            }
+                            ublox::PacketRef::NavStatus(x) => {
+                                info!("GPS fix stat: {:?}", x.fix_stat_raw());
+                            }
+                            ublox::PacketRef::NavDop(x) => {
+                                info!("GPS geometric drop: {:?}", x.geometric_dop());
+                            }
+                            ublox::PacketRef::NavSat(x) => {
+                                info!("GPS num sats used: {:?}", x.num_svs());
+                            }
+                            ublox::PacketRef::NavVelNed(x) => {
+                                info!("GPS velocity north: {:?}", x.vel_north());
+                            }
+                            ublox::PacketRef::NavPvt(x) => {
+                                info!("GPS nun sats PVT: {:?}", x.num_satellites());
+                            }
+                            _ => {
+                                info!("GPS Message not handled.");
+                            }
+                        },
+                        Err(e) => {
+                            info!("GPS parse Error");
+                        }
+                    }
                 }
             }
         }
@@ -333,7 +392,7 @@ mod app {
             Local {
                 led_green,
                 led_red,
-                gps_uart, 
+                gps_uart,
                 // sd_manager,
             },
             init::Monotonics(mono),
@@ -346,10 +405,8 @@ mod app {
         loop {}
     }
 
-
     #[task(binds = SERCOM2_2, local = [gps_uart], shared = [&em])]
     fn gps_rx(cx: gps_rx::Context) {
-        info!("GPS interrupt");
         cx.shared.em.run(|| {
             cortex_m::interrupt::free(|cs| {
                 let mut buf: [u8; 256] = [0; 256];
@@ -363,38 +420,35 @@ mod app {
                 let mut msgs = parser.consume(&bytes);
                 while let Some(msg) = msgs.next() {
                     match msg {
-                        Ok(msg) => {
-                            match msg {
-                                ublox::PacketRef::NavPosLlh(x) => {
-                                    info!("GPS latitude: {:?}", x.lat_degrees());
-                                }
-                                ublox::PacketRef::NavStatus(x) => {
-                                    info!("GPS fix stat: {:?}", x.fix_stat_raw());
-                                }
-                                ublox::PacketRef::NavDop(x) => {
-                                    info!("GPS geometric drop: {:?}", x.geometric_dop());
-                                }
-                                ublox::PacketRef::NavSat(x) => {
-                                    info!("GPS num sats used: {:?}", x.num_svs());
-                                }
-                                ublox::PacketRef::NavVelNed(x) => {
-                                    info!("GPS velocity north: {:?}", x.vel_north());
-                                }
-                                ublox::PacketRef::NavPvt(x) => {
-                                    info!("GPS nun sats PVT: {:?}", x.num_satellites());
-                                }
-                                _ => {
-                                    info!("GPS Message not handled.");
-                                }
+                        Ok(msg) => match msg {
+                            ublox::PacketRef::NavPosLlh(x) => {
+                                info!("GPS latitude: {:?}", x.lat_degrees());
                             }
-                        }
+                            ublox::PacketRef::NavStatus(x) => {
+                                info!("GPS fix stat: {:?}", x.fix_stat_raw());
+                            }
+                            ublox::PacketRef::NavDop(x) => {
+                                info!("GPS geometric drop: {:?}", x.geometric_dop());
+                            }
+                            ublox::PacketRef::NavSat(x) => {
+                                info!("GPS num sats used: {:?}", x.num_svs());
+                            }
+                            ublox::PacketRef::NavVelNed(x) => {
+                                info!("GPS velocity north: {:?}", x.vel_north());
+                            }
+                            ublox::PacketRef::NavPvt(x) => {
+                                info!("GPS nun sats PVT: {:?}", x.num_satellites());
+                            }
+                            _ => {
+                                info!("GPS Message not handled.");
+                            }
+                        },
                         Err(e) => {
                             info!("GPS parse Error");
                         }
                     }
                 }
-
-            }); 
+            });
             Ok(())
         });
     }
@@ -513,8 +567,8 @@ mod app {
     // }
 
     // /// Handles the radio interrupt.
-    // /// This only needs to be called when the radio has data to read, this is why an interrupt handler is used above polling which would waste resources. 
-    // /// We use a critical section to ensure that we are not interrupted while servicing the mavlink message. 
+    // /// This only needs to be called when the radio has data to read, this is why an interrupt handler is used above polling which would waste resources.
+    // /// We use a critical section to ensure that we are not interrupted while servicing the mavlink message.
     // #[task(priority = 3, binds = SERCOM2_2, shared = [&em, radio_manager])]
     // fn radio_rx(mut cx: radio_rx::Context) {
     //     cx.shared.radio_manager.lock(|radio_manager| {
@@ -522,7 +576,7 @@ mod app {
     //            cortex_m::interrupt::free(|cs| {
     //                 let m = radio_manager.receive_message()?;
     //                 info!("Received message {}", m.clone());
-    //                 spawn!(send_command, m) 
+    //                 spawn!(send_command, m)
 
     //             })?;
     //             Ok(())

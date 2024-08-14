@@ -15,6 +15,9 @@ pub static COM_ID: Sender = CommunicationBoard;
 pub type GpsPads = uart::PadsFromIds<Sercom2, IoSet1, PA13, PA12>;
 pub type GpsUartConfig = uart::Config<GpsPads, EightBit>;
 pub type GpsUart = uart::Uart<GpsUartConfig, Duplex>;
+
+pub type GPSBUFFER = &'static mut [u8; 256];
+
 // -------
 // Ground Station
 // -------
