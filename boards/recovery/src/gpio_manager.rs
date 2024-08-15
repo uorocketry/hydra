@@ -11,8 +11,8 @@ impl GPIOManager {
         mut main_ematch: Pin<PB12, PushPullOutput>,
         mut drogue_ematch: Pin<PB11, PushPullOutput>,
     ) -> Self {
-        drogue_ematch.set_low().ok();
-        main_ematch.set_low().ok();
+        // drogue_ematch.set_low().ok();
+        // main_ematch.set_low().ok();
         Self {
             main_ematch,
             drogue_ematch,

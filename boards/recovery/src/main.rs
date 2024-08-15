@@ -155,8 +155,11 @@ mod app {
         /* GPIO config */
         let led_green = pins.pa03.into_push_pull_output();
         let led_red = pins.pb04.into_push_pull_output();
-        let main_ematch = pins.pb12.into_push_pull_output();
-        let drogue_ematch = pins.pb11.into_push_pull_output();
+        let mut main_ematch = pins.pb12.into_push_pull_output();
+        let mut drogue_ematch = pins.pb11.into_push_pull_output();
+        main_ematch.set_low().ok();
+        drogue_ematch.set_low().ok();
+        
 
         let gpio = GPIOManager::new(main_ematch, drogue_ematch);
         /* State Machine config */
@@ -203,7 +206,7 @@ mod app {
         state_send::spawn().ok();
         ejection_sense::spawn().ok();
         blink::spawn().ok();
-        // fire_main::spawn_after(ExtU64::secs(1000)).ok();
+        // fire_main::spawn_after(ExtU64::secs(15)).ok();
         // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
 
         /* Monotonic clock */
