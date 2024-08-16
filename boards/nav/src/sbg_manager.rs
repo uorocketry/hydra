@@ -84,7 +84,7 @@ impl SBGManager {
 
         let config = DmaConfig::default()
             .memory_increment(true)
-            .transfer_complete_interrupt(true).peripheral_burst(stm32h7xx_hal::dma::config::BurstMode::Burst4);
+            .transfer_complete_interrupt(true);
         let mut transfer: Transfer<
             StreamX<stm32h7xx_hal::pac::DMA1, 1>,
             Rx<stm32h7xx_hal::pac::UART4>,

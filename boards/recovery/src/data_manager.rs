@@ -45,7 +45,10 @@ impl DataManager {
                 let mut avg_sum: f32 = 0.0;
                 let mut prev = last;
                 for i in buf {
-                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
+
+                    let time_diff: f32 = (i.1 - prev.1) as f32 / 100_000_0.0;
+                    info!("last: {:?}, timestamp: {}, time diff {}", last, i.1, time_diff);
+
                     if time_diff == 0.0 {
                         continue;
                     }

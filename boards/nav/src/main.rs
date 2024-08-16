@@ -54,6 +54,7 @@ static RTC: Mutex<RefCell<Option<rtc::Rtc>>> = Mutex::new(RefCell::new(None));
 
 #[rtic::app(device = stm32h7xx_hal::stm32, peripherals = true, dispatchers = [EXTI0, EXTI1, EXTI2, SPI3, SPI2])]
 mod app {
+    use chrono::Timelike;
     use messages::Message;
     use stm32h7xx_hal::gpio::{Alternate, Pin};
 
@@ -352,16 +353,15 @@ mod app {
                                 NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
                                 NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
                             ))
-                            .and_utc()
-                            .timestamp_subsec_millis()
+                            .and_utc().timestamp_subsec_millis()
                     }),
                     COM_ID,
                     Sensor::new(x),
                 )
             });
-            // for msg in messages {
-            //     sender.send(msg).await;
-            // }
+            for msg in messages {
+                sender.send(msg).await;
+            }
             Mono::delay(100.millis()).await; // what if there was no delay and we used chanenls to control the rate of messages.
         }
     }
@@ -474,7 +474,7 @@ mod app {
         #[task(priority = 3, binds = DMA1_STR1, shared = [&em, sbg_manager])]
         fn sbg_dma(mut context: sbg_dma::Context);
 
-        #[task(priority = 3, shared = [data_manager])]
+        #[task(priority = 2, shared = [data_manager])]
         async fn sbg_handle_data(context: sbg_handle_data::Context, data: CallbackData);
 
         #[task(priority = 1, shared = [&em, sbg_manager])]

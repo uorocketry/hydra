@@ -10,7 +10,12 @@ use atsamd_hal::rtc::Count32Mode;
 use common_arm::*;
 use common_arm_atsame::mcan;
 // use panic_halt as _;
-
+use atsamd_hal::gpio::{Alternate, Output, PushPull, D, PA04, PA05, PA06, PA07};
+use atsamd_hal::sercom::{
+    spi,
+    spi::{Config, Duplex, Pads, Spi},
+    Sercom0,
+};
 use communication::Capacities;
 use communication::{CanCommandManager, RadioDevice, RadioManager};
 use core::cell::RefCell;
@@ -23,15 +28,10 @@ use fugit::RateExtU32;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
 use hal::gpio::Pins;
-use hal::gpio::{
-    Alternate, Pin, PushPullOutput, C, PA02, PA03,
-    PA08, PA09,
-};
+use hal::gpio::{Pin, PushPullOutput, C, PA02, PA03, PA08, PA09};
 use hal::prelude::*;
 use hal::sercom::uart;
-use hal::sercom::{
-    IoSet3,
-};
+use hal::sercom::IoSet3;
 use mcan::messageram::SharedMemory;
 use messages::command::RadioRate;
 use messages::state::State;
@@ -61,12 +61,9 @@ static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefC
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
 
-    
     use command::{Command, CommandData};
-    
-    
+
     use sender::Sender;
-    
 
     use super::*;
 
@@ -203,7 +200,7 @@ mod app {
         // let (mut gclk1, dfll) =
         //     hal::clock::v2::gclk::Gclk::from_source(tokens.gclks.gclk1, clocks.dfll);
         // let gclk1 = gclk1.div(gclk::GclkDiv16::Div(3)).enable(); // 48 / 3 = 16 MHzs
-        // let (pclk_sd, gclk1) = Pclk::enable(tokens.pclks.sercom0, gclk1);
+        // let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
 
         // let pads_spi = spi::Pads::<Sercom0, IoSet3>::default()
         //     .sclk(pins.pa05)
@@ -306,7 +303,7 @@ mod app {
     /// Handles the CAN0 interrupt.
     #[task(priority = 3, binds = CAN0, shared = [can0, data_manager])]
     fn can0(mut cx: can0::Context) {
-        // info!("CAN0 interrupt");
+        info!("CAN0 interrupt");
         cx.shared.can0.lock(|can| {
             cx.shared
                 .data_manager
@@ -318,7 +315,7 @@ mod app {
      */
     #[task(capacity = 10, shared = [can0, &em])]
     fn send_internal(mut cx: send_internal::Context, m: Message) {
-        info!("{}", m.clone());
+        // info!("{}", m.clone());
         cx.shared.em.run(|| {
             cx.shared.can0.lock(|can| can.send_message(m))?;
             Ok(())
@@ -420,25 +417,24 @@ mod app {
         }
     }
 
-    // #[task(shared = [&em])]
-    // fn generate_random_messages(cx: generate_random_messages::Context) {
-    //     cx.shared.em.run(|| {
-    //         let message = Message::new(
-    //             cortex_m::interrupt::free(|cs| {
-    //                 let mut rc = RTC.borrow(cs).borrow_mut();
-    //                 let rtc = rc.as_mut().unwrap();
-    //                 rtc.count32()
-    //             }),
-    //             COM_ID,
-    //             State::new(StateData::Initializing),
-    //         );
-    //         // spawn!(send_gs, message.clone())?;
-    //         spawn!(send_internal, message)?;
-    //         Ok(())
-    //     });
-    //     spawn_after!(generate_random_messages, ExtU64::millis(200)).ok();
-
-    // }
+    #[task(shared = [&em])]
+    fn generate_random_messages(cx: generate_random_messages::Context) {
+        cx.shared.em.run(|| {
+            let message = Message::new(
+                cortex_m::interrupt::free(|cs| {
+                    let mut rc = RTC.borrow(cs).borrow_mut();
+                    let rtc = rc.as_mut().unwrap();
+                    rtc.count32()
+                }),
+                COM_ID,
+                State::new(messages::state::StateData::Initializing),
+            );
+            // spawn!(send_gs, message.clone())?;
+            spawn!(send_internal, message)?;
+            Ok(())
+        });
+        spawn_after!(generate_random_messages, ExtU64::millis(200)).ok();
+    }
 
     #[task(shared = [&em])]
     fn generate_random_command(cx: generate_random_command::Context) {
@@ -468,10 +464,15 @@ mod app {
             .lock(|data_manager| data_manager.state.clone());
         cx.shared.em.run(|| {
             if let Some(x) = state_data {
-                let message = Message::new(cortex_m::interrupt::free(|cs| {
-                    let mut rc = RTC.borrow(cs).borrow_mut();
-                    let rtc = rc.as_mut().unwrap();
-                    rtc.count32()}), COM_ID, State::new(x));
+                let message = Message::new(
+                    cortex_m::interrupt::free(|cs| {
+                        let mut rc = RTC.borrow(cs).borrow_mut();
+                        let rtc = rc.as_mut().unwrap();
+                        rtc.count32()
+                    }),
+                    COM_ID,
+                    State::new(x),
+                );
                 // spawn!(send_gs, message)?;
             } // if there is none we still return since we simply don't have data yet.
             Ok(())
@@ -480,17 +481,16 @@ mod app {
     }
 
     /// Handles the radio interrupt.
-    /// This only needs to be called when the radio has data to read, this is why an interrupt handler is used above polling which would waste resources. 
-    /// We use a critical section to ensure that we are not interrupted while servicing the mavlink message. 
+    /// This only needs to be called when the radio has data to read, this is why an interrupt handler is used above polling which would waste resources.
+    /// We use a critical section to ensure that we are not interrupted while servicing the mavlink message.
     #[task(priority = 3, binds = SERCOM2_2, shared = [&em, radio_manager])]
     fn radio_rx(mut cx: radio_rx::Context) {
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
-               cortex_m::interrupt::free(|cs| {
+                cortex_m::interrupt::free(|cs| {
                     let m = radio_manager.receive_message()?;
                     info!("Received message {}", m.clone());
-                    spawn!(send_command, m) 
-
+                    spawn!(send_command, m)
                 })?;
                 Ok(())
             });

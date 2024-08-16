@@ -29,7 +29,6 @@ impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2, GpsPosAcc) {
         let status = GpsPositionStatus::new(value.status);
 
         let valid = matches!(status.get_status(), Some(GpsPositionStatusE::SolComputed));
-        // defmt::info!("GpsPos: {:?}", value.latitude);
         (
             GpsPos1 {
                 latitude: if valid { Some(value.latitude) } else { None },
