@@ -27,10 +27,42 @@ pub enum SensorData {
     GpsPos1(GpsPos1),
     GpsPos2(GpsPos2),
     GpsPosAcc(GpsPosAcc),
+    ResetReason,
     RecoverySensing(RecoverySensing),
 }
 
 /* Replace with new health monitor */
+
+#[common_derives]
+pub enum ResetReason {
+    /// The mcu went from not having power to having power and resetting
+    PowerOnReset,
+    /// The reset pin was asserted
+    PinReset,
+    /// The brownout detector triggered
+    BrownoutReset,
+    /// The software did a soft reset through the SCB peripheral
+    SystemReset,
+    /// The software did a soft reset through the RCC periperal
+    CpuReset,
+    /// The window watchdog triggered
+    WindowWatchdogReset,
+    /// The independent watchdog triggered
+    IndependentWatchdogReset,
+    /// Either of the two watchdogs triggered (but we don't know which one)
+    GenericWatchdogReset,
+    /// The DStandby mode was exited
+    D1ExitsDStandbyMode,
+    /// The DStandby mode was exited
+    D2ExitsDStandbyMode,
+    /// A state has been entered erroneously
+    D1EntersDStandbyErroneouslyOrCpuEntersCStopErroneously,
+    /// The reason could not be determined
+    Unknown {
+        /// The raw register value
+        rcc_rsr: u32,
+    },
+}
 
 #[common_derives]
 pub struct GpsPos1 {
