@@ -11,10 +11,10 @@ default-members = ["boards/*", "examples/*"]
 version = "0.2.7"
 
 [workspace.dependencies.stm32h7xx-hal]
-git = "https://github.com/uorocketry/stm32h7xx-hal"
+#git = "https://github.com/uorocketry/stm32h7xx-hal"
+version = "0.16.0"
 # We use 35 even though we have the 33. 
 features = ["defmt", "rt", "stm32h735", "can", "rtc"]
-
 [workspace.dependencies.atsamd-hal]
 git = "https://github.com/uorocketry/atsamd"
 #git = "https://github.com/atsamd-rs/atsamd"

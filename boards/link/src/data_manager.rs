@@ -154,7 +154,7 @@ impl DataManager {
                 messages::sensor::SensorData::RecoverySensing(_) => {
                     self.recovery_sensing = Some(data);
                 }
-                messages::sensor::SensorData::ResetReason => {
+                messages::sensor::SensorData::ResetReason(_) => {
                     
                 }
             },

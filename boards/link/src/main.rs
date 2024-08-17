@@ -9,7 +9,6 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use common_arm::*;
 use communication::{CanCommandManager, CanDataManager};
 use communication::{RadioDevice, RadioManager};
-use stm32h7xx_hal::rcc::ResetReason;
 use core::cell::RefCell;
 use core::num::{NonZeroU16, NonZeroU8};
 use cortex_m::interrupt::Mutex;
@@ -30,6 +29,7 @@ use stm32h7xx_hal::gpio::gpiob::PB4;
 use stm32h7xx_hal::gpio::Speed;
 use stm32h7xx_hal::gpio::{Output, PushPull};
 use stm32h7xx_hal::prelude::*;
+use stm32h7xx_hal::rcc::ResetReason;
 use stm32h7xx_hal::rtc;
 use stm32h7xx_hal::spi;
 use stm32h7xx_hal::{rcc, rcc::rec};
@@ -283,6 +283,9 @@ mod app {
         let em = ErrorManager::new();
         blink::spawn().ok();
         send_data_internal::spawn(r).ok();
+        reset_reason_send::spawn().ok();
+        state_send::spawn().ok();
+        sensor_send::spawn().ok();
         info!("Online");
 
         (
@@ -309,28 +312,80 @@ mod app {
 
     #[task(priority = 3, shared = [data_manager, &em])]
     async fn reset_reason_send(mut cx: reset_reason_send::Context) {
-        let reason = cx.shared.data_manager.lock(|data_manager| {
-            data_manager.clone_reset_reason()
-        });
-        let message = messages::Message::new(
-            cortex_m::interrupt::free(|cs| {
-                let mut rc = RTC.borrow(cs).borrow_mut();
-                let rtc = rc.as_mut().unwrap();
-                rtc.date_time()
-                    .unwrap_or(NaiveDateTime::new(
-                        NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-                        NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
-                    ))
-                    .and_utc()
-                    .timestamp_subsec_millis()
-            }),
-            COM_ID,
-            reason.into(),
-        );
+        let reason = cx
+            .shared
+            .data_manager
+            .lock(|data_manager| data_manager.clone_reset_reason());
+        match reason {
+            Some(reason) => {
+                let x = match reason {
+                    stm32h7xx_hal::rcc::ResetReason::BrownoutReset => sensor::ResetReason::BrownoutReset, 
+                    stm32h7xx_hal::rcc::ResetReason::CpuReset => sensor::ResetReason::CpuReset,
+                    stm32h7xx_hal::rcc::ResetReason::D1EntersDStandbyErroneouslyOrCpuEntersCStopErroneously => sensor::ResetReason::D1EntersDStandbyErroneouslyOrCpuEntersCStopErroneously,
+                    stm32h7xx_hal::rcc::ResetReason::D1ExitsDStandbyMode => sensor::ResetReason::D1ExitsDStandbyMode,
+                    stm32h7xx_hal::rcc::ResetReason::D2ExitsDStandbyMode => sensor::ResetReason::D2ExitsDStandbyMode,
+                    stm32h7xx_hal::rcc::ResetReason::GenericWatchdogReset => sensor::ResetReason::GenericWatchdogReset,
+                    stm32h7xx_hal::rcc::ResetReason::IndependentWatchdogReset => sensor::ResetReason::IndependentWatchdogReset,
+                    stm32h7xx_hal::rcc::ResetReason::PinReset => sensor::ResetReason::PinReset, 
+                    stm32h7xx_hal::rcc::ResetReason::PowerOnReset => sensor::ResetReason::PowerOnReset,
+                    stm32h7xx_hal::rcc::ResetReason::SystemReset => sensor::ResetReason::SystemReset,
+                    stm32h7xx_hal::rcc::ResetReason::Unknown { rcc_rsr } => sensor::ResetReason::Unknown { rcc_rsr },
+                    stm32h7xx_hal::rcc::ResetReason::WindowWatchdogReset => sensor::ResetReason::WindowWatchdogReset,
+                };
+                let message = messages::Message::new(
+                    cortex_m::interrupt::free(|cs| {
+                        let mut rc = RTC.borrow(cs).borrow_mut();
+                        let rtc = rc.as_mut().unwrap();
+                        rtc.date_time()
+                            .unwrap_or(NaiveDateTime::new(
+                                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                                NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
+                            ))
+                            .and_utc()
+                            .timestamp_subsec_millis()
+                    }),
+                    COM_ID,
+                    sensor::Sensor::new(x),
+                );
+
+                cx.shared.em.run(|| {
+                    spawn!(send_gs, message)?;
+                    Ok(())
+                })
+            }
+            None => return,
+        }
+    }
+
+    #[task(priority = 3, shared = [data_manager, &em])]
+    async fn state_send(mut cx: state_send::Context) {
+        let state_data = cx
+            .shared
+            .data_manager
+            .lock(|data_manager| data_manager.state.clone());
         cx.shared.em.run(|| {
-            spawn!(send_gs, message)?;
+            if let Some(x) = state_data {
+                let message = Message::new(
+                    cortex_m::interrupt::free(|cs| {
+                        let mut rc = RTC.borrow(cs).borrow_mut();
+                        let rtc = rc.as_mut().unwrap();
+                        rtc.date_time()
+                            .unwrap_or(NaiveDateTime::new(
+                                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                                NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
+                            ))
+                            .and_utc()
+                            .timestamp_subsec_millis()
+                    }),
+                    COM_ID,
+                    messages::state::State::new(x),
+                );
+                spawn!(send_gs, message)?;
+            } // if there is none we still return since we simply don't have data yet.
             Ok(())
-        })
+        });
+        Mono::delay(5.secs()).await;
+        // spawn_after!(state_send, ExtU64::secs(5)).ok();
     }
 
     /**
@@ -498,4 +553,3 @@ mod app {
         });
     }
 }
-

@@ -27,7 +27,7 @@ pub enum SensorData {
     GpsPos1(GpsPos1),
     GpsPos2(GpsPos2),
     GpsPosAcc(GpsPosAcc),
-    ResetReason,
+    ResetReason(ResetReason),
     RecoverySensing(RecoverySensing),
 }
 
