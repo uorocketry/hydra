@@ -333,17 +333,7 @@ mod app {
                     stm32h7xx_hal::rcc::ResetReason::WindowWatchdogReset => sensor::ResetReason::WindowWatchdogReset,
                 };
                 let message = messages::Message::new(
-                    cortex_m::interrupt::free(|cs| {
-                        let mut rc = RTC.borrow(cs).borrow_mut();
-                        let rtc = rc.as_mut().unwrap();
-                        rtc.date_time()
-                            .unwrap_or(NaiveDateTime::new(
-                                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-                                NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
-                            ))
-                            .and_utc()
-                            .timestamp_subsec_millis()
-                    }),
+                    Mono::now().ticks(),
                     COM_ID,
                     sensor::Sensor::new(x),
                 );
@@ -366,17 +356,7 @@ mod app {
         cx.shared.em.run(|| {
             if let Some(x) = state_data {
                 let message = Message::new(
-                    cortex_m::interrupt::free(|cs| {
-                        let mut rc = RTC.borrow(cs).borrow_mut();
-                        let rtc = rc.as_mut().unwrap();
-                        rtc.date_time()
-                            .unwrap_or(NaiveDateTime::new(
-                                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-                                NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
-                            ))
-                            .and_utc()
-                            .timestamp_subsec_millis()
-                    }),
+                    Mono::now().ticks(),
                     COM_ID,
                     messages::state::State::new(x),
                 );
@@ -430,17 +410,7 @@ mod app {
     pub fn queue_gs_message(d: impl Into<Data>) {
         info!("Queueing message");
         let message = messages::Message::new(
-            cortex_m::interrupt::free(|cs| {
-                let mut rc = RTC.borrow(cs).borrow_mut();
-                let rtc = rc.as_mut().unwrap();
-                rtc.date_time()
-                    .unwrap_or(NaiveDateTime::new(
-                        NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-                        NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
-                    ))
-                    .and_utc()
-                    .timestamp_subsec_millis()
-            }),
+            Mono::now().ticks(),
             COM_ID,
             d.into(),
         );

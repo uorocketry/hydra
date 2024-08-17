@@ -16,7 +16,7 @@ use data_manager::DataManager;
 use defmt::info;
 use defmt_rtt as _;
 use fdcan::{
-    config::{NominalBitTiming, DataBitTiming},
+    config::{DataBitTiming, NominalBitTiming},
     filter::{StandardFilter, StandardFilterSlot},
 };
 use heapless::Vec;
@@ -72,7 +72,6 @@ mod app {
         can_command_manager: CanCommandManager,
         can_data_manager: CanDataManager,
         sbg_power: PB4<Output<PushPull>>,
-
     }
     #[local]
     struct LocalResources {
@@ -142,7 +141,6 @@ mod app {
         //     transceiver_delay_compensation: true,
         // };
 
-
         info!("CAN enabled");
         // GPIO
         let gpioc = ctx.device.GPIOC.split(ccdr.peripheral.GPIOC);
@@ -179,7 +177,7 @@ mod app {
 
         can_data.set_nominal_bit_timing(btr);
 
-        // can_data.set_automatic_retransmit(false); // data can be dropped due to its volume. 
+        // can_data.set_automatic_retransmit(false); // data can be dropped due to its volume.
 
         // can_command.set_data_bit_timing(data_bit_timing);
 
@@ -218,7 +216,7 @@ mod app {
             StandardFilter::accept_all_into_fifo0(),
         );
         // can_data.set_data_bit_timing(data_bit_timing);
-        
+
         let config = can_command
             .get_config()
             .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCanAndBRS); // check this maybe don't bit switch allow.
@@ -226,10 +224,8 @@ mod app {
         can_command.enable_interrupt(fdcan::interrupt::Interrupt::RxFifo0NewMsg);
 
         can_command.enable_interrupt_line(fdcan::interrupt::InterruptLine::_0, true);
-        
+
         let can_command_manager = CanCommandManager::new(can_command.into_normal());
-
-
 
         let spi_sd: stm32h7xx_hal::spi::Spi<
             stm32h7xx_hal::stm32::SPI1,
@@ -305,7 +301,7 @@ mod app {
         send_data_internal::spawn(r).ok();
         display_data::spawn(s).ok();
         // sbg_power_on::spawn().ok();
-        
+
         (
             SharedResources {
                 data_manager,
@@ -315,12 +311,8 @@ mod app {
                 can_command_manager,
                 can_data_manager,
                 sbg_power,
-
             },
-            LocalResources {
-                led_red,
-                led_green,
-            },
+            LocalResources { led_red, led_green },
         )
     }
 
@@ -343,22 +335,10 @@ mod app {
                 .data_manager
                 .lock(|manager| manager.clone_sensors());
             info!("{:?}", data.clone());
-            let messages = data.into_iter().flatten().map(|x| {
-                Message::new(
-                    cortex_m::interrupt::free(|cs| {
-                        let mut rc = RTC.borrow(cs).borrow_mut();
-                        let rtc = rc.as_mut().unwrap();
-                        rtc.date_time()
-                            .unwrap_or(NaiveDateTime::new(
-                                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-                                NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
-                            ))
-                            .and_utc().timestamp_subsec_millis()
-                    }),
-                    COM_ID,
-                    Sensor::new(x),
-                )
-            });
+            let messages = data
+                .into_iter()
+                .flatten()
+                .map(|x| Message::new(Mono::now().ticks(), COM_ID, Sensor::new(x)));
             for msg in messages {
                 sender.send(msg).await;
             }
@@ -370,17 +350,7 @@ mod app {
     pub fn queue_gs_message(d: impl Into<Data>) {
         info!("Queueing message");
         let message = messages::Message::new(
-            cortex_m::interrupt::free(|cs| {
-                let mut rc = RTC.borrow(cs).borrow_mut();
-                let rtc = rc.as_mut().unwrap();
-                rtc.date_time()
-                    .unwrap_or(NaiveDateTime::new(
-                        NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-                        NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap(),
-                    ))
-                    .and_utc()
-                    .timestamp_subsec_millis()
-            }),
+            Mono::now().ticks(),
             COM_ID,
             d.into(),
         );
