@@ -334,7 +334,12 @@ mod app {
                     match msg {
                         Ok(msg) => match msg {
                             ublox::PacketRef::NavPosLlh(x) => {
-                                info!("GPS latitude: {:?}, longitude {:?}", x.lat_degrees(), x.lon_degrees());
+                                let message_data = messages::sensor::NavPosLlh {
+                                    height_msl: x.height_msl(),
+                                    longitude: x.lon_degrees(),
+                                    latitude: x.lat_degrees(),
+                                };                                
+                                // info!("GPS latitude: {:?}, longitude {:?}", x.lat_degrees(), x.lon_degrees());
                             }
                             ublox::PacketRef::NavStatus(x) => {
                                 info!("GPS fix stat: {:?}", x.fix_stat_raw());

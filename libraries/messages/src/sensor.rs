@@ -22,6 +22,7 @@ pub enum SensorData {
     EkfNavAcc(EkfNavAcc),
     Imu1(Imu1),
     Imu2(Imu2),
+    NavPosLlh(NavPosLlh),
     GpsVel(GpsVel),
     GpsVelAcc(GpsVelAcc),
     GpsPos1(GpsPos1),
@@ -29,6 +30,13 @@ pub enum SensorData {
     GpsPosAcc(GpsPosAcc),
     ResetReason(ResetReason),
     RecoverySensing(RecoverySensing),
+}
+
+#[common_derives]
+pub struct NavPosLlh {
+    pub height_msl: f64,
+    pub longitude: f64,
+    pub latitude: f64, 
 }
 
 /* Replace with new health monitor */
@@ -71,6 +79,8 @@ pub struct GpsPos1 {
     #[doc = "< Longitude in degrees, positive east."]
     pub longitude: Option<f64>,
 }
+
+
 
 #[common_derives]
 pub struct GpsPos2 {

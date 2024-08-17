@@ -23,6 +23,7 @@ pub struct DataManager {
     pub reset_reason: Option<ResetReason>,
     pub logging_rate: Option<RadioRate>,
     pub recovery_sensing: Option<Message>,
+    pub nav_pos_l1h: Option<Message>,
 }
 
 impl DataManager {
@@ -45,6 +46,7 @@ impl DataManager {
             reset_reason: None, 
             logging_rate: Some(RadioRate::Slow), // start slow.
             recovery_sensing: None,
+            nav_pos_l1h: None,
         }
     }
 
@@ -59,7 +61,7 @@ impl DataManager {
     }
 
     /// Do not clone instead take to reduce CPU load.
-    pub fn take_sensors(&mut self) -> [Option<Message>; 14] {
+    pub fn take_sensors(&mut self) -> [Option<Message>; 15] {
         [
             self.air.take(),
             self.ekf_nav_1.take(),
@@ -74,6 +76,7 @@ impl DataManager {
             self.gps_pos_1.take(),
             self.gps_pos_2.take(),
             self.gps_pos_acc.take(),
+            self.nav_pos_l1h.take(),
             self.recovery_sensing.take(),
         ]
     }
@@ -153,6 +156,9 @@ impl DataManager {
                 }
                 messages::sensor::SensorData::RecoverySensing(_) => {
                     self.recovery_sensing = Some(data);
+                }
+                messages::sensor::SensorData::NavPosLlh(_) => {
+                    self.nav_pos_l1h = Some(data);
                 }
                 messages::sensor::SensorData::ResetReason(_) => {
                     
