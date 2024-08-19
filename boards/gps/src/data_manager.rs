@@ -24,6 +24,7 @@ impl DataManager {
                 messages::command::CommandData::DeployDrogue(_) => {}
                 messages::command::CommandData::DeployMain(_) => {}
                 messages::command::CommandData::PowerDown(_) => {}
+                messages::command::CommandData::Online(_) => {}
             },
             _ => {}
         }

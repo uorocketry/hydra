@@ -202,10 +202,19 @@ mod app {
 
         /* Spawn tasks */
         run_sm::spawn().ok();
-        read_barometer::spawn().ok();
+        // read_barometer::spawn().ok();
         state_send::spawn().ok();
         ejection_sense::spawn().ok();
         blink::spawn().ok();
+        // send an online message to the com board. 
+        let message = Message::new(
+            0,// technically true time is not known yet.
+            COM_ID,
+            messages::command::Command {
+                data: messages::command::CommandData::Online(messages::command::Online { online: true }),
+            },
+        );
+        send_command::spawn(message).ok(); 
         // fire_main::spawn_after(ExtU64::secs(15)).ok();
         // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
 

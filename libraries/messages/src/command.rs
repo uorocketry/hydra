@@ -7,6 +7,7 @@ pub struct Command {
     pub data: CommandData,
 }
 
+
 #[common_derives]
 #[derive(From)]
 pub enum CommandData {
@@ -14,6 +15,14 @@ pub enum CommandData {
     DeployMain(DeployMain),
     PowerDown(PowerDown),
     RadioRateChange(RadioRateChange),
+    Online(Online),
+}
+
+
+// not really a command but this decreases the complexity of the change on ground station. 
+#[common_derives]
+pub struct Online {
+    pub online: bool, 
 }
 
 #[common_derives]

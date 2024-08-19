@@ -20,6 +20,7 @@ use data_manager::DataManager;
 use defmt::info;
 use defmt_rtt as _; // global logger
 use fugit::ExtU64;
+use types::GpsUartTx;
 use fugit::RateExtU32;
 use hal::clock::v2::pclk::Pclk;
 use hal::clock::v2::Source;
@@ -33,6 +34,7 @@ use mcan::messageram::SharedMemory;
 use messages::*;
 use panic_probe as _;
 use systick_monotonic::*;
+use types::GPSTransfer;
 use types::GPSBUFFER;
 use types::*;
 use ublox::{
@@ -86,7 +88,8 @@ mod app {
     struct Local {
         led_green: Pin<PA03, PushPullOutput>,
         led_red: Pin<PA02, PushPullOutput>,
-        gps_uart: GpsUart,
+        gps_tx: GpsUartTx,
+        gps_dma_transfer: Option<GPSTransfer>,
         // sd_manager: SdManager<
         //     Spi<
         //         Config<
@@ -294,26 +297,28 @@ mod app {
         dmaCh0
             .as_mut()
             .enable_interrupts(dmac::InterruptFlags::new().with_tcmpl(true));
-        let mut xfer = Transfer::new(dmaCh0, gps_rx, unsafe { &mut *BUF_DST }, false)
-            .expect("DMA err")
-            .begin(
-                atsamd_hal::sercom::Sercom2::DMA_RX_TRIGGER,
-                dmac::TriggerAction::BURST,
-            );
+        let mut gps_dma_transfer: GPSTransfer =
+            Transfer::new(dmaCh0, gps_rx, unsafe { &mut *BUF_DST }, false)
+                .expect("DMA err")
+                .begin(
+                    atsamd_hal::sercom::Sercom2::DMA_RX_TRIGGER,
+                    dmac::TriggerAction::BURST,
+                );
 
         loop {
-            if xfer.complete() {
-                let (chan0, source, buf) = xfer.stop();
-                xfer = dmac::Transfer::new(chan0, source, unsafe { &mut *BUF_DST }, false)
-                    .unwrap()
-                    .begin(
-                        atsamd_hal::sercom::Sercom2::DMA_RX_TRIGGER,
-                        dmac::TriggerAction::BURST,
-                    );
+            if gps_dma_transfer.complete() {
+                let (chan0, source, buf) = gps_dma_transfer.stop();
+                gps_dma_transfer =
+                    dmac::Transfer::new(chan0, source, unsafe { &mut *BUF_DST }, false)
+                        .unwrap()
+                        .begin(
+                            atsamd_hal::sercom::Sercom2::DMA_RX_TRIGGER,
+                            dmac::TriggerAction::BURST,
+                        );
                 let buf_clone = buf.clone();
 
                 unsafe { BUF_DST.copy_from_slice(&[0; 256]) };
-                xfer.block_transfer_interrupt();
+                gps_dma_transfer.block_transfer_interrupt();
                 let request =
                     UbxPacketRequest::request_for::<ublox::NavPosLlh>().into_packet_bytes();
                 for byte in request {
@@ -338,7 +343,7 @@ mod app {
                                     height_msl: x.height_msl(),
                                     longitude: x.lon_degrees(),
                                     latitude: x.lat_degrees(),
-                                };                                
+                                };
                                 // info!("GPS latitude: {:?}, longitude {:?}", x.lat_degrees(), x.lon_degrees());
                             }
                             ublox::PacketRef::NavStatus(x) => {
@@ -385,6 +390,16 @@ mod app {
         led_green.set_low();
         led_red.set_low();
         blink::spawn().ok();
+        let message = Message::new(
+            0, // technically true time is not known yet.
+            COM_ID,
+            messages::command::Command {
+                data: messages::command::CommandData::Online(messages::command::Online {
+                    online: true,
+                }),
+            },
+        );
+        send_command::spawn(message).ok();
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
         (
@@ -397,7 +412,8 @@ mod app {
             Local {
                 led_green,
                 led_red,
-                gps_uart,
+                gps_dma_transfer: Some(gps_dma_transfer),
+                gps_tx, 
                 // sd_manager,
             },
             init::Monotonics(mono),
@@ -410,52 +426,68 @@ mod app {
         loop {}
     }
 
-    #[task(binds = SERCOM2_2, local = [gps_uart], shared = [&em])]
-    fn gps_rx(cx: gps_rx::Context) {
-        cx.shared.em.run(|| {
-            cortex_m::interrupt::free(|cs| {
-                let mut buf: [u8; 256] = [0; 256];
-                let mut bytes: [u8; 256] = [0; 256];
-                for i in 0..buf.len() {
-                    let item = nb::block!(cx.local.gps_uart.read()).unwrap();
-                    bytes[i] = item;
-                }
-                let buf = ublox::FixedLinearBuffer::new(&mut buf[..]);
-                let mut parser = ublox::Parser::new(buf);
-                let mut msgs = parser.consume(&bytes);
-                while let Some(msg) = msgs.next() {
-                    match msg {
-                        Ok(msg) => match msg {
-                            ublox::PacketRef::NavPosLlh(x) => {
-                                info!("GPS latitude: {:?}", x.lat_degrees());
-                            }
-                            ublox::PacketRef::NavStatus(x) => {
-                                info!("GPS fix stat: {:?}", x.fix_stat_raw());
-                            }
-                            ublox::PacketRef::NavDop(x) => {
-                                info!("GPS geometric drop: {:?}", x.geometric_dop());
-                            }
-                            ublox::PacketRef::NavSat(x) => {
-                                info!("GPS num sats used: {:?}", x.num_svs());
-                            }
-                            ublox::PacketRef::NavVelNed(x) => {
-                                info!("GPS velocity north: {:?}", x.vel_north());
-                            }
-                            ublox::PacketRef::NavPvt(x) => {
-                                info!("GPS nun sats PVT: {:?}", x.num_satellites());
-                            }
-                            _ => {
-                                info!("GPS Message not handled.");
-                            }
-                        },
-                        Err(e) => {
-                            info!("GPS parse Error");
+    #[task(priority = 3, binds = DMAC_0, local = [gps_dma_transfer, gps_tx], shared = [&em, data_manager])]
+    fn gps_dma(mut cx: gps_dma::Context) {
+        let mut gps_dma_transfer = cx.local.gps_dma_transfer.take().unwrap();
+        let mut gps_tx = cx.local.gps_tx;
+        if gps_dma_transfer.complete() {
+            let (chan0, source, buf) = gps_dma_transfer.stop();
+            gps_dma_transfer = dmac::Transfer::new(chan0, source, unsafe { &mut *BUF_DST }, false)
+                .unwrap()
+                .begin(
+                    atsamd_hal::sercom::Sercom2::DMA_RX_TRIGGER,
+                    dmac::TriggerAction::BURST,
+                );
+            let buf_clone = buf.clone();
+
+            unsafe { BUF_DST.copy_from_slice(&[0; 256]) };
+            gps_dma_transfer.block_transfer_interrupt();
+            let request = UbxPacketRequest::request_for::<ublox::NavPosLlh>().into_packet_bytes();
+            for byte in request {
+                nb::block!(gps_tx.write(byte)).unwrap();
+            }
+            cortex_m::asm::delay(300_000);
+            let mut buf: [u8; 256] = [0; 256];
+            let mut bytes: [u8; 256] = [0; 256];
+            let buf = ublox::FixedLinearBuffer::new(&mut buf[..]);
+            let mut parser = ublox::Parser::new(buf);
+            let mut msgs = parser.consume(&buf_clone);
+            while let Some(msg) = msgs.next() {
+                match msg {
+                    Ok(msg) => match msg {
+                        ublox::PacketRef::NavPosLlh(x) => {
+                            let message_data = messages::sensor::NavPosLlh {
+                                height_msl: x.height_msl(),
+                                longitude: x.lon_degrees(),
+                                latitude: x.lat_degrees(),
+                            };
+                            // info!("GPS latitude: {:?}, longitude {:?}", x.lat_degrees(), x.lon_degrees());
                         }
+                        ublox::PacketRef::NavStatus(x) => {
+                            info!("GPS fix stat: {:?}", x.fix_stat_raw());
+                        }
+                        ublox::PacketRef::NavDop(x) => {
+                            info!("GPS geometric drop: {:?}", x.geometric_dop());
+                        }
+                        ublox::PacketRef::NavSat(x) => {
+                            info!("GPS num sats used: {:?}", x.num_svs());
+                        }
+                        ublox::PacketRef::NavVelNed(x) => {
+                            info!("GPS velocity north: {:?}", x.vel_north());
+                        }
+                        ublox::PacketRef::NavPvt(x) => {
+                            info!("GPS nun sats PVT: {:?}", x.num_satellites());
+                        }
+                        _ => {
+                            info!("GPS Message not handled.");
+                        }
+                    },
+                    Err(e) => {
+                        info!("GPS parse Error");
                     }
                 }
-            });
-            Ok(())
-        });
+            }
+        }
     }
 
     /// Handles the CAN1 interrupt.

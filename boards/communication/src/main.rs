@@ -252,7 +252,7 @@ mod app {
         led_red.set_low();
         blink::spawn().ok();
         sensor_send::spawn().ok();
-        // generate_random_messages::spawn().ok();
+        generate_random_messages::spawn().ok();
         // generate_random_command::spawn().ok();
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
@@ -429,8 +429,9 @@ mod app {
                 COM_ID,
                 State::new(messages::state::StateData::Initializing),
             );
+            info!("Sending message {}", message.clone());
             // spawn!(send_gs, message.clone())?;
-            spawn!(send_internal, message)?;
+            spawn!(send_gs, message)?;
             Ok(())
         });
         spawn_after!(generate_random_messages, ExtU64::millis(200)).ok();

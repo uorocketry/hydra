@@ -11,6 +11,7 @@ pub enum Sender {
     PowerBoard,
     CameraBoard,
     BeaconBoard,
+    GpsBoard, 
 }
 
 impl From<Sender> for u16 {
@@ -23,6 +24,7 @@ impl From<Sender> for u16 {
             Sender::PowerBoard => 4,
             Sender::CameraBoard => 5,
             Sender::BeaconBoard => 6,
+            Sender::GpsBoard => 7,
         }
     }
 }

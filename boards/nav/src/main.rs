@@ -82,7 +82,8 @@ mod app {
     #[init]
     fn init(ctx: init::Context) -> (SharedResources, LocalResources) {
         // channel setup
-        let (s, r) = make_channel!(Message, DATA_CHANNEL_CAPACITY);
+        let (mut s, mut r) = make_channel!(Message, DATA_CHANNEL_CAPACITY);
+        let (mut s_command, mut r_command) = make_channel!(Message, DATA_CHANNEL_CAPACITY);
 
         let core = ctx.core;
 
@@ -301,6 +302,17 @@ mod app {
         send_data_internal::spawn(r).ok();
         display_data::spawn(s).ok();
         // sbg_power_on::spawn().ok();
+        let message = Message::new(
+            0,// technically true time is not known yet.
+            COM_ID,
+            messages::command::Command {
+                data: messages::command::CommandData::Online(messages::command::Online { online: true }),
+            },
+        );
+        send_command_internal::spawn(r_command).ok(); 
+        async {
+            s_command.send(message).await; 
+        };
 
         (
             SharedResources {

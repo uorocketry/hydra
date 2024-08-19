@@ -1,4 +1,4 @@
-use defmt::info;
+use defmt::{info, error};
 use messages::command::RadioRate;
 use messages::state::StateData;
 use messages::Message;
@@ -88,6 +88,7 @@ impl DataManager {
                 messages::command::CommandData::DeployDrogue(_) => {}
                 messages::command::CommandData::DeployMain(_) => {}
                 messages::command::CommandData::PowerDown(_) => {}
+                messages::command::CommandData::Online(_) => {}
             },
             _ => {}
         }
@@ -136,6 +137,9 @@ impl DataManager {
                 }
                 messages::sensor::SensorData::RecoverySensing(_) => {
                     self.recovery_sensing = Some(data);
+                }
+                _ => {
+                    error!("Unknown sensor data type");
                 }
             },
             messages::Data::State(state) => {
