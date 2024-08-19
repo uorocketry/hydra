@@ -302,6 +302,7 @@ dependencies = [
  "cortex-m-rtic",
  "defmt",
  "defmt-rtt",
+ "embedded-alloc",
  "embedded-sdmmc 0.8.0",
  "heapless 0.7.17",
  "messages",
@@ -309,6 +310,7 @@ dependencies = [
  "postcard",
  "systick-monotonic",
  "typenum",
+ "ublox",
 ]
 
 [[package]]

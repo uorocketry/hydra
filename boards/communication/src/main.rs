@@ -3,12 +3,14 @@
 
 mod communication;
 mod data_manager;
+mod gps_manager;
 mod types;
 
 use atsamd_hal as hal;
 use atsamd_hal::rtc::Count32Mode;
 use common_arm::*;
 use common_arm_atsame::mcan;
+use gps_manager::{gps_dma, GpsManager};
 // use panic_halt as _;
 use atsamd_hal::gpio::{Alternate, Output, PushPull, D, PA04, PA05, PA06, PA07};
 use atsamd_hal::sercom::{
@@ -17,7 +19,7 @@ use atsamd_hal::sercom::{
     Sercom0,
 };
 use communication::Capacities;
-use communication::{CanCommandManager, RadioDevice, RadioManager};
+use communication::{CanCommandManager, RadioManager};
 use core::cell::RefCell;
 use cortex_m::interrupt::Mutex;
 use data_manager::DataManager;
@@ -43,7 +45,7 @@ use types::*;
 #[inline(never)]
 #[defmt::panic_handler]
 fn panic() -> ! {
-    cortex_m::asm::udf()
+    atsamd_hal::pac::SCB::sys_reset()
 }
 
 /// Hardfault handler.
@@ -55,6 +57,9 @@ fn panic() -> ! {
 unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
     loop {}
 }
+
+#[global_allocator]
+static HEAP: embedded_alloc::Heap = embedded_alloc::Heap::empty();
 
 static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefCell::new(None));
 
@@ -71,7 +76,8 @@ mod app {
     struct Shared {
         em: ErrorManager,
         data_manager: DataManager,
-        radio_manager: RadioManager,
+        radio_manager: Option<RadioManager>,
+        gps_manager: Option<GpsManager>,
         can0: communication::CanDevice0,
         can_command_manager: CanCommandManager,
     }
@@ -108,6 +114,12 @@ mod app {
         can_command_memory: SharedMemory<Capacities> = SharedMemory::new()
     ])]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
+        {
+            use core::mem::MaybeUninit;
+            const HEAP_SIZE: usize = 1024;
+            static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
+            unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
+        }
         let mut peripherals = cx.device;
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
@@ -192,9 +204,9 @@ mod app {
                 )
                 .enable();
 
-        let radio = RadioDevice::new(uart);
+        // let radio = RadioDevice::new(uart);
 
-        let radio_manager = RadioManager::new(radio);
+        let radio_manager = RadioManager::new(uart);
 
         // /* SD config */
         // let (mut gclk1, dfll) =
@@ -215,16 +227,23 @@ mod app {
 
         let (pclk_gps, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
         //info!("here");
-        let pads = hal::sercom::uart::Pads::<hal::sercom::Sercom4, IoSet3>::default()
-            .rx(pins.pa12)
-            .tx(pins.pa13);
+        // let pads = hal::sercom::uart::Pads::<hal::sercom::Sercom4, IoSet3>::default()
+        //     .rx(pins.pa12)
+        //     .tx(pins.pa13);
 
-        let gps_uart = GpsUartConfig::new(&mclk, peripherals.SERCOM4, pads, pclk_gps.freq())
-            .baud(
-                RateExtU32::Hz(9600),
-                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-            )
-            .enable();
+        // let gps_uart = GpsUartConfig::new(&mclk, peripherals.SERCOM4, pads, pclk_gps.freq())
+        //     .baud(
+        //         RateExtU32::Hz(9600),
+        //         uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+        //     )
+        //     .enable();
+
+        let gps_manager = GpsManager::new(
+            None,
+            pins.pb07.into_push_pull_output(),
+            pins.pb09.into_push_pull_output(),
+        );
+
         // gps_uart.enable_interrupts(hal::sercom::uart::Flags::RXC);
 
         /* Status LED */
@@ -248,11 +267,10 @@ mod app {
         });
         let mut led_green = pins.pa03.into_push_pull_output();
         let mut led_red = pins.pa02.into_push_pull_output();
-        led_green.set_low();
-        led_red.set_low();
+        led_green.set_high();
+        led_red.set_high();
         blink::spawn().ok();
         sensor_send::spawn().ok();
-        generate_random_messages::spawn().ok();
         // generate_random_command::spawn().ok();
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
 
@@ -261,7 +279,8 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
-                radio_manager,
+                radio_manager: Some(radio_manager),
+                gps_manager: Some(gps_manager),
                 can0,
                 can_command_manager,
             },
@@ -311,7 +330,7 @@ mod app {
         });
     }
     /**
-     * Sends a message over CAN.
+     * Sends a mgps_txessage over CAN.
      */
     #[task(capacity = 10, shared = [can0, &em])]
     fn send_internal(mut cx: send_internal::Context, m: Message) {
@@ -347,24 +366,24 @@ mod app {
             COM_ID,
             d.into(),
         );
-
-        send_gs::spawn(message).ok();
+        info!("Sending message {}", message);
+        // send_gs::spawn(message).ok();
     }
 
-    /**
-     * Sends a message to the radio over UART.
-     */
-    #[task(capacity = 10, shared = [&em, radio_manager])]
-    fn send_gs(mut cx: send_gs::Context, m: Message) {
-        cx.shared.radio_manager.lock(|radio_manager| {
-            cx.shared.em.run(|| {
-                let mut buf = [0; 255];
-                let data = postcard::to_slice(&m, &mut buf)?;
-                radio_manager.send_message(data)?;
-                Ok(())
-            })
-        });
-    }
+    // /**
+    //  * Sends a message to the radio over UART.
+    //  */
+    // #[task(capacity = 10, shared = [&em, radio_manager])]
+    // fn send_gs(mut cx: send_gs::Context, m: Message) {
+    //     cx.shared.radio_manager.lock(|radio_manager| {
+    //         cx.shared.em.run(|| {
+    //             let mut buf = [0; 255];
+    //             let data = postcard::to_slice(&m, &mut buf)?;
+    //             radio_manager.send_message(data)?;
+    //             Ok(())
+    //         })
+    //     });
+    // }
 
     // #[task(capacity = 10, local = [sd_manager], shared = [&em])]
     //  fn sd_dump(cx: sd_dump::Context, m: Message) {
@@ -386,27 +405,38 @@ mod app {
     /**
      * Sends information about the sensors.
      */
-    #[task(shared = [data_manager, &em])]
+    #[task(shared = [data_manager, radio_manager, gps_manager, &em])]
     fn sensor_send(mut cx: sensor_send::Context) {
         let (sensors, logging_rate) = cx
             .shared
             .data_manager
             .lock(|data_manager| (data_manager.take_sensors(), data_manager.get_logging_rate()));
 
-        cx.shared.em.run(|| {
-            for msg in sensors {
-                match msg {
-                    Some(x) => {
-                        spawn!(send_gs, x.clone())?;
-                        //                     spawn!(sd_dump, x)?;
-                    }
-                    None => {
-                        continue;
-                    }
+        for msg in sensors {
+            match msg {
+                Some(x) => {
+                    // spawn!(send_gs, x.clone())?;
+                    cx.shared.radio_manager.lock(|radio_manager| {
+                        cx.shared.em.run(|| {
+                            let mut buf = [0; 255];
+                            let data = postcard::to_slice(&x, &mut buf)?;
+                            let mut radio = radio_manager.take().unwrap();
+                            radio.send_message(data)?;
+                            // let uart = radio.release();
+                            // cx.shared.gps_manager.lock(|gps| {
+                            // let mut gps = gps.take().unwrap();
+                            // });
+                            Ok(())
+                        });
+                    });
+
+                    //                     spawn!(sd_dump, x)?;
+                }
+                None => {
+                    continue;
                 }
             }
-            Ok(())
-        });
+        }
         match logging_rate {
             RadioRate::Fast => {
                 spawn_after!(sensor_send, ExtU64::millis(100)).ok();
@@ -417,86 +447,95 @@ mod app {
         }
     }
 
-    #[task(shared = [&em])]
-    fn generate_random_messages(cx: generate_random_messages::Context) {
-        cx.shared.em.run(|| {
-            let message = Message::new(
-                cortex_m::interrupt::free(|cs| {
-                    let mut rc = RTC.borrow(cs).borrow_mut();
-                    let rtc = rc.as_mut().unwrap();
-                    rtc.count32()
-                }),
-                COM_ID,
-                State::new(messages::state::StateData::Initializing),
-            );
-            info!("Sending message {}", message.clone());
-            // spawn!(send_gs, message.clone())?;
-            spawn!(send_gs, message)?;
-            Ok(())
-        });
-        spawn_after!(generate_random_messages, ExtU64::millis(200)).ok();
-    }
+    // #[task(shared = [&em])]
+    // fn generate_random_messages(cx: generate_random_messages::Context) {
+    //     cx.shared.em.run(|| {
+    //         let message = Message::new(
+    //             cortex_m::interrupt::free(|cs| {
+    //                 let mut rc = RTC.borrow(cs).borrow_mut();
+    //                 let rtc = rc.as_mut().unwrap();
+    //                 rtc.count32()
+    //             }),
+    //             COM_ID,
+    //             State::new(messages::state::StateData::Initializing),
+    //         );
+    //         info!("Sending message {}", message.clone());
+    //         // spawn!(send_gs, message.clone())?;
+    //         spawn!(send_gs, message)?;
+    //         Ok(())
+    //     });
+    //     spawn_after!(generate_random_messages, ExtU64::millis(200)).ok();
+    // }
 
-    #[task(shared = [&em])]
-    fn generate_random_command(cx: generate_random_command::Context) {
-        cx.shared.em.run(|| {
-            let message = Message::new(
-                cortex_m::interrupt::free(|cs| {
-                    let mut rc = RTC.borrow(cs).borrow_mut();
-                    let rtc = rc.as_mut().unwrap();
-                    rtc.count32()
-                }),
-                COM_ID,
-                Command::new(CommandData::PowerDown(command::PowerDown {
-                    board: Sender::BeaconBoard,
-                })),
-            );
-            spawn!(send_command, message)?;
-            Ok(())
-        });
-        spawn!(generate_random_command).ok();
-    }
+    // #[task(shared = [&em])]
+    // fn generate_random_command(cx: generate_random_command::Context) {
+    //     cx.shared.em.run(|| {
+    //         let message = Message::new(
+    //             cortex_m::interrupt::free(|cs| {
+    //                 let mut rc = RTC.borrow(cs).borrow_mut();
+    //                 let rtc = rc.as_mut().unwrap();
+    //                 rtc.count32()
+    //             }),
+    //             COM_ID,
+    //             Command::new(CommandData::PowerDown(command::PowerDown {
+    //                 board: Sender::BeaconBoard,
+    //             })),
+    //         );
+    //         spawn!(send_command, message)?;
+    //         Ok(())
+    //     });
+    //     spawn!(generate_random_command).ok();
+    // }
 
-    #[task(shared = [data_manager, &em])]
+    #[task(shared = [data_manager, &em, radio_manager])]
     fn state_send(mut cx: state_send::Context) {
         let state_data = cx
             .shared
             .data_manager
             .lock(|data_manager| data_manager.state.clone());
-        cx.shared.em.run(|| {
-            if let Some(x) = state_data {
-                let message = Message::new(
-                    cortex_m::interrupt::free(|cs| {
-                        let mut rc = RTC.borrow(cs).borrow_mut();
-                        let rtc = rc.as_mut().unwrap();
-                        rtc.count32()
-                    }),
-                    COM_ID,
-                    State::new(x),
-                );
-                // spawn!(send_gs, message)?;
-            } // if there is none we still return since we simply don't have data yet.
-            Ok(())
-        });
+        if let Some(x) = state_data {
+            let message = Message::new(
+                cortex_m::interrupt::free(|cs| {
+                    let mut rc = RTC.borrow(cs).borrow_mut();
+                    let rtc = rc.as_mut().unwrap();
+                    rtc.count32()
+                }),
+                COM_ID,
+                State::new(x),
+            );
+            cx.shared.radio_manager.lock(|mut radio_manager| {
+                cx.shared.em.run(|| {
+                    let mut buf = [0; 255];
+                    let data = postcard::to_slice(&message, &mut buf)?;
+                    let mut radio = radio_manager.take().unwrap();
+                    radio.send_message(data)?;
+                    *radio_manager = Some(radio);
+                    Ok(())
+                });
+            });
+            // spawn!(send_gs, message)?;
+        } // if there is none we still return since we simply don't have data yet.
         spawn_after!(state_send, ExtU64::secs(5)).ok();
     }
 
-    /// Handles the radio interrupt.
-    /// This only needs to be called when the radio has data to read, this is why an interrupt handler is used above polling which would waste resources.
-    /// We use a critical section to ensure that we are not interrupted while servicing the mavlink message.
-    #[task(priority = 3, binds = SERCOM2_2, shared = [&em, radio_manager])]
-    fn radio_rx(mut cx: radio_rx::Context) {
-        cx.shared.radio_manager.lock(|radio_manager| {
-            cx.shared.em.run(|| {
-                cortex_m::interrupt::free(|cs| {
-                    let m = radio_manager.receive_message()?;
-                    info!("Received message {}", m.clone());
-                    spawn!(send_command, m)
-                })?;
-                Ok(())
-            });
-        });
-    }
+    // /// Handles the radio interrupt.
+    // /// This only needs to be called when the radio has data to read, this is why an interrupt handler is used above polling which would waste resources.
+    // /// We use a critical section to ensure that we are not interrupted while servicing the mavlink message.
+    // #[task(priority = 3, binds = SERCOM2_2, shared = [&em, radio_manager])]
+    // fn radio_rx(mut cx: radio_rx::Context) {
+    //     cx.shared.radio_manager.lock(|radio_manager| {
+    //         cx.shared.em.run(|| {
+    //             cortex_m::interrupt::free(|cs| {
+    //                 let mut radio = radio_manager.take();
+    //                 let m = radio.receive_message()?;
+    //                 radio_manager = Some(radio);
+    //                 info!("Received message {}", m.clone());
+    //                 spawn!(send_command, m)
+    //             })?;
+    //             Ok(())
+    //         });
+    //     });
+    // }
 
     /**
      * Simple blink task to test the system.
@@ -516,8 +555,8 @@ mod app {
         });
     }
 
-    // extern "Rust" {
-    //     #[task(binds = DMAC_0, shared=[&em], local=[radio_manager])]
-    //     fn radio_dma(context: radio_dma::Context);
-    // }
+    extern "Rust" {
+        #[task(priority = 3, binds = DMAC_0, shared = [&em, gps_manager, data_manager, radio_manager])]
+        fn gps_dma(context: gps_dma::Context);
+    }
 }

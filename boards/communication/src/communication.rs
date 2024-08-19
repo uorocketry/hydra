@@ -13,6 +13,7 @@ use atsamd_hal::gpio::{
 use atsamd_hal::gpio::{AlternateH, H, PB14, PB15};
 use atsamd_hal::pac::{CAN0, CAN1};
 use atsamd_hal::prelude::*;
+use atsamd_hal::sercom::spi::Duplex;
 use atsamd_hal::sercom::uart;
 use atsamd_hal::sercom::uart::Uart;
 use atsamd_hal::sercom::uart::{RxDuplex, TxDuplex};
@@ -394,42 +395,18 @@ impl CanCommandManager {
     }
 }
 
-pub struct RadioDevice {
-    transmitter: Uart<GroundStationUartConfig, TxDuplex>,
-    receiver: PeekReader<Uart<GroundStationUartConfig, RxDuplex>>,
-}
-
-impl RadioDevice {
-    pub fn new(
-        uart: atsamd_hal::sercom::uart::Uart<
-            GroundStationUartConfig,
-            atsamd_hal::sercom::uart::Duplex,
-        >,
-    ) -> Self {
-        let (mut rx, tx) = uart.split();
-
-        // setup interrupts
-        rx.enable_interrupts(uart::Flags::RXC);
-
-        RadioDevice {
-            transmitter: tx,
-            receiver: PeekReader::new(rx),
-        }
-    }
-}
-
 pub struct RadioManager {
     buf: HistoryBuffer<u8, 280>,
-    radio: RadioDevice,
+    radio: Option<atsamd_hal::sercom::uart::Uart<GroundStationUartConfig, atsamd_hal::sercom::uart::Duplex>>,
     mav_sequence: u8,
 }
 
 impl RadioManager {
-    pub fn new(radio: RadioDevice) -> Self {
+    pub fn new(radio: atsamd_hal::sercom::uart::Uart<GroundStationUartConfig, atsamd_hal::sercom::uart::Duplex>) -> Self {
         let buf = HistoryBuffer::new();
         RadioManager {
             buf,
-            radio,
+            radio: Some(radio),
             mav_sequence: 0,
         }
     }
@@ -449,8 +426,9 @@ impl RadioManager {
                 message: fixed_payload,
             },
         );
+        let mut radio = self.radio.take().unwrap(); 
         mavlink::write_versioned_msg(
-            &mut self.radio.transmitter,
+            &mut radio,
             mavlink::MavlinkVersion::V2,
             mav_header,
             &mav_message,
@@ -461,27 +439,27 @@ impl RadioManager {
         self.mav_sequence = self.mav_sequence.wrapping_add(1);
         self.mav_sequence
     }
-    pub fn receive_message(&mut self) -> Result<Message, HydraError> {
-        let (_header, msg): (_, MavMessage) =
-            mavlink::read_versioned_msg(&mut self.radio.receiver, mavlink::MavlinkVersion::V2)?;
+    // pub fn receive_message(&mut self) -> Result<Message, HydraError> {
+    //     let (_header, msg): (_, MavMessage) =
+    //         mavlink::read_versioned_msg(&mut self.radio.receiver, mavlink::MavlinkVersion::V2)?;
         
-        // info!("{:?}", );
-        // Do we need the header?
-        match msg {
-            mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(msg) => {
-                return Ok(postcard::from_bytes::<Message>(&msg.message)?);
-                // weird Ok syntax to coerce to hydra error type.
-            }
-            mavlink::uorocketry::MavMessage::COMMAND_MESSAGE(command) => {
-                info!("{}", command.command);
-                return Ok(postcard::from_bytes::<Message>(&command.command)?);
-            }
-            _ => {
-                error!("Error, ErrorContext::UnkownPostcardMessage");
-                return Err(mavlink::error::MessageReadError::Io.into());
-            }
-        }
-    }
+    //     // info!("{:?}", );
+    //     // Do we need the header?
+    //     match msg {
+    //         mavlink::uorocketry::MavMessage::POSTCARD_MESSAGE(msg) => {
+    //             return Ok(postcard::from_bytes::<Message>(&msg.message)?);
+    //             // weird Ok syntax to coerce to hydra error type.
+    //         }
+    //         mavlink::uorocketry::MavMessage::COMMAND_MESSAGE(command) => {
+    //             info!("{}", command.command);
+    //             return Ok(postcard::from_bytes::<Message>(&command.command)?);
+    //         }
+    //         _ => {
+    //             error!("Error, ErrorContext::UnkownPostcardMessage");
+    //             return Err(mavlink::error::MessageReadError::Io.into());
+    //         }
+    //     }
+    // }
 }
 
 // impl Read for RadioManager {

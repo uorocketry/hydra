@@ -639,8 +639,5 @@ mod app {
         });
     }
 
-    // extern "Rust" {
-    //     #[task(binds = DMAC_0, shared=[&em], local=[radio_manager])]
-    //     fn radio_dma(context: radio_dma::Context);
-    // }
+
 }
