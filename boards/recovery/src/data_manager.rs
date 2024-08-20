@@ -46,7 +46,7 @@ impl DataManager {
                 let mut prev = last;
                 for i in buf {
 
-                    let time_diff: f32 = (i.1 - prev.1) as f32 / 100_000_0.0;
+                    let time_diff: f32 = (i.1 - prev.1) as f32 * 0.002; // Each tick is 2ms, so multiply by 0.002 to get seconds
                     info!("last: {:?}, timestamp: {}, time diff {}", last, i.1, time_diff);
 
                     if time_diff == 0.0 {

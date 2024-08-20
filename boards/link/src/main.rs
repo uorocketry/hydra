@@ -418,7 +418,7 @@ mod app {
                 for msg in sensors {
                     match msg {
                         Some(x) => {
-                            info!("Sending sensor data {}", x.clone());
+                            // info!("Sending sensor data {}", x.clone());
                             spawn!(send_gs, x)?;
                             //                     spawn!(sd_dump, x)?;
                         }
@@ -483,7 +483,7 @@ mod app {
 
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
-                info!("Sending message {}", m);
+                // info!("Sending message {}", m);
                 let mut buf = [0; 255];
                 let data = postcard::to_slice(&m, &mut buf)?;
                 radio_manager.send_message(data)?;
@@ -492,20 +492,26 @@ mod app {
         });
     }
 
-    #[task(priority = 3, binds = UART4, shared = [&em, radio_manager])]
-    fn radio_rx(mut cx: radio_rx::Context) {
-        info!("Radio Rx");
-        cx.shared.radio_manager.lock(|radio_manager| {
-            cx.shared.em.run(|| {
-                cortex_m::interrupt::free(|cs| {
-                    let m = radio_manager.receive_message()?;
-                    info!("Received message {}", m.clone());
-                    spawn!(send_command_internal, m)
-                })?;
-                Ok(())
-            });
-        });
-    }
+    // #[task(priority = 3, binds = UART4, local = [just_fired: bool = false], shared = [&em, radio_manager])]
+    // fn radio_rx(mut cx: radio_rx::Context) {
+    //     if *cx.local.just_fired {
+    //         *cx.local.just_fired = false;
+    //         return;
+    //     }
+    //     info!("Radio Rx");
+
+    //     cx.shared.radio_manager.lock(|radio_manager| {
+    //         cx.shared.em.run(|| {
+    //             // cortex_m::interrupt::free(|cs| {
+    //                 let m = radio_manager.receive_message()?;
+    //                 *cx.local.just_fired = true; 
+    //                 info!("Received message {}", m.clone());
+    //                 spawn!(send_command_internal, m)?;
+    //             // })?;
+    //             Ok(())
+    //         });
+    //     });
+    // }
 
     #[task( priority = 3, binds = FDCAN2_IT0, shared = [can_data_manager, data_manager])]
     fn can_data(mut cx: can_data::Context) {

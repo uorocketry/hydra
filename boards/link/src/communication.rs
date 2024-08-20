@@ -117,7 +117,7 @@ impl CanDataManager {
 
 pub struct RadioDevice {
     transmitter: stm32h7xx_hal::serial::Tx<stm32h7xx_hal::pac::UART4>,
-    receiver: PeekReader<stm32h7xx_hal::serial::Rx<stm32h7xx_hal::pac::UART4>>,
+    pub receiver: PeekReader<stm32h7xx_hal::serial::Rx<stm32h7xx_hal::pac::UART4>>,
 }
 
 impl RadioDevice {
@@ -138,7 +138,7 @@ impl RadioDevice {
 }
 
 pub struct RadioManager {
-    radio: RadioDevice,
+    pub radio: RadioDevice,
     mav_sequence: u8,
 }
 
@@ -192,10 +192,10 @@ impl RadioManager {
                 info!("{}", command.command);
                 return Ok(postcard::from_bytes::<Message>(&command.command)?);
             }
-            // mavlink::uorocketry::MavMessage::HEARTBEAT(heartbeat) => {
-            //     info!("Heartbeat");
-            //     return 
-            // }
+            mavlink::uorocketry::MavMessage::HEARTBEAT(heartbeat) => {
+                info!("Heartbeat");
+                return Err(mavlink::error::MessageReadError::Io.into());
+            }
             _ => {
                 error!("Error, ErrorContext::UnkownPostcardMessage");
                 return Err(mavlink::error::MessageReadError::Io.into());

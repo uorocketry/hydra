@@ -41,7 +41,7 @@ use types::COM_ID; // global logger
 
 const DATA_CHANNEL_CAPACITY: usize = 10;
 
-systick_monotonic!(Mono, 500);
+systick_monotonic!(Mono, 500); // 2ms ticks 
 
 #[inline(never)]
 #[defmt::panic_handler]
