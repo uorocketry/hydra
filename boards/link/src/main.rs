@@ -274,7 +274,7 @@ mod app {
         let uart_radio = ctx
             .device
             .UART4
-            .serial((tx, rx), 115_200.bps(), ccdr.peripheral.UART4, &ccdr.clocks)
+            .serial((tx, rx), 57600.bps(), ccdr.peripheral.UART4, &ccdr.clocks)
             .unwrap();
         // let mut sbg_manager = sbg_manager::SBGManager::new(uart_sbg, stream_tuple);
 
@@ -312,7 +312,7 @@ mod app {
         reset_reason_send::spawn().ok();
         state_send::spawn().ok();
         // generate_random_messages::spawn().ok();
-        sensor_send::spawn().ok();
+        // sensor_send::spawn().ok();
         info!("Online");
 
         (
@@ -329,30 +329,22 @@ mod app {
         )
     }
 
-    #[idle]
-    fn idle(ctx: idle::Context) -> ! {
+    #[task(priority = 3, shared = [&em])]
+    async fn generate_random_messages(cx: generate_random_messages::Context) {
         loop {
-            // info!("Idle");
-            // cortex_m::asm::wfi(); // could case issue with CAN Bus. Was an issue with ATSAME51.
+            cx.shared.em.run(|| {
+                let message = Message::new(
+                    0,
+                    COM_ID,
+                    messages::state::State::new(messages::state::StateData::Initializing),
+                );
+                spawn!(send_gs, message.clone())?;
+                // spawn!(send_data_internal, message)?;
+                Ok(())
+            });
+            Mono::delay(1.secs()).await;
         }
     }
-
-    // #[task(priority = 3, shared = [&em])]
-    // async fn generate_random_messages(cx: generate_random_messages::Context) {
-    //     loop {
-    //         cx.shared.em.run(|| {
-    //             let message = Message::new(
-    //                 0,
-    //                 COM_ID,
-    //                 messages::state::State::new(messages::state::StateData::Initializing),
-    //             );
-    //             // spawn!(send_gs, message.clone())?;
-    //             spawn!(send_data_internal, message)?;
-    //             Ok(())
-    //         });
-    //         Mono::delay(1.secs()).await;
-    //     }
-    // }
 
     #[task(priority = 3, shared = [data_manager, &em])]
     async fn reset_reason_send(mut cx: reset_reason_send::Context) {
@@ -391,7 +383,7 @@ mod app {
         }
     }
 
-    #[task(priority = 3, shared = [data_manager, &em])]
+    #[task(shared = [data_manager, &em])]
     async fn state_send(mut cx: state_send::Context) {
         let state_data = cx
             .shared
@@ -415,7 +407,7 @@ mod app {
     /**
      * Sends information about the sensors.
      */
-    #[task(priority = 2, shared = [data_manager, &em])]
+    #[task(priority = 3, shared = [data_manager, &em])]
     async fn sensor_send(mut cx: sensor_send::Context) {
         loop {
             let (sensors, logging_rate) = cx.shared.data_manager.lock(|data_manager| {
@@ -426,10 +418,12 @@ mod app {
                 for msg in sensors {
                     match msg {
                         Some(x) => {
-                            spawn!(send_gs, x.clone())?;
+                            info!("Sending sensor data {}", x.clone());
+                            spawn!(send_gs, x)?;
                             //                     spawn!(sd_dump, x)?;
                         }
                         None => {
+                            info!("No sensor data to send");
                             continue;
                         }
                     }
@@ -440,11 +434,9 @@ mod app {
             match logging_rate {
                 RadioRate::Fast => {
                     Mono::delay(100.millis()).await;
-                    spawn!(sensor_send).ok();
                 }
                 RadioRate::Slow => {
                     Mono::delay(250.millis()).await;
-                    spawn!(sensor_send).ok();
                 }
             }
         }
@@ -462,9 +454,9 @@ mod app {
         // send_in::spawn(message).ok();
     }
 
-    #[task(priority = 3, binds = FDCAN1_IT0, shared = [can_command_manager, data_manager, &em])]
+    #[task(priority = 2, binds = FDCAN1_IT0, shared = [can_command_manager, data_manager, &em])]
     fn can_command(mut cx: can_command::Context) {
-        info!("CAN Command");
+        // info!("CAN Command");
         cx.shared.can_command_manager.lock(|can| {
             cx.shared
                 .data_manager
@@ -487,8 +479,11 @@ mod app {
      */
     #[task(priority = 3, shared = [&em, radio_manager])]
     async fn send_gs(mut cx: send_gs::Context, m: Message) {
+        // info!("{}", m.clone());
+
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
+                info!("Sending message {}", m);
                 let mut buf = [0; 255];
                 let data = postcard::to_slice(&m, &mut buf)?;
                 radio_manager.send_message(data)?;
@@ -499,6 +494,7 @@ mod app {
 
     #[task(priority = 3, binds = UART4, shared = [&em, radio_manager])]
     fn radio_rx(mut cx: radio_rx::Context) {
+        info!("Radio Rx");
         cx.shared.radio_manager.lock(|radio_manager| {
             cx.shared.em.run(|| {
                 cortex_m::interrupt::free(|cs| {
@@ -511,8 +507,7 @@ mod app {
         });
     }
 
-    // Might be the wrong interrupt
-    #[task(priority = 3, binds = FDCAN2_IT0, shared = [can_data_manager, data_manager])]
+    #[task( priority = 3, binds = FDCAN2_IT0, shared = [can_data_manager, data_manager])]
     fn can_data(mut cx: can_data::Context) {
         cx.shared.can_data_manager.lock(|can| {
             cx.shared

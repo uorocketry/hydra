@@ -101,8 +101,8 @@ impl CanDataManager {
         for message in self.can.receive0(&mut buf) {
             match from_bytes::<Message>(&buf) {
                 Ok(data) => {
-                    info!("Received message {}", data.clone());
-                    data_manager.handle_data(data);
+                    crate::app::send_gs::spawn(data).ok();
+                    // data_manager.handle_data(data);
                 }
                 Err(e) => {
                     info!("Error: {:?}", e)
@@ -192,6 +192,10 @@ impl RadioManager {
                 info!("{}", command.command);
                 return Ok(postcard::from_bytes::<Message>(&command.command)?);
             }
+            // mavlink::uorocketry::MavMessage::HEARTBEAT(heartbeat) => {
+            //     info!("Heartbeat");
+            //     return 
+            // }
             _ => {
                 error!("Error, ErrorContext::UnkownPostcardMessage");
                 return Err(mavlink::error::MessageReadError::Io.into());

@@ -251,12 +251,53 @@ mod app {
                 pclk_sercom2.freq(),
             )
         });
+        let message = Message::new(
+            cortex_m::interrupt::free(|cs| {
+                let mut rc = RTC.borrow(cs).borrow_mut();
+                let rtc = rc.as_mut().unwrap();
+                rtc.count32()
+            }),
+            COM_ID,
+            State::new(messages::state::StateData::Initializing),
+        );
+    
         let radio_manager = cortex_m::interrupt::free(|cs| {
             info!("Setting up radio");
             let mut x = unsafe { MCLK.borrow(cs).borrow_mut() };
             let mclk = x.as_mut().unwrap();
             RadioManager::new(rx, tx, pclk_sercom2.freq())
         });
+        let mut gps_tx = gps_manager.gps_uart_tx.take().unwrap();
+        let mut gps_uart = atsamd_hal::sercom::uart::Uart::join(gps_rx, gps_tx);
+        let mut config = gps_uart.disable();
+        let (mut sercom, mut pads) = config.free();
+        let (rx, tx, _, _) = pads.free();
+        let radio_uart = cortex_m::interrupt::free(|cs| {
+            let mut x = unsafe { crate::MCLK.borrow(cs).borrow_mut() };
+            let mclk = x.as_mut().unwrap();
+            let pads = atsamd_hal::sercom::uart::Pads::<atsamd_hal::sercom::Sercom2, atsamd_hal::sercom::IoSet3>::default()
+            .rx(radio_manager.rx.take().unwrap())
+            .tx(radio_manager.tx.take().unwrap());
+            GroundStationUartConfig::new(
+                &mclk,
+                sercom,
+                pads,
+                radio_manager.uart_clk_freq,
+            )
+            .baud(
+                RateExtU32::Hz(57600),
+                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+            )
+            .enable()
+        });
+        radio_manager.radio = Some(radio_uart);
+
+        loop {
+
+            let mut buf = [0; 255];
+            let data = postcard::to_slice(&m, &mut buf).unwrap();
+            radio_manager.send_message(data);
+        }
 
         // /* SD config */
         // let (mut gclk1, dfll) =
@@ -415,8 +456,8 @@ mod app {
     // fn send_gs(mut cx: send_gs::Context, m: Message) {
     //     cx.shared.radio_manager.lock(|radio_manager| {
     //         cx.shared.em.run(|| {
-    //             let mut buf = [0; 255];
-    //             let data = postcard::to_slice(&m, &mut buf)?;
+                // let mut buf = [0; 255];
+                // let data = postcard::to_slice(&m, &mut buf)?;
     //             radio_manager.send_message(data)?;
     //             Ok(())
     //         })
@@ -524,15 +565,15 @@ mod app {
     // #[task(shared = [&em])]
     // fn generate_random_messages(cx: generate_random_messages::Context) {
     //     cx.shared.em.run(|| {
-    //         let message = Message::new(
-    //             cortex_m::interrupt::free(|cs| {
-    //                 let mut rc = RTC.borrow(cs).borrow_mut();
-    //                 let rtc = rc.as_mut().unwrap();
-    //                 rtc.count32()
-    //             }),
-    //             COM_ID,
-    //             State::new(messages::state::StateData::Initializing),
-    //         );
+            // let message = Message::new(
+            //     cortex_m::interrupt::free(|cs| {
+            //         let mut rc = RTC.borrow(cs).borrow_mut();
+            //         let rtc = rc.as_mut().unwrap();
+            //         rtc.count32()
+            //     }),
+            //     COM_ID,
+            //     State::new(messages::state::StateData::Initializing),
+            // );
     //         info!("Sending message {}", message.clone());
     //         // spawn!(send_gs, message.clone())?;
     //         spawn!(send_gs, message)?;

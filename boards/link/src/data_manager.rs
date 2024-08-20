@@ -3,7 +3,7 @@ use messages::state::StateData;
 use messages::Message;
 use common_arm::HydraError;
 use stm32h7xx_hal::rcc::ResetReason;
-
+use defmt::info;
 #[derive(Clone)]
 pub struct DataManager {
     pub air: Option<Message>,
