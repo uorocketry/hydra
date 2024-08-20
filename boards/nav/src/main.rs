@@ -187,6 +187,17 @@ mod app {
             StandardFilter::accept_all_into_fifo0(),
         );
 
+        can_data.set_standard_filter(
+            StandardFilterSlot::_1,
+            StandardFilter::accept_all_into_fifo0(),
+        );
+
+
+        can_data.set_standard_filter(
+            StandardFilterSlot::_2,
+            StandardFilter::accept_all_into_fifo0(),
+        );
+
         let config = can_data
             .get_config()
             .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCan);

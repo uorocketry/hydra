@@ -8,7 +8,7 @@ use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::types::{Can0, Can1};
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::gpio::{
-    Alternate, AlternateI, Pin, I, PA22, PA23,
+    Alternate, AlternateI, Pin, I, PA22, PA23, PA09, PA08, C, D
 };
 use atsamd_hal::gpio::{AlternateH, H, PB14, PB15};
 use atsamd_hal::pac::{CAN0, CAN1};
@@ -26,6 +26,8 @@ use defmt::error;
 use defmt::info;
 use heapless::HistoryBuffer;
 use heapless::Vec;
+use atsamd_hal::time::Hertz;
+
 use mavlink::peek_reader::PeekReader;
 use mcan::bus::Can;
 use mcan::embedded_can as ecan;
@@ -397,17 +399,27 @@ impl CanCommandManager {
 
 pub struct RadioManager {
     buf: HistoryBuffer<u8, 280>,
-    radio: Option<atsamd_hal::sercom::uart::Uart<GroundStationUartConfig, atsamd_hal::sercom::uart::Duplex>>,
+    pub radio: Option<atsamd_hal::sercom::uart::Uart<GroundStationUartConfig, atsamd_hal::sercom::uart::Duplex>>,
+    pub radio_pads: Option<crate::types::GroundStationPads>, 
+    pub sercom: Option<atsamd_hal::pac::SERCOM2>,
     mav_sequence: u8,
+    pub rx: Option<Pin<PA08, Alternate<D>>>,
+    pub tx: Option<Pin<PA09, Alternate<D>>>,
+    pub uart_clk_freq: Hertz,
 }
 
 impl RadioManager {
-    pub fn new(radio: atsamd_hal::sercom::uart::Uart<GroundStationUartConfig, atsamd_hal::sercom::uart::Duplex>) -> Self {
+    pub fn new(rx: Pin<PA08, Alternate<D>>, tx: Pin<PA09, Alternate<D>>, uart_clk_freq: Hertz) -> Self {
         let buf = HistoryBuffer::new();
         RadioManager {
             buf,
-            radio: Some(radio),
+            radio: None,
             mav_sequence: 0,
+            radio_pads: None,
+            sercom: None,
+            uart_clk_freq,
+            rx: Some(rx),
+            tx: Some(tx),
         }
     }
     pub fn send_message(&mut self, payload: &[u8]) -> Result<(), HydraError> {

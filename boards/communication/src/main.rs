@@ -7,6 +7,7 @@ mod gps_manager;
 mod types;
 
 use atsamd_hal as hal;
+use atsamd_hal::dmac;
 use atsamd_hal::rtc::Count32Mode;
 use common_arm::*;
 use common_arm_atsame::mcan;
@@ -16,7 +17,7 @@ use atsamd_hal::gpio::{Alternate, Output, PushPull, D, PA04, PA05, PA06, PA07};
 use atsamd_hal::sercom::{
     spi,
     spi::{Config, Duplex, Pads, Spi},
-    Sercom0,
+    IoSet1, Sercom0,
 };
 use communication::Capacities;
 use communication::{CanCommandManager, RadioManager};
@@ -41,6 +42,10 @@ use messages::*;
 use panic_probe as _;
 use systick_monotonic::*;
 use types::*;
+use ublox::{
+    CfgPrtUartBuilder, DataBits, InProtoMask, OutProtoMask, Parity, StopBits, UartMode, UartPortId,
+    UbxPacketRequest,
+};
 
 #[inline(never)]
 #[defmt::panic_handler]
@@ -63,9 +68,14 @@ static HEAP: embedded_alloc::Heap = embedded_alloc::Heap::empty();
 
 static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefCell::new(None));
 
+static mut MCLK: Mutex<RefCell<Option<hal::pac::MCLK>>> = Mutex::new(RefCell::new(None));
+
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
 
+    use core::borrow::BorrowMut;
+
+    use atsamd_hal::{clock::v2::pclk, sercom::dma};
     use command::{Command, CommandData};
 
     use sender::Sender;
@@ -76,8 +86,8 @@ mod app {
     struct Shared {
         em: ErrorManager,
         data_manager: DataManager,
-        radio_manager: Option<RadioManager>,
-        gps_manager: Option<GpsManager>,
+        radio_manager: RadioManager,
+        gps_manager: GpsManager,
         can0: communication::CanDevice0,
         can_command_manager: CanCommandManager,
     }
@@ -124,8 +134,8 @@ mod app {
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
 
-        // let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
-        // let dmaChannels = dmac.split();
+        let mut dmac = dmac::DmaController::init(peripherals.DMAC, &mut peripherals.PM);
+        let dmaChannels = dmac.split();
 
         /* Logging Setup */
         HydraLogging::set_ground_station_callback(queue_gs_message);
@@ -188,25 +198,65 @@ mod app {
         // let (mut gclk0, dfll) =
         // hal::clock::v2::gclk::Gclk::from_source(tokens.gclks.gclk2, xosc0);
         // let gclk2 = gclk2.div(gclk::GclkDiv8::Div(1)).enable();
-        let (pclk_radio, gclk0) = Pclk::enable(tokens.pclks.sercom2, gclk0);
+        let (pclk_sercom2, gclk0) = Pclk::enable(tokens.pclks.sercom2, gclk0);
         /* Radio config */
 
-        let rx: Pin<PA08, Alternate<C>> = pins.pa08.into_alternate();
-        let tx: Pin<PA09, Alternate<C>> = pins.pa09.into_alternate();
-        let pads = uart::Pads::<hal::sercom::Sercom2, _>::default()
-            .rx(rx)
-            .tx(tx);
-        let uart =
-            GroundStationUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_radio.freq())
-                .baud(
-                    RateExtU32::Hz(57600),
-                    uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-                )
-                .enable();
+        let rx: Pin<PA08, Alternate<_>> = pins.pa08.into_alternate();
+        let tx: Pin<PA09, Alternate<_>> = pins.pa09.into_alternate();
+        // let pads = uart::Pads::<hal::sercom::Sercom2, _>::default()
+        //     .rx(rx)
+        //     .tx(tx);
+        // let uart =
+        //     GroundStationUartConfig::new(&mclk, peripherals.SERCOM2, pads, pclk_sercom2.freq())
+        //         .baud(
+        //             RateExtU32::Hz(57600),
+        //             uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+        //         )
+        //         .enable();
 
         // let radio = RadioDevice::new(uart);
 
-        let radio_manager = RadioManager::new(uart);
+        unsafe {
+            MCLK = Mutex::new(RefCell::new(Some(mclk)));
+        }
+        // let (pclk_gps, gclk0) = Pclk::enable(tokens.pclks.sercom2, gclk0);
+        let gps_rx: Pin<atsamd_hal::gpio::PA13, Alternate<C>> = pins.pa13.into_alternate();
+        let gps_tx: Pin<atsamd_hal::gpio::PA12, Alternate<C>> = pins.pa12.into_alternate();
+        let gps_pads = hal::sercom::uart::Pads::<hal::sercom::Sercom2, IoSet1>::default()
+            .rx(gps_rx)
+            .tx(gps_tx);
+
+        let mut gps_uart_config = cortex_m::interrupt::free(|cs| {
+            let mut x = unsafe { MCLK.borrow(cs).borrow_mut() };
+            let mclk = x.as_mut().unwrap();
+            GpsUartConfig::new(&mclk, peripherals.SERCOM2, gps_pads, pclk_sercom2.freq()).baud(
+                RateExtU32::Hz(9600),
+                uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+            )
+        });
+        gps_uart_config = gps_uart_config.immediate_overflow_notification(false);
+
+        let mut gps_uart = gps_uart_config.enable();
+        let mut dmaCh0 = dmaChannels.0.init(dmac::PriorityLevel::LVL3);
+        let gps_manager = cortex_m::interrupt::free(|cs| {
+            let mut x = unsafe { MCLK.borrow(cs).borrow_mut() };
+            let mclk = x.as_mut().unwrap();
+            GpsManager::new(
+                gps_uart,
+                None, // pads are already consumed by the uart.
+                None,
+                pins.pb07.into_push_pull_output(),
+                pins.pb09.into_push_pull_output(),
+                dmaCh0,
+                pclk_sercom2.freq(),
+            )
+        });
+        let radio_manager = cortex_m::interrupt::free(|cs| {
+            info!("Setting up radio");
+            let mut x = unsafe { MCLK.borrow(cs).borrow_mut() };
+            let mclk = x.as_mut().unwrap();
+            RadioManager::new(rx, tx, pclk_sercom2.freq())
+        });
 
         // /* SD config */
         // let (mut gclk1, dfll) =
@@ -225,24 +275,7 @@ mod app {
         //     .enable();
         // let sd_manager = SdManager::new(sdmmc_spi, pins.pa06.into_push_pull_output());
 
-        let (pclk_gps, gclk0) = Pclk::enable(tokens.pclks.sercom4, gclk0);
-        //info!("here");
-        // let pads = hal::sercom::uart::Pads::<hal::sercom::Sercom4, IoSet3>::default()
-        //     .rx(pins.pa12)
-        //     .tx(pins.pa13);
-
-        // let gps_uart = GpsUartConfig::new(&mclk, peripherals.SERCOM4, pads, pclk_gps.freq())
-        //     .baud(
-        //         RateExtU32::Hz(9600),
-        //         uart::BaudMode::Fractional(uart::Oversampling::Bits16),
-        //     )
-        //     .enable();
-
-        let gps_manager = GpsManager::new(
-            None,
-            pins.pb07.into_push_pull_output(),
-            pins.pb09.into_push_pull_output(),
-        );
+        // No need to reclock the peripheral sercom since it's shared with the radio.
 
         // gps_uart.enable_interrupts(hal::sercom::uart::Flags::RXC);
 
@@ -255,11 +288,16 @@ mod app {
         /* Spawn tasks */
         // sensor_send::spawn().ok();
         // state_send::spawn().ok();
-        let rtc = hal::rtc::Rtc::clock_mode(
-            peripherals.RTC,
-            atsamd_hal::fugit::RateExtU32::Hz(1024),
-            &mut mclk,
-        );
+        let rtc = cortex_m::interrupt::free(|cs| {
+            let mut x = unsafe { MCLK.borrow(cs).borrow_mut() };
+            let mut mclk = x.as_mut().unwrap();
+            hal::rtc::Rtc::clock_mode(
+                peripherals.RTC,
+                atsamd_hal::fugit::RateExtU32::Hz(1024),
+                &mut mclk,
+            )
+        });
+
         let mut rtc = rtc.into_count32_mode(); // hal bug this must be done
         rtc.set_count32(0);
         cortex_m::interrupt::free(|cs| {
@@ -279,8 +317,8 @@ mod app {
             Shared {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
-                radio_manager: Some(radio_manager),
-                gps_manager: Some(gps_manager),
+                radio_manager: radio_manager,
+                gps_manager: gps_manager,
                 can0,
                 can_command_manager,
             },
@@ -411,32 +449,68 @@ mod app {
             .shared
             .data_manager
             .lock(|data_manager| (data_manager.take_sensors(), data_manager.get_logging_rate()));
-
-        for msg in sensors {
-            match msg {
-                Some(x) => {
-                    // spawn!(send_gs, x.clone())?;
-                    cx.shared.radio_manager.lock(|radio_manager| {
+        cx.shared.radio_manager.lock(|mut radio_manager| {
+            for msg in sensors {
+                match msg {
+                    Some(x) => {
+                        // spawn!(send_gs, x.clone())?;
                         cx.shared.em.run(|| {
                             let mut buf = [0; 255];
                             let data = postcard::to_slice(&x, &mut buf)?;
-                            let mut radio = radio_manager.take().unwrap();
-                            radio.send_message(data)?;
-                            // let uart = radio.release();
-                            // cx.shared.gps_manager.lock(|gps| {
-                            // let mut gps = gps.take().unwrap();
-                            // });
+                            radio_manager.send_message(data)?;
+
                             Ok(())
                         });
-                    });
 
-                    //                     spawn!(sd_dump, x)?;
-                }
-                None => {
-                    continue;
+                        //                     spawn!(sd_dump, x)?;
+                    }
+                    None => {
+                        continue;
+                    }
                 }
             }
-        }
+            info!("before take");
+            if let Some(radio) = radio_manager.radio.take() {
+                info!("after_take");
+                let mut config = radio_manager.radio.take().unwrap().disable();
+
+                let (mut sercom, mut pads) = config.free();
+                let (rx, tx, _, _) = pads.free();
+                radio_manager.rx = Some(rx);
+                radio_manager.tx = Some(tx);
+
+                cx.shared.gps_manager.lock(|mut gps_manager| {
+                    let mut gps_uart = cortex_m::interrupt::free(|cs| {
+                        let mut x = unsafe { crate::MCLK.borrow(cs).borrow_mut() };
+                        let mclk = x.as_mut().unwrap();
+                        let pads = atsamd_hal::sercom::uart::Pads::<
+                            atsamd_hal::sercom::Sercom2,
+                            atsamd_hal::sercom::IoSet1,
+                        >::default()
+                        .rx(gps_manager.rx.take().unwrap())
+                        .tx(gps_manager.tx.take().unwrap());
+                        let mut gps_uart_config =
+                            GpsUartConfig::new(&mclk, sercom, pads, gps_manager.uart_clk_freq)
+                                .baud(
+                                    RateExtU32::Hz(9600),
+                                    uart::BaudMode::Fractional(uart::Oversampling::Bits16),
+                                );
+
+                        gps_uart_config = gps_uart_config.immediate_overflow_notification(false);
+                        gps_uart_config.enable()
+                    });
+
+                    let request =
+                        UbxPacketRequest::request_for::<ublox::NavPosLlh>().into_packet_bytes();
+                    for byte in request {
+                        nb::block!(gps_uart.write(byte)).unwrap();
+                    }
+                    cortex_m::asm::delay(300_000);
+                    gps_manager.gps_uart = Some(gps_uart);
+                });
+            }
+        });
+
         match logging_rate {
             RadioRate::Fast => {
                 spawn_after!(sensor_send, ExtU64::millis(100)).ok();
@@ -507,9 +581,8 @@ mod app {
                 cx.shared.em.run(|| {
                     let mut buf = [0; 255];
                     let data = postcard::to_slice(&message, &mut buf)?;
-                    let mut radio = radio_manager.take().unwrap();
-                    radio.send_message(data)?;
-                    *radio_manager = Some(radio);
+                    radio_manager.send_message(data)?;
+                    // *radio_manager = Some(radio);
                     Ok(())
                 });
             });

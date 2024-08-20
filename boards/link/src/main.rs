@@ -5,6 +5,7 @@ mod communication;
 mod data_manager;
 mod types;
 
+use stm32h7xx_hal::nb;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use common_arm::*;
 use communication::{CanCommandManager, CanDataManager};
@@ -60,10 +61,10 @@ mod app {
     struct SharedResources {
         data_manager: DataManager,
         em: ErrorManager,
-        sd_manager: SdManager<
-            stm32h7xx_hal::spi::Spi<stm32h7xx_hal::pac::SPI1, stm32h7xx_hal::spi::Enabled>,
-            PA4<Output<PushPull>>,
-        >,
+        // sd_manager: SdManager<
+        //     stm32h7xx_hal::spi::Spi<stm32h7xx_hal::pac::SPI1, stm32h7xx_hal::spi::Enabled>,
+        //     PA4<Output<PushPull>>,
+        // >,
         radio_manager: RadioManager,
         can_command_manager: CanCommandManager,
         can_data_manager: CanDataManager,
@@ -148,7 +149,6 @@ mod app {
         // assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 32_000_000);
         info!("PLL1Q:");
         // https://github.com/stm32-rs/stm32h7xx-hal/issues/369 This needs to be stolen. Grrr I hate the imaturity of the stm32-hal
-
         let can2: fdcan::FdCan<
             stm32h7xx_hal::can::Can<stm32h7xx_hal::pac::FDCAN2>,
             fdcan::ConfigMode,
@@ -172,14 +172,28 @@ mod app {
             StandardFilter::accept_all_into_fifo0(),
         );
 
+        can_data.set_standard_filter(
+            StandardFilterSlot::_1,
+            StandardFilter::accept_all_into_fifo0(),
+        );
+
+
+        can_data.set_standard_filter(
+            StandardFilterSlot::_2,
+            StandardFilter::accept_all_into_fifo0(),
+        );
+
+
+        can_data.enable_interrupt(fdcan::interrupt::Interrupt::RxFifo0NewMsg);
+
+        can_data.enable_interrupt_line(fdcan::interrupt::InterruptLine::_0, true);
+        
         let config = can_data
             .get_config()
             .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCan);
         can_data.apply_config(config);
 
-        can_data.enable_interrupt(fdcan::interrupt::Interrupt::RxFifo0NewMsg);
 
-        can_data.enable_interrupt_line(fdcan::interrupt::InterruptLine::_0, true);
         let can_data_manager = CanDataManager::new(can_data.into_normal());
 
         /// SAFETY: This is done as a result of a single memory mapped bit in hardware. Safe in this context.
@@ -196,41 +210,53 @@ mod app {
         can_command.set_protocol_exception_handling(false);
 
         can_command.set_nominal_bit_timing(btr);
-
         can_command.set_standard_filter(
             StandardFilterSlot::_0,
             StandardFilter::accept_all_into_fifo0(),
         );
 
-        let config = can_command
-            .get_config()
-            .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCanAndBRS); // check this maybe don't bit switch allow.
-        can_command.apply_config(config);
+        can_command.set_standard_filter(
+            StandardFilterSlot::_1,
+            StandardFilter::accept_all_into_fifo0(),
+        );
+
+
+        can_command.set_standard_filter(
+            StandardFilterSlot::_2,
+            StandardFilter::accept_all_into_fifo0(),
+        );
+
+        // can_data.set_data_bit_timing(data_bit_timing);
         can_command.enable_interrupt(fdcan::interrupt::Interrupt::RxFifo0NewMsg);
 
         can_command.enable_interrupt_line(fdcan::interrupt::InterruptLine::_0, true);
 
+        let config = can_command
+            .get_config()
+            .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCanAndBRS); // check this maybe don't bit switch allow.
+        can_command.apply_config(config);
+
         let can_command_manager = CanCommandManager::new(can_command.into_normal());
 
-        let spi_sd: stm32h7xx_hal::spi::Spi<
-            stm32h7xx_hal::stm32::SPI1,
-            stm32h7xx_hal::spi::Enabled,
-            u8,
-        > = ctx.device.SPI1.spi(
-            (
-                gpioa.pa5.into_alternate::<5>(),
-                gpioa.pa6.into_alternate(),
-                gpioa.pa7.into_alternate(),
-            ),
-            spi::Config::new(spi::MODE_0),
-            16.MHz(),
-            ccdr.peripheral.SPI1,
-            &ccdr.clocks,
-        );
+        // let spi_sd: stm32h7xx_hal::spi::Spi<
+        //     stm32h7xx_hal::stm32::SPI1,
+        //     stm32h7xx_hal::spi::Enabled,
+        //     u8,
+        // > = ctx.device.SPI1.spi(
+        //     (
+        //         gpioa.pa5.into_alternate::<5>(),
+        //         gpioa.pa6.into_alternate(),
+        //         gpioa.pa7.into_alternate(),
+        //     ),
+        //     spi::Config::new(spi::MODE_0),
+        //     16.MHz(),
+        //     ccdr.peripheral.SPI1,
+        //     &ccdr.clocks,
+        // );
 
-        let cs_sd = gpioa.pa4.into_push_pull_output();
+        // let cs_sd = gpioa.pa4.into_push_pull_output();
 
-        let sd_manager = SdManager::new(spi_sd, cs_sd);
+        // let sd_manager = SdManager::new(spi_sd, cs_sd);
 
         // leds
         let led_red = gpioa.pa2.into_push_pull_output();
@@ -285,6 +311,7 @@ mod app {
         send_data_internal::spawn(r).ok();
         reset_reason_send::spawn().ok();
         state_send::spawn().ok();
+        // generate_random_messages::spawn().ok();
         sensor_send::spawn().ok();
         info!("Online");
 
@@ -292,7 +319,7 @@ mod app {
             SharedResources {
                 data_manager,
                 em,
-                sd_manager,
+                // sd_manager,
                 radio_manager,
                 can_command_manager,
                 can_data_manager,
@@ -309,6 +336,23 @@ mod app {
             // cortex_m::asm::wfi(); // could case issue with CAN Bus. Was an issue with ATSAME51.
         }
     }
+
+    // #[task(priority = 3, shared = [&em])]
+    // async fn generate_random_messages(cx: generate_random_messages::Context) {
+    //     loop {
+    //         cx.shared.em.run(|| {
+    //             let message = Message::new(
+    //                 0,
+    //                 COM_ID,
+    //                 messages::state::State::new(messages::state::StateData::Initializing),
+    //             );
+    //             // spawn!(send_gs, message.clone())?;
+    //             spawn!(send_data_internal, message)?;
+    //             Ok(())
+    //         });
+    //         Mono::delay(1.secs()).await;
+    //     }
+    // }
 
     #[task(priority = 3, shared = [data_manager, &em])]
     async fn reset_reason_send(mut cx: reset_reason_send::Context) {

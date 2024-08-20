@@ -434,7 +434,7 @@ mod app {
                 COM_ID,
                 board_state,
             );
-            spawn!(send_internal, message)?;
+            spawn!(send_command, message)?;
             spawn_after!(state_send, ExtU64::secs(2))?; // I think this is fine here.
             Ok(())
         });

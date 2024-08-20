@@ -307,6 +307,7 @@ mod app {
 
         loop {
             if gps_dma_transfer.complete() {
+                info!("DMA transfer complete");
                 let (chan0, source, buf) = gps_dma_transfer.stop();
                 gps_dma_transfer =
                     dmac::Transfer::new(chan0, source, unsafe { &mut *BUF_DST }, false)
@@ -344,7 +345,7 @@ mod app {
                                     longitude: x.lon_degrees(),
                                     latitude: x.lat_degrees(),
                                 };
-                                // info!("GPS latitude: {:?}, longitude {:?}", x.lat_degrees(), x.lon_degrees());
+                                info!("GPS latitude: {:?}, longitude {:?}", x.lat_degrees(), x.lon_degrees());
                             }
                             ublox::PacketRef::NavStatus(x) => {
                                 info!("GPS fix stat: {:?}", x.fix_stat_raw());

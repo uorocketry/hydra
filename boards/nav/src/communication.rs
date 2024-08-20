@@ -84,7 +84,7 @@ impl CanDataManager {
             len: payload.len() as u8, // switch to const as this never changes or swtich on message type of known size
             id: StandardId::new(COM_ID.into()).unwrap().into(),
             frame_format: FrameFormat::Fdcan,
-            bit_rate_switching: false,
+            bit_rate_switching: true,
             marker: None,
         };
         // self.can.abort(fdcan::Mailbox::_2); // this is needed if boards are not in sync (if they are not in sync that is a bigger problem)
