@@ -46,8 +46,7 @@ systick_monotonic!(Mono, 500); // 2ms ticks
 #[inline(never)]
 #[defmt::panic_handler]
 fn panic() -> ! {
-    // stm32h7xx_hal::pac::SCB::sys_reset()
-    cortex_m::asm::udf()
+    stm32h7xx_hal::pac::SCB::sys_reset()
 }
 
 static RTC: Mutex<RefCell<Option<rtc::Rtc>>> = Mutex::new(RefCell::new(None));

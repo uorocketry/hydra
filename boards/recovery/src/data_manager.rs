@@ -8,6 +8,10 @@ use messages::Message;
 
 const MAIN_HEIGHT: f32 = 876.0; // meters ASL
 const HEIGHT_MIN: f32 = 600.0; // meters ASL
+const TICK_RATE: f32 = 0.002; // seconds 
+const ASCENT_LOCKOUT: f32 = 100.0; 
+const DATA_POINTS: usize = 8;
+const VALID_DESCENT_RATE: f32 = -2.0; // meters per second
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -16,7 +20,7 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
-    pub historical_barometer_altitude: HistoryBuffer<(f32, u32), 8>,
+    pub historical_barometer_altitude: HistoryBuffer<(f32, u32), DATA_POINTS>,
     pub current_state: Option<RocketStates>,
 }
 
@@ -46,28 +50,21 @@ impl DataManager {
                 let mut prev = last;
                 for i in buf {
 
-                    let time_diff: f32 = (i.1 - prev.1) as f32 * 0.002; // Each tick is 2ms, so multiply by 0.002 to get seconds
+                    let time_diff: f32 = (i.1 - prev.1) as f32 * TICK_RATE; // Each tick is 2ms, so multiply by 0.002 to get seconds
                     info!("last: {:?}, timestamp: {}, time diff {}", last, i.1, time_diff);
 
                     if time_diff == 0.0 {
                         continue;
                     }
                     let slope = (i.0 - prev.0) / time_diff;
-                    if slope > 100.0 {
+                    if slope > ASCENT_LOCKOUT {
                         return false;
                     }
                     avg_sum += slope;
                     prev = i;
                 }
-                match avg_sum / 7.0 {
-                    // 7 because we have 8 points.
-                    // exclusive range
-                    x if !(100.0..=5.0).contains(&x) => {
-                        return false;
-                    }
-                    _ => {
-                        info!("avg: {}", avg_sum / 7.0);
-                    }
+                if avg_sum / (DATA_POINTS as f32 - 1.0) > VALID_DESCENT_RATE {
+                    return false;
                 }
             }
             None => {
@@ -76,6 +73,7 @@ impl DataManager {
         }
         true
     }
+
     pub fn is_launched(&self) -> bool {
         match self.air.as_ref() {
             Some(air) => match air.altitude {
@@ -95,7 +93,7 @@ impl DataManager {
                 let mut avg_sum: f32 = 0.0;
                 let mut prev = last;
                 for i in buf {
-                    let time_diff: f32 = (i.1 - prev.1) as f32 / 1_000_000.0;
+                    let time_diff: f32 = (i.1 - prev.1) * TICK_RATE;
                     if time_diff == 0.0 {
                         continue;
                     }
@@ -104,7 +102,7 @@ impl DataManager {
                 }
                 match avg_sum / 7.0 {
                     // inclusive range
-                    x if (-0.25..=0.25).contains(&x) => {
+                    x if (-0.5..=0.5).contains(&x) => {
                         return true;
                     }
                     _ => {
