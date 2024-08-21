@@ -215,8 +215,8 @@ mod app {
             },
         );
         send_command::spawn(message).ok(); 
-        fire_main::spawn_after(ExtU64::secs(60)).ok();
-        // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
+        // fire_main::spawn_after(ExtU64::secs(60)).ok();
+        fire_drogue::spawn_after(ExtU64::secs(60)).ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());

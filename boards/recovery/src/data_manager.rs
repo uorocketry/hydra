@@ -6,8 +6,9 @@ use heapless::HistoryBuffer;
 use messages::sensor::{Air, EkfNav1, EkfNav2, EkfQuat, GpsVel, Imu1, Imu2, UtcTime};
 use messages::Message;
 
-const MAIN_HEIGHT: f32 = 876.0; // meters ASL
-const HEIGHT_MIN: f32 = 600.0; // meters ASL
+const MAIN_HEIGHT: f32 = GROUND_HEIGHT + 500.0; // meters ASL
+const HEIGHT_MIN: f32 = GROUND_HEIGHT + 300.0; // meters ASL
+const GROUND_HEIGHT: f32 = 300.0; // meters ASL
 const TICK_RATE: f32 = 0.002; // seconds 
 const ASCENT_LOCKOUT: f32 = 100.0; 
 const DATA_POINTS: usize = 8;
@@ -93,7 +94,7 @@ impl DataManager {
                 let mut avg_sum: f32 = 0.0;
                 let mut prev = last;
                 for i in buf {
-                    let time_diff: f32 = (i.1 - prev.1) * TICK_RATE;
+                    let time_diff: f32 = (i.1 - prev.1) as f32 * TICK_RATE;
                     if time_diff == 0.0 {
                         continue;
                     }
