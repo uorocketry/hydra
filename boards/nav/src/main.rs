@@ -359,6 +359,7 @@ mod app {
                 .lock(|manager| manager.take_sensors());
             // info!("{:?}", data.clone());
             for msg in data {
+                info!("{:?}", msg);
                 sender
                     .send(Message::new(Mono::now().ticks(), COM_ID, Sensor::new(msg)))
                     .await;

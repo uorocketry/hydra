@@ -12,7 +12,7 @@ const GROUND_HEIGHT: f32 = 300.0; // meters ASL
 const TICK_RATE: f32 = 0.002; // seconds 
 const ASCENT_LOCKOUT: f32 = 100.0; 
 const DATA_POINTS: usize = 8;
-const VALID_DESCENT_RATE: f32 = -2.0; // meters per second
+const VALID_DESCENT_RATE: f32 = -1.0; // meters per second
 
 pub struct DataManager {
     pub air: Option<Air>,
@@ -21,7 +21,7 @@ pub struct DataManager {
     pub imu: (Option<Imu1>, Option<Imu2>),
     pub utc_time: Option<UtcTime>,
     pub gps_vel: Option<GpsVel>,
-    pub historical_barometer_altitude: HistoryBuffer<(f32, u32), DATA_POINTS>,
+    pub historical_barometer_altitude: HistoryBuffer<(f32, u32), DATA_POINTS>, // (alt, timestamp)
     pub current_state: Option<RocketStates>,
 }
 
@@ -40,8 +40,45 @@ impl DataManager {
         }
     }
     /// Returns true if the rocket is descending
+    // pub fn is_falling(&self) -> bool {
+    //     if self.historical_barometer_altitude.len() < 8 {
+    //         info!("not enough data points");
+    //         return false;
+    //     }
+    //     let mut buf = self.historical_barometer_altitude.oldest_ordered();
+    //     match buf.next() {
+    //         Some(last) => {
+    //             let mut avg_sum: f32 = 0.0;
+    //             let mut prev = last;
+    //             for i in buf {
+
+    //                 let time_diff: f32 = (i.1 - prev.1) as f32 * TICK_RATE; // Each tick is 2ms, so multiply by 0.002 to get seconds
+    //                 info!("prev alt: {:?}, new alt: {}, time diff {}", prev.0, i.0, time_diff);
+
+    //                 if time_diff == 0.0 {
+    //                     continue;
+    //                 }
+    //                 let slope = (i.0 - prev.0) / time_diff;
+    //                 if slope > ASCENT_LOCKOUT {
+    //                     return false;
+    //                 }
+    //                 avg_sum += slope;
+    //                 prev = i;
+    //             }
+    //             if avg_sum / (DATA_POINTS as f32 - 1.0) > VALID_DESCENT_RATE {
+    //                 return false;
+    //             }
+    //             info!("avg_sum: {}", avg_sum / (DATA_POINTS as f32 - 1.0));
+    //         }
+    //         None => {
+    //             return false;
+    //         }
+    //     }
+    //     true
+    // }
     pub fn is_falling(&self) -> bool {
         if self.historical_barometer_altitude.len() < 8 {
+            info!("not enough data points");
             return false;
         }
         let mut buf = self.historical_barometer_altitude.oldest_ordered();
@@ -50,10 +87,9 @@ impl DataManager {
                 let mut avg_sum: f32 = 0.0;
                 let mut prev = last;
                 for i in buf {
-
                     let time_diff: f32 = (i.1 - prev.1) as f32 * TICK_RATE; // Each tick is 2ms, so multiply by 0.002 to get seconds
-                    info!("last: {:?}, timestamp: {}, time diff {}", last, i.1, time_diff);
-
+                    info!("prev alt: {:?}, new alt: {}, time diff {}", prev.0, i.0, time_diff);
+    
                     if time_diff == 0.0 {
                         continue;
                     }
@@ -63,16 +99,19 @@ impl DataManager {
                     }
                     avg_sum += slope;
                     prev = i;
-                }
-                if avg_sum / (DATA_POINTS as f32 - 1.0) > VALID_DESCENT_RATE {
-                    return false;
+    
+                    // Check if the average descent rate is valid
+                    if avg_sum / (DATA_POINTS as f32 - 1.0) <= VALID_DESCENT_RATE {
+                        info!("avg_sum: {}", avg_sum / (DATA_POINTS as f32 - 1.0));
+                        return true;
+                    }
                 }
             }
             None => {
                 return false;
             }
         }
-        true
+        false
     }
 
     pub fn is_launched(&self) -> bool {

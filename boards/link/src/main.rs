@@ -144,7 +144,7 @@ mod app {
 
         c0.set_duty(c0.get_max_duty() / 4);
         // PWM outputs are disabled by default
-        c0.enable();
+        // c0.enable();
 
         info!("PWM enabled");
         // assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 32_000_000);
@@ -191,7 +191,7 @@ mod app {
         
         let config = can_data
             .get_config()
-            .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCan);
+            .set_frame_transmit(fdcan::config::FrameTransmissionConfig::AllowFdCanAndBRS);
         can_data.apply_config(config);
 
 

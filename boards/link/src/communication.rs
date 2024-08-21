@@ -101,6 +101,7 @@ impl CanDataManager {
         for message in self.can.receive0(&mut buf) {
             match from_bytes::<Message>(&buf) {
                 Ok(data) => {
+                    info!("Received message {}", data.clone());
                     crate::app::send_gs::spawn(data).ok();
                     // data_manager.handle_data(data);
                 }

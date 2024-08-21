@@ -98,7 +98,7 @@ impl CanDevice0 {
         )
         .unwrap();
         can.config().mode = Mode::Fd {
-            allow_bit_rate_switching: false,
+            allow_bit_rate_switching: true,
             data_phase_timing: BitTiming::new(fugit::RateExtU32::kHz(500)),
         };
 
@@ -178,7 +178,7 @@ impl CanDevice0 {
                 id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
                 frame_type: tx::FrameType::FlexibleDatarate {
                     payload: &payload[..],
-                    bit_rate_switching: false,
+                    bit_rate_switching: true,
                     force_error_state_indicator: false,
                 },
                 store_tx_event: None,
@@ -262,7 +262,7 @@ impl CanCommandManager {
         )
         .unwrap();
         can.config().mode = Mode::Fd {
-            allow_bit_rate_switching: false,
+            allow_bit_rate_switching: true,
             data_phase_timing: BitTiming::new(fugit::RateExtU32::kHz(500)),
         };
 
@@ -342,7 +342,7 @@ impl CanCommandManager {
                 id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
                 frame_type: tx::FrameType::FlexibleDatarate {
                     payload: &payload[..],
-                    bit_rate_switching: false,
+                    bit_rate_switching: true,
                     force_error_state_indicator: false,
                 },
                 store_tx_event: None,

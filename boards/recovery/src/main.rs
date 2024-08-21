@@ -216,7 +216,7 @@ mod app {
         );
         send_command::spawn(message).ok(); 
         // fire_main::spawn_after(ExtU64::secs(60)).ok();
-        fire_drogue::spawn_after(ExtU64::secs(60)).ok();
+        // fire_drogue::spawn_after(ExtU64::secs(60)).ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -410,7 +410,7 @@ mod app {
     }
 
     /// Sends info about the current state of the system.
-    #[task(shared = [data_manager, &em])]
+    #[task(priority = 3, shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
         cx.shared.em.run(|| {
             let rocket_state = cx
@@ -428,14 +428,13 @@ mod app {
                 cortex_m::interrupt::free(|cs| {
                     let mut rc = RTC.borrow(cs).borrow_mut();
                     let rtc = rc.as_mut().unwrap();
-                    // info!("RTC: {:?}", rtc.count32());
                     rtc.count32()
                 }),
                 COM_ID,
                 board_state,
             );
             spawn!(send_command, message)?;
-            spawn_after!(state_send, ExtU64::secs(2))?; // I think this is fine here.
+            spawn_after!(state_send, ExtU64::secs(5))?; // I think this is fine here.
             Ok(())
         });
     }

@@ -79,7 +79,7 @@ impl CanDevice0 {
         let mut can =
             mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, can_memory).unwrap();
         can.config().mode = Mode::Fd {
-            allow_bit_rate_switching: false,
+            allow_bit_rate_switching: true,
             data_phase_timing: BitTiming::new(500.kHz()),
         };
 
@@ -220,7 +220,7 @@ impl CanCommandManager {
         let mut can =
             mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, can_memory).unwrap();
         can.config().mode = Mode::Fd {
-            allow_bit_rate_switching: false,
+            allow_bit_rate_switching: true,
             data_phase_timing: BitTiming::new(500.kHz()),
         };
 
@@ -300,7 +300,7 @@ impl CanCommandManager {
                 id: ecan::Id::Standard(ecan::StandardId::new(m.sender.into()).unwrap()),
                 frame_type: tx::FrameType::FlexibleDatarate {
                     payload: &payload[..],
-                    bit_rate_switching: false,
+                    bit_rate_switching: true,
                     force_error_state_indicator: false,
                 },
                 store_tx_event: None,
