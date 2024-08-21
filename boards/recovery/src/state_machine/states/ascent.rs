@@ -14,7 +14,6 @@ pub struct Ascent {}
 
 impl State for Ascent {
     fn enter(&self, context: &mut StateMachineContext) {
-        for _i in 0..10 {
             let radio_rate_change = RadioRateChange {
                 rate: RadioRate::Fast,
             };
@@ -33,7 +32,6 @@ impl State for Ascent {
                     Ok(())
                 })
             });
-        }
     }
     fn step(&mut self, context: &mut StateMachineContext) -> Option<RocketStates> {
         context.shared_resources.data_manager.lock(|data| {

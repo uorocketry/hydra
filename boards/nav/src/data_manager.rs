@@ -4,6 +4,7 @@ use messages::sensor::{
     Imu1, Imu2, SensorData, UtcTime,
 };
 use messages::Message;
+use heapless::Vec;
 
 #[derive(Clone)]
 pub struct DataManager {
@@ -29,21 +30,44 @@ impl DataManager {
         }
     }
 
-    // TODO: stop cloning so much this is a waste of resources.
-    pub fn clone_sensors(&self) -> [Option<SensorData>; 11] {
-        [
-            self.air.clone().map(|x| x.into()),
-            self.ekf_nav.clone().map(|x| x.0.into()),
-            self.ekf_nav.clone().map(|x| x.1.into()),
-            self.ekf_quat.clone().map(|x| x.into()),
-            self.imu.clone().map(|x| x.0.into()),
-            self.imu.clone().map(|x| x.1.into()),
-            self.utc_time.clone().map(|x| x.into()),
-            self.gps_vel.clone().map(|x| x.0.into()),
-            self.gps_vel.clone().map(|x| x.1.into()),
-            self.gps_pos.clone().map(|x| x.0.into()),
-            self.gps_pos.clone().map(|x| x.1.into()),
-        ]
+    pub fn take_sensors(&mut self) -> Vec<SensorData, 13> {
+        let mut sensors = Vec::new();
+    
+        if let Some(data) = self.air.take().map(|x| x.into()) {
+            sensors.push(data);
+        }
+    
+        if let Some((data1, data2, data3)) = self.ekf_nav.take().map(|x| (x.0.into(), x.1.into(), x.2.into())) {
+            sensors.push(data1);
+            sensors.push(data2);
+            sensors.push(data3);
+        }
+    
+        if let Some(data) = self.ekf_quat.take().map(|x| x.into()) {
+            sensors.push(data);
+        }
+    
+        if let Some((data1, data2)) = self.imu.take().map(|x| (x.0.into(), x.1.into())) {
+            sensors.push(data1);
+            sensors.push(data2);
+        }
+    
+        if let Some(data) = self.utc_time.take().map(|x| x.into()) {
+            sensors.push(data);
+        }
+    
+        if let Some((data1, data2)) = self.gps_vel.take().map(|x| (x.0.into(), x.1.into())) {
+            sensors.push(data1);
+            sensors.push(data2);
+        }
+    
+        if let Some((data1, data2, data3)) = self.gps_pos.take().map(|x| (x.0.into(), x.1.into(), x.2.into())) {
+            sensors.push(data1);
+            sensors.push(data2);
+            sensors.push(data3);
+        }
+    
+        sensors
     }
 
     pub fn handle_data(&mut self, data: Message) -> Result<(), HydraError> {

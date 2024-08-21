@@ -74,6 +74,7 @@ mod app {
     struct LocalResources {
         led_red: PA2<Output<PushPull>>,
         led_green: PA3<Output<PushPull>>,
+        buzzer: stm32h7xx_hal::pwm::Pwm<stm32h7xx_hal::pac::TIM12, 0, stm32h7xx_hal::pwm::ComplementaryImpossible>
     }
 
     #[init]
@@ -325,7 +326,7 @@ mod app {
                 can_data_manager,
                 sbg_power,
             },
-            LocalResources { led_red, led_green },
+            LocalResources { led_red, led_green, buzzer: c0 },
         )
     }
 
@@ -545,18 +546,34 @@ mod app {
         // }
     }
 
-    #[task(priority = 1, local = [led_red, led_green], shared = [&em])]
+    #[task(priority = 1, local = [led_red, led_green, buzzer, buzzed: bool = false], shared = [&em])]
     async fn blink(cx: blink::Context) {
         loop {
-            cx.shared.em.run(|| {
                 if cx.shared.em.has_error() {
                     cx.local.led_red.toggle();
+                    if *cx.local.buzzed {
+                        cx.local.buzzer.set_duty(0);
+                        *cx.local.buzzed = false;
+                    } else {
+                        let duty = cx.local.buzzer.get_max_duty() / 4;
+                        cx.local.buzzer.set_duty(duty);
+                        *cx.local.buzzed = true;
+                    }
+                    Mono::delay(500.millis()).await;
+
                 } else {
                     cx.local.led_green.toggle();
+                    if *cx.local.buzzed {
+                        cx.local.buzzer.set_duty(0);
+                        *cx.local.buzzed = false;
+                    } else {
+                        let duty = cx.local.buzzer.get_max_duty() / 4;
+                        cx.local.buzzer.set_duty(duty);
+                        *cx.local.buzzed = true;
+                    }
+                    Mono::delay(2000.millis()).await;
+
                 }
-                Ok(())
-            });
-            Mono::delay(1000.millis()).await;
         }
     }
 

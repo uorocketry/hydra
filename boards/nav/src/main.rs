@@ -41,7 +41,7 @@ use types::COM_ID; // global logger
 
 const DATA_CHANNEL_CAPACITY: usize = 10;
 
-systick_monotonic!(Mono, 500); // 2ms ticks 
+systick_monotonic!(Mono, 500); // 2ms ticks
 
 #[inline(never)]
 #[defmt::panic_handler]
@@ -178,7 +178,7 @@ mod app {
 
         can_data.set_nominal_bit_timing(btr);
 
-        // can_data.set_automatic_retransmit(false); // data can be dropped due to its volume.
+        can_data.set_automatic_retransmit(false); // data can be dropped due to its volume.
 
         // can_command.set_data_bit_timing(data_bit_timing);
 
@@ -191,7 +191,6 @@ mod app {
             StandardFilterSlot::_1,
             StandardFilter::accept_all_into_fifo0(),
         );
-
 
         can_data.set_standard_filter(
             StandardFilterSlot::_2,
@@ -314,15 +313,17 @@ mod app {
         display_data::spawn(s).ok();
         // sbg_power_on::spawn().ok();
         let message = Message::new(
-            0,// technically true time is not known yet.
+            0,
             COM_ID,
             messages::command::Command {
-                data: messages::command::CommandData::Online(messages::command::Online { online: true }),
+                data: messages::command::CommandData::Online(messages::command::Online {
+                    online: true,
+                }),
             },
         );
-        send_command_internal::spawn(r_command).ok(); 
+        send_command_internal::spawn(r_command).ok();
         async {
-            s_command.send(message).await; 
+            s_command.send(message).await;
         };
 
         (
@@ -356,14 +357,12 @@ mod app {
             let data = cx
                 .shared
                 .data_manager
-                .lock(|manager| manager.clone_sensors());
-            info!("{:?}", data.clone());
-            let messages = data
-                .into_iter()
-                .flatten()
-                .map(|x| Message::new(Mono::now().ticks(), COM_ID, Sensor::new(x)));
-            for msg in messages {
-                sender.send(msg).await;
+                .lock(|manager| manager.take_sensors());
+            // info!("{:?}", data.clone());
+            for msg in data {
+                sender
+                    .send(Message::new(Mono::now().ticks(), COM_ID, Sensor::new(msg)))
+                    .await;
             }
             Mono::delay(200.millis()).await; // what if there was no delay and we used chanenls to control the rate of messages.
         }
@@ -372,11 +371,7 @@ mod app {
     /// Receives a log message from the custom logger so that it can be sent over the radio.
     pub fn queue_gs_message(d: impl Into<Data>) {
         info!("Queueing message");
-        let message = messages::Message::new(
-            Mono::now().ticks(),
-            COM_ID,
-            d.into(),
-        );
+        let message = messages::Message::new(Mono::now().ticks(), COM_ID, d.into());
         info!("{:?}", message);
         // send_in::spawn(message).ok();
     }

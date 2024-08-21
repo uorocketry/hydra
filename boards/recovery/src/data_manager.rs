@@ -53,7 +53,7 @@ impl DataManager {
                         continue;
                     }
                     let slope = (i.0 - prev.0) / time_diff;
-                    if slope < -100.0 {
+                    if slope > 100.0 {
                         return false;
                     }
                     avg_sum += slope;
@@ -62,7 +62,7 @@ impl DataManager {
                 match avg_sum / 7.0 {
                     // 7 because we have 8 points.
                     // exclusive range
-                    x if !(-100.0..=-5.0).contains(&x) => {
+                    x if !(100.0..=5.0).contains(&x) => {
                         return false;
                     }
                     _ => {
@@ -140,9 +140,8 @@ impl DataManager {
                        the alt is dropped, if the number is high switch to
                        the on board barometer.
                     */
-
                     if let Some(alt) = air_data.altitude {
-                        let tup_data: (f32, u32) = (alt, air_data.time_stamp);
+                        let tup_data: (f32, u32) = (alt, data.timestamp);
                         self.air = Some(air_data);
                         if let Some(recent) = self.historical_barometer_altitude.recent() {
                             if recent.1 != tup_data.1 {

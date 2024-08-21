@@ -161,7 +161,6 @@ pub fn sbg_get_time() -> u32 {
 }
 
 pub async fn sbg_handle_data(mut cx: sbg_handle_data::Context<'_>, data: CallbackData) {
-
     cx.shared.data_manager.lock(|manager| match data {
         CallbackData::UtcTime(x) => manager.utc_time = Some(x),
         CallbackData::Air(x) => manager.air = Some(x),
@@ -169,11 +168,7 @@ pub async fn sbg_handle_data(mut cx: sbg_handle_data::Context<'_>, data: Callbac
         CallbackData::EkfNav(x) => manager.ekf_nav = Some(x),
         CallbackData::Imu(x) => manager.imu = Some(x),
         CallbackData::GpsVel(x) => manager.gps_vel = Some(x),
-        CallbackData::GpsPos(x) => {
-            info!("{}", x.0.latitude.unwrap());
-            panic!("fucl");
-            manager.gps_pos = Some(x)
-        },
+        CallbackData::GpsPos(x) => manager.gps_pos = Some(x),
     });
 }
 
@@ -213,7 +208,7 @@ pub fn sbg_dma(mut cx: crate::app::sbg_dma::Context) {
                     // info!("{}", data);
                     xfer.clear_transfer_complete_interrupt();
                     sbg.sbg_device.read_data(&data);
-                    // crate::app::sbg_sd_task::spawn(data).ok();
+                    crate::app::sbg_sd_task::spawn(data).ok();
                 }
             }
             None => {

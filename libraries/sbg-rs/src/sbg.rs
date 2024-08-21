@@ -382,18 +382,14 @@ impl SBG {
                             callback(CallbackData::EkfNav((*pLogData).ekfNavData.into()))
                         }
                         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS => {
-                            // panic!("GPS Data");
                             callback(CallbackData::GpsPos((*pLogData).gpsPosData.into()))
                         }
                         _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL => {
-                            // panic!("GPS Velocity Data");
                             callback(CallbackData::GpsVel((*pLogData).gpsVelData.into()))
                         }
                         _SbgEComLog_SBG_ECOM_LOG_GPS1_HDT => {
-                            // info!("Heading Data");
                         }
                         _ => {
-                            panic!("unkown")
                         },
                     }
                 }
@@ -488,7 +484,7 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
 
     match logType {
         // silently handle errors
-        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info "),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug "),
