@@ -156,7 +156,7 @@ mod app {
 
         c0.set_duty(c0.get_max_duty() / 4);
         // PWM outputs are disabled by default
-        // c0.enable();
+        c0.enable();
 
         info!("PWM enabled");
         // assert_eq!(ccdr.clocks.pll1_q_ck().unwrap().raw(), 32_000_000);

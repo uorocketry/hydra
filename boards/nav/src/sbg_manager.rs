@@ -183,7 +183,7 @@ pub async fn sbg_sd_task(
                 Ok(())
             });
             manager.file = Some(file); // give the file back after use
-        } else if let Ok(mut file) = manager.open_file("sbg.txt") {
+        } else if let Ok(mut file) = manager.open_file("lc24.txt") {
             cx.shared.em.run(|| {
                 manager.write(&mut file, &data)?;
                 Ok(())

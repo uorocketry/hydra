@@ -56,6 +56,7 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
 mod app {
 
     use atsamd_hal::gpio::{B, PA03, PB04, PB06, PB07, PB08, PB09};
+    use embedded_hal::digital::v2::StatefulOutputPin;
 
     use super::*;
 
@@ -192,13 +193,18 @@ mod app {
         // info!("RTC done");
 
         // ADC sensing setup
-        let (pclk_adc, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
-        let adc1 = hal::adc::Adc::adc1(peripherals.ADC1, &mut mclk);
-        let drogue_current_sense = pins.pb06.into_alternate();
-        let main_current_sense = pins.pb07.into_alternate();
-        let drogue_sense = pins.pb08.into_alternate();
-        let main_sense = pins.pb09.into_alternate();
+        // let (pclk_adc, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
+        // let adc1 = hal::adc::Adc::adc1(peripherals.ADC1, &mut mclk);
+        // let drogue_current_sense = pins.pb06.into_alternate();
+        // let main_current_sense = pins.pb07.into_alternate();
+        // let drogue_sense = pins.pb08.into_alternate();
+        // let main_sense = pins.pb09.into_alternate();
         // let data = adc1.read(&mut drogue_sense);
+
+        let mut drogue_current_sense = pins.pb06.into_push_pull_output();
+        let mut main_current_sense = pins.pb07.into_push_pull_output();
+        drogue_current_sense.set_low().ok();
+        main_current_sense.set_low().ok();
 
         /* Spawn tasks */
         run_sm::spawn().ok();

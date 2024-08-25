@@ -81,7 +81,7 @@ where
         let file = sd_cont.open_file_in_dir(
             &mut volume,
             &root_directory,
-            "log.txt",
+            "lc24.txt",
             sd::Mode::ReadWriteCreateOrTruncate,
         );
         let file = match file {

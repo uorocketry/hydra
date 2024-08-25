@@ -79,7 +79,7 @@ impl CanDevice0 {
         let mut can =
             mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, can_memory).unwrap();
         can.config().mode = Mode::Fd {
-            allow_bit_rate_switching: true,
+            allow_bit_rate_switching: false,
             data_phase_timing: BitTiming::new(500.kHz()),
         };
 
@@ -161,7 +161,7 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("Sender: {:?}", data.clone());
+                                // info!("Sender: {:?}", data.clone());
                                 data_manager.handle_data(data)?;
                             }
                             Err(e) => {
