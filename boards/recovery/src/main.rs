@@ -234,6 +234,7 @@ mod app {
                 can0,
                 can_command_manager,
                 gpio,
+                recovery_timer,
             },
             Local {
                 led_green,
@@ -382,7 +383,7 @@ mod app {
 
     /// Runs the state machine.
     /// This takes control of the shared resources.
-    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager, &em])]
+    #[task(priority = 3, local = [state_machine], shared = [can0, gpio, data_manager, &em, recovery_timer])]
     fn run_sm(mut cx: run_sm::Context) {
         cx.local.state_machine.run(&mut StateMachineContext {
             shared_resources: &mut cx.shared,

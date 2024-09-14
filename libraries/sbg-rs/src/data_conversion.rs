@@ -1,13 +1,21 @@
 use crate::bindings::{
     SbgLogAirData, SbgLogEkfNavData, SbgLogEkfQuatData, SbgLogGpsPos, SbgLogGpsVel, SbgLogImuData,
     SbgLogUtcData,
+    SbgLogAirData, SbgLogEkfNavData, SbgLogEkfQuatData, SbgLogGpsPos, SbgLogGpsVel, SbgLogImuData,
+    SbgLogUtcData,
 };
 use bitflags::Flags;
 use messages::sensor::{
     Air, EkfNav1, EkfNav2, EkfNavAcc, EkfQuat, GpsPos1, GpsPos2, GpsPosAcc, GpsVel, GpsVelAcc,
     Imu1, Imu2, UtcTime,
 };
+use messages::sensor::{
+    Air, EkfNav1, EkfNav2, EkfNavAcc, EkfQuat, GpsPos1, GpsPos2, GpsPosAcc, GpsVel, GpsVelAcc,
+    Imu1, Imu2, UtcTime,
+};
 use messages::sensor_status::{
+    AirFlags, AirStatus, EkfFlags, EkfStatus, GpsPositionStatus, GpsPositionStatusE, GpsVelStatus,
+    GpsVelStatusE, ImuFlags, ImuStatus, UtcStatus, UtcTimeStatus,
     AirFlags, AirStatus, EkfFlags, EkfStatus, GpsPositionStatus, GpsPositionStatusE, GpsVelStatus,
     GpsVelStatusE, ImuFlags, ImuStatus, UtcStatus, UtcTimeStatus,
 };
@@ -28,7 +36,9 @@ impl From<SbgLogGpsPos> for (GpsPos1, GpsPos2, GpsPosAcc) {
     fn from(value: SbgLogGpsPos) -> Self {
         let status = GpsPositionStatus::new(value.status);
 
+
         let valid = matches!(status.get_status(), Some(GpsPositionStatusE::SolComputed));
+        
         (
             GpsPos1 {
                 latitude: if valid { Some(value.latitude) } else { None },

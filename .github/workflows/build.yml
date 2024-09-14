@@ -67,11 +67,6 @@ jobs:
         with:
           command: make
           args: test-host
-      - uses: actions-rs/cargo@v1
-        name: "Generate Typescript bindings"
-        with:
-          command: make
-          args: generate-ts-bindings
       - uses: actions/upload-artifact@v3
         name: "Upload Binding Artifacts"
         with:

@@ -23,6 +23,8 @@ pub struct DataManager {
     pub gps_vel: Option<GpsVel>,
     pub historical_barometer_altitude: HistoryBuffer<(f32, u32), DATA_POINTS>, // (alt, timestamp)
     pub current_state: Option<RocketStates>,
+    // each tick represents a minute that passed
+    pub recovery_counter: u8,
 }
 
 impl DataManager {
@@ -37,6 +39,7 @@ impl DataManager {
             gps_vel: None,
             historical_barometer_altitude,
             current_state: None,
+            recovery_counter: 0,
         }
     }
     /// Returns true if the rocket is descending
@@ -123,8 +126,8 @@ impl DataManager {
             None => false,
         }
     }
-    pub fn is_landed(&self) -> bool {
-        if self.historical_barometer_altitude.len() < 8 {
+    pub fn is_landed(&mut self) -> bool {
+        if self.historical_barometer_altitude.len() < RECOVERY_DATA_POINTS.into() {
             return false;
         }
         let mut buf = self.historical_barometer_altitude.oldest_ordered();
@@ -140,13 +143,13 @@ impl DataManager {
                     avg_sum += (i.0 - prev.0) / time_diff;
                     prev = i;
                 }
-                match avg_sum / 7.0 {
+                match avg_sum / (RECOVERY_DATA_POINTS as f32 - 1.0) {
                     // inclusive range
                     x if (-0.5..=0.5).contains(&x) => {
                         return true;
                     }
                     _ => {
-                        // continue
+                        self.recovery_counter = 0;
                     }
                 }
             }

@@ -7,7 +7,7 @@ use crate::RTC;
 use common_arm::spawn;
 use defmt::{write, Format, Formatter};
 use messages::command::{Command, PowerDown, RadioRate, RadioRateChange};
-use messages::sender::Sender::SensorBoard;
+use messages::node::Node::SensorBoard;
 use messages::Message;
 
 #[derive(Debug, Clone)]
