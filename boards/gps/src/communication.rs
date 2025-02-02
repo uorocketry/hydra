@@ -1,15 +1,22 @@
-/// Encapsulates all communication logic.
+
+use crate::data_manager::DataManager;
 use atsamd_hal::can::Dependencies;
 use atsamd_hal::clock::v2::ahb::AhbClk;
-use atsamd_hal::clock::v2::gclk::Gclk0Id;
+use atsamd_hal::clock::v2::gclk::{Gclk0Id};
 use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::types::{Can0, Can1};
 use atsamd_hal::clock::v2::Source;
-use atsamd_hal::gpio::{Alternate, AlternateH, AlternateI, Pin, H, I, PA22, PA23, PB14, PB15};
+use atsamd_hal::gpio::{
+    Alternate, AlternateI, Pin, I, PA22, PA23,
+};
+use atsamd_hal::gpio::{AlternateH, H, PB14, PB15};
 use atsamd_hal::pac::{CAN0, CAN1};
+use atsamd_hal::prelude::*;
 use atsamd_hal::typelevel::Increment;
 use common_arm::HydraError;
 use common_arm_atsame::mcan;
+use common_arm_atsame::mcan::message::{rx, Raw};
+use common_arm_atsame::mcan::tx_buffers::DynTx;
 use defmt::error;
 use defmt::info;
 use heapless::Vec;
@@ -18,20 +25,16 @@ use mcan::embedded_can as ecan;
 use mcan::interrupt::state::EnabledLine0;
 use mcan::interrupt::{Interrupt, OwnedInterruptSet};
 use mcan::message::tx;
-use mcan::message::{rx, Raw};
 use mcan::messageram::SharedMemory;
-use mcan::tx_buffers::DynTx;
 use mcan::{
     config::{BitTiming, Mode},
     filter::{Action, Filter},
 };
-
-use crate::data_manager::DataManager;
+use messages::mavlink::{self};
 use messages::Message;
 use postcard::from_bytes;
-use systick_monotonic::fugit::RateExtU32;
+use systick_monotonic::*;
 use typenum::{U0, U128, U32, U64};
-
 pub struct Capacities;
 
 impl mcan::messageram::Capacities for Capacities {
@@ -48,6 +51,18 @@ impl mcan::messageram::Capacities for Capacities {
     type DedicatedTxBuffers = U0;
     type TxEventFifo = U32;
 }
+
+// macro_rules! create_filter {
+//     ($can:expr, $action:expr, $sender:expr) => {
+//         $can.filters_standard()
+//             .push(Filter::Classic {
+//                 action: $action,
+//                 filter: ecan::StandardId::new($sender.into()).unwrap(),
+//                 mask: ecan::StandardId::ZERO,
+//             })
+//             .unwrap_or_else(|_| panic!("Filter Error"));
+//     };
+// }
 
 pub struct CanDevice0 {
     pub can: Can<
@@ -76,11 +91,15 @@ impl CanDevice0 {
         let (can_dependencies, gclk0) =
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
-        let mut can =
-            mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, can_memory).unwrap();
+        let mut can = mcan::bus::CanConfigurable::new(
+            200.kHz(),
+            can_dependencies,
+            can_memory,
+        )
+        .unwrap();
         can.config().mode = Mode::Fd {
-            allow_bit_rate_switching: false,
-            data_phase_timing: BitTiming::new(500.kHz()),
+            allow_bit_rate_switching: true,
+            data_phase_timing: BitTiming::new(fugit::RateExtU32::kHz(500)),
         };
 
         if loopback {
@@ -108,20 +127,36 @@ impl CanDevice0 {
             .interrupt_configuration()
             .enable_line_0(interrupts_to_be_enabled);
 
-        // We accept messages from the sensor board as we need data from the sensors.
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo0,
-                filter: ecan::StandardId::new(messages::node::Node::SensorBoard.into()).unwrap(),
+                filter: ecan::StandardId::new(messages::sender::Sender::RecoveryBoard.into())
+                    .unwrap(),
                 mask: ecan::StandardId::ZERO,
             })
-            .unwrap_or_else(|_| panic!("Sensor Board filter"));
+            .unwrap_or_else(|_| panic!("Recovery filter"));
 
-        // We accept messages from the communication board as we may need to force the deployment of the parachute.
         can.filters_standard()
             .push(Filter::Classic {
                 action: Action::StoreFifo1,
-                filter: ecan::StandardId::new(messages::node::Node::CommunicationBoard.into())
+                filter: ecan::StandardId::new(messages::sender::Sender::SensorBoard.into())
+                    .unwrap(),
+                mask: ecan::StandardId::ZERO,
+            })
+            .unwrap_or_else(|_| panic!("Sensor filter"));
+
+        can.filters_standard()
+            .push(Filter::Classic {
+                action: Action::StoreFifo0,
+                filter: ecan::StandardId::new(messages::sender::Sender::PowerBoard.into()).unwrap(),
+                mask: ecan::StandardId::ZERO,
+            })
+            .unwrap_or_else(|_| panic!("Power filter"));
+
+        can.filters_standard()
+            .push(Filter::Classic {
+                action: Action::StoreFifo0,
+                filter: ecan::StandardId::new(messages::sender::Sender::GroundStation.into())
                     .unwrap(),
                 mask: ecan::StandardId::ZERO,
             })
@@ -152,7 +187,7 @@ impl CanDevice0 {
         )?;
         Ok(())
     }
-    pub fn process_data(&mut self, data_manager: &mut DataManager) -> Result<(), HydraError> {
+    pub fn process_data(&mut self, data_manager: &mut DataManager) {
         let line_interrupts = &self.line_interrupts;
         for interrupt in line_interrupts.iter_flagged() {
             match interrupt {
@@ -160,11 +195,12 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                // info!("Sender: {:?}", data.clone());
-                                data_manager.handle_data(data)?;
+                                // info!("Received message {}", data.clone());
+
+                                data_manager.handle_data(data);
                             }
-                            Err(e) => {
-                                info!("Error: {:?}", e)
+                            Err(_) => {
+                                // error!("Error, ErrorContext::UnkownCanMessage");
                             }
                         }
                     }
@@ -173,11 +209,12 @@ impl CanDevice0 {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                // info!("CAN Command: {:?}", data.clone());
-                                data_manager.handle_data(data)?;
+                                info!("Received message {}", data.clone());
+
+                                data_manager.handle_data(data);
                             }
-                            Err(e) => {
-                                info!("Error: {:?}", e)
+                            Err(_) => {
+                                // error!("Error, ErrorContext::UnkownCanMessage");
                             }
                         }
                     }
@@ -185,9 +222,11 @@ impl CanDevice0 {
                 _ => (),
             }
         }
-        Ok(())
     }
 }
+
+// So I really am not a fan of this can device 0 and can device 1, I think it would be better to have a single generic can manager
+// that can also take a list of filters and apply them.
 
 pub struct CanCommandManager {
     pub can: Can<
@@ -216,11 +255,15 @@ impl CanCommandManager {
         let (can_dependencies, gclk0) =
             Dependencies::new(gclk0, pclk_can, ahb_clock, can_rx, can_tx, peripheral);
 
-        let mut can =
-            mcan::bus::CanConfigurable::new(200.kHz(), can_dependencies, can_memory).unwrap();
+        let mut can = mcan::bus::CanConfigurable::new(
+            200.kHz(), // needs a prescaler of 6 to be changed in the mcan source because mcan is meh. 
+            can_dependencies,
+            can_memory,
+        )
+        .unwrap();
         can.config().mode = Mode::Fd {
             allow_bit_rate_switching: true,
-            data_phase_timing: BitTiming::new(500.kHz()),
+            data_phase_timing: BitTiming::new(fugit::RateExtU32::kHz(500)),
         };
 
         if loopback {
@@ -316,7 +359,7 @@ impl CanCommandManager {
                     for message in &mut self.can.rx_fifo_0 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("CAN Command: {:?}", data.clone());
+                                info!("Received message {}", data.clone());
                                 data_manager.handle_command(data);
                             }
                             Err(_) => {
@@ -329,7 +372,7 @@ impl CanCommandManager {
                     for message in &mut self.can.rx_fifo_1 {
                         match from_bytes::<Message>(message.data()) {
                             Ok(data) => {
-                                info!("CAN Command: {:?}", data.clone());
+                                info!("Received message {}", data.clone());
                                 data_manager.handle_command(data);
                             }
                             Err(_) => {

@@ -22,39 +22,55 @@ pub enum SensorData {
     EkfNavAcc(EkfNavAcc),
     Imu1(Imu1),
     Imu2(Imu2),
+    NavPosLlh(NavPosLlh),
     GpsVel(GpsVel),
     GpsVelAcc(GpsVelAcc),
     GpsPos1(GpsPos1),
     GpsPos2(GpsPos2),
     GpsPosAcc(GpsPosAcc),
+    ResetReason(ResetReason),
+    RecoverySensing(RecoverySensing),
+}
+
+#[common_derives]
+pub struct NavPosLlh {
+    pub height_msl: f64,
+    pub longitude: f64,
+    pub latitude: f64, 
 }
 
 /* Replace with new health monitor */
 
 #[common_derives]
-pub struct Regulator {
-    pub status: bool,
+pub enum ResetReason {
+    /// The mcu went from not having power to having power and resetting
+    PowerOnReset,
+    /// The reset pin was asserted
+    PinReset,
+    /// The brownout detector triggered
+    BrownoutReset,
+    /// The software did a soft reset through the SCB peripheral
+    SystemReset,
+    /// The software did a soft reset through the RCC periperal
+    CpuReset,
+    /// The window watchdog triggered
+    WindowWatchdogReset,
+    /// The independent watchdog triggered
+    IndependentWatchdogReset,
+    /// Either of the two watchdogs triggered (but we don't know which one)
+    GenericWatchdogReset,
+    /// The DStandby mode was exited
+    D1ExitsDStandbyMode,
+    /// The DStandby mode was exited
+    D2ExitsDStandbyMode,
+    /// A state has been entered erroneously
+    D1EntersDStandbyErroneouslyOrCpuEntersCStopErroneously,
+    /// The reason could not be determined
+    Unknown {
+        /// The raw register value
+        rcc_rsr: u32,
+    },
 }
-
-#[common_derives]
-pub struct Voltage {
-    pub voltage: f32,
-    pub rolling_avg: f32,
-}
-
-#[common_derives]
-pub struct Current {
-    pub current: f32,
-    pub rolling_avg: f32,
-}
-
-#[common_derives]
-pub struct Temperature {
-    pub temperature: f32,
-    pub rolling_avg: f32,
-}
-
-/* Replace with new health monitor */
 
 #[common_derives]
 pub struct GpsPos1 {
@@ -63,6 +79,8 @@ pub struct GpsPos1 {
     #[doc = "< Longitude in degrees, positive east."]
     pub longitude: Option<f64>,
 }
+
+
 
 #[common_derives]
 pub struct GpsPos2 {
@@ -216,6 +234,14 @@ pub struct GpsVelAcc {
     pub course_acc: Option<f32>,
     #[doc = "< GPS North, East, Down velocity 1 sigma accuracy in m.s^-1."]
     pub velocity_acc: Option<[f32; 3usize]>,
+}
+
+#[common_derives]
+pub struct RecoverySensing {
+    pub drogue_current: u16, 
+    pub main_current: u16,
+    pub drogue_voltage: u16,
+    pub main_voltage: u16,
 }
 
 impl Sensor {

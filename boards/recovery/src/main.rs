@@ -12,29 +12,52 @@ use atsamd_hal::clock::v2::pclk::Pclk;
 use atsamd_hal::clock::v2::Source;
 use atsamd_hal::dmac::DmaController;
 use common_arm::hinfo;
-use common_arm::mcan;
 use common_arm::*;
+use common_arm_atsame::mcan;
+use communication::CanCommandManager;
 use communication::Capacities;
 use data_manager::DataManager;
+use defmt::info;
+use defmt_rtt as _;
+use embedded_hal::spi::FullDuplex;
 use gpio_manager::GPIOManager;
-use hal::gpio::{Pin, Pins, PushPullOutput, PB16, PB17};
+use hal::gpio::{Alternate, Pin, Pins, PushPullOutput, D, PA04, PA05, PA07};
+use panic_probe as _; // global logger
+
+use core::cell::RefCell;
+use cortex_m::interrupt::Mutex;
 use hal::prelude::*;
-use hal::timer::TimerCounter2;
+use hal::rtc::Count32Mode;
+use hal::sercom::{spi, spi::Config, spi::Duplex, spi::Pads, spi::Spi, IoSet3, Sercom0};
 use mcan::messageram::SharedMemory;
 use messages::*;
+use ms5611_01ba::{calibration::OversamplingRatio, MS5611_01BA};
 use state_machine::{StateMachine, StateMachineContext};
 use systick_monotonic::*;
 use types::COM_ID;
+pub static RTC: Mutex<RefCell<Option<hal::rtc::Rtc<Count32Mode>>>> = Mutex::new(RefCell::new(None));
+#[inline(never)]
+#[defmt::panic_handler]
+fn panic() -> ! {
+    cortex_m::asm::udf()
+}
 
-/// Custom panic handler.
-/// Reset the system if a panic occurs.
-#[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
-    atsamd_hal::pac::SCB::sys_reset();
+/// Hardfault handler.
+///
+/// Terminates the application and makes a semihosting-capable debug tool exit
+/// with an error. This seems better than the default, which is to spin in a
+/// loop.
+#[cortex_m_rt::exception]
+unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
+    loop {}
 }
 
 #[rtic::app(device = hal::pac, peripherals = true, dispatchers = [EVSYS_0, EVSYS_1, EVSYS_2])]
 mod app {
+
+    use atsamd_hal::gpio::{B, PA03, PB04, PB06, PB07, PB08, PB09};
+    use embedded_hal::digital::v2::StatefulOutputPin;
+
     use super::*;
 
     #[shared]
@@ -43,14 +66,33 @@ mod app {
         data_manager: DataManager,
         can0: communication::CanDevice0,
         gpio: GPIOManager,
-        recovery_timer: TimerCounter2,
+        can_command_manager: CanCommandManager,
     }
 
     #[local]
     struct Local {
-        led_green: Pin<PB16, PushPullOutput>,
-        led_red: Pin<PB17, PushPullOutput>,
+        led_green: Pin<PA03, PushPullOutput>,
+        led_red: Pin<PB04, PushPullOutput>,
+        drogue_current_sense: Pin<PB06, Alternate<B>>,
+        main_current_sense: Pin<PB07, Alternate<B>>,
+        drogue_sense: Pin<PB08, Alternate<B>>,
+        main_sense: Pin<PB09, Alternate<B>>,
+        adc1: hal::adc::Adc<hal::pac::ADC1>,
         state_machine: StateMachine,
+        barometer: MS5611_01BA<
+            Spi<
+                Config<
+                    Pads<
+                        hal::pac::SERCOM0,
+                        IoSet3,
+                        Pin<PA07, Alternate<D>>,
+                        Pin<PA04, Alternate<D>>,
+                        Pin<PA05, Alternate<D>>,
+                    >,
+                >,
+                Duplex,
+            >,
+        >,
     }
 
     #[monotonic(binds = SysTick, default = true)]
@@ -58,12 +100,16 @@ mod app {
 
     #[init(local = [
         #[link_section = ".can"]
-        can_memory: SharedMemory<Capacities> = SharedMemory::new()
+        can_memory: SharedMemory<Capacities> = SharedMemory::new(),
+        #[link_section = ".can_command"]
+        can_command_memory: SharedMemory<Capacities> = SharedMemory::new()
     ])]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut peripherals = cx.device;
         let core = cx.core;
         let pins = Pins::new(peripherals.PORT);
+
+        HydraLogging::set_ground_station_callback(queue_gs_message);
 
         let mut dmac = DmaController::init(peripherals.DMAC, &mut peripherals.PM);
         let _dmaChannels = dmac.split();
@@ -95,28 +141,88 @@ mod app {
             false,
         );
 
-        /* GPIO config */
-        let led_green = pins.pb16.into_push_pull_output();
-        let led_red = pins.pb17.into_push_pull_output();
-        let gpio = GPIOManager::new(
-            // pins switched from schematic
-            pins.pa09.into_push_pull_output(),
-            pins.pa06.into_push_pull_output(),
+        let (pclk_can_command, gclk0) = Pclk::enable(tokens.pclks.can1, gclk0);
+        let (can_command_manager, gclk0) = CanCommandManager::new(
+            pins.pb15.into_mode(),
+            pins.pb14.into_mode(),
+            pclk_can_command,
+            clocks.ahbs.can1,
+            peripherals.CAN1,
+            gclk0,
+            cx.local.can_command_memory,
+            false,
         );
+
+        /* GPIO config */
+        let led_green = pins.pa03.into_push_pull_output();
+        let led_red = pins.pb04.into_push_pull_output();
+        let mut main_ematch = pins.pb12.into_push_pull_output();
+        let mut drogue_ematch = pins.pb11.into_push_pull_output();
+        main_ematch.set_low().ok();
+        drogue_ematch.set_low().ok();
+        
+
+        let gpio = GPIOManager::new(main_ematch, drogue_ematch);
         /* State Machine config */
         let state_machine = StateMachine::new();
 
-        /* Recovery Timer config */
-        let (pclk_tc2tc3, gclk0) = Pclk::enable(tokens.pclks.tc2_tc3, gclk0);
-        let timerclk: hal::clock::v1::Tc2Tc3Clock = pclk_tc2tc3.into();
-        let recovery_timer = hal::timer::TimerCounter2::tc2_(&timerclk, peripherals.TC2, &mut mclk);
+        //type pads = hal::sercom::spi::PadsFromIds<Sercom0, IoSet3, PA07, PA04, PA05, PA06>;
+        //let pads_spi = pads::Pads::new(pins.pa07, pins.pa04, pins.pa05, pins.pa06);
+
+        let (pclk_sd, gclk0) = Pclk::enable(tokens.pclks.sercom0, gclk0);
+        let pads_spi = spi::Pads::<Sercom0, IoSet3>::default()
+            .sclk(pins.pa05)
+            .data_in(pins.pa07)
+            .data_out(pins.pa04);
+
+        let baro_spi = spi::Config::new(&mclk, peripherals.SERCOM0, pads_spi, pclk_sd.freq())
+            .length::<spi::lengths::U1>()
+            .bit_order(spi::BitOrder::MsbFirst)
+            .spi_mode(spi::MODE_0)
+            .enable();
+
+        let barometer = MS5611_01BA::new(baro_spi, OversamplingRatio::OSR2048);
+
+        info!("RTC");
+        let rtc = hal::rtc::Rtc::clock_mode(peripherals.RTC, 1024.Hz(), &mut mclk);
+        let mut rtc = rtc.into_count32_mode(); // hal bug this must be done
+        rtc.set_count32(0);
+        cortex_m::interrupt::free(|cs| {
+            RTC.borrow(cs).replace(Some(rtc));
+        });
+        // info!("RTC done");
+
+        // ADC sensing setup
+        // let (pclk_adc, gclk0) = Pclk::enable(tokens.pclks.adc1, gclk0);
+        // let adc1 = hal::adc::Adc::adc1(peripherals.ADC1, &mut mclk);
+        // let drogue_current_sense = pins.pb06.into_alternate();
+        // let main_current_sense = pins.pb07.into_alternate();
+        // let drogue_sense = pins.pb08.into_alternate();
+        // let main_sense = pins.pb09.into_alternate();
+        // let data = adc1.read(&mut drogue_sense);
+
+        let mut drogue_current_sense = pins.pb06.into_push_pull_output();
+        let mut main_current_sense = pins.pb07.into_push_pull_output();
+        drogue_current_sense.set_low().ok();
+        main_current_sense.set_low().ok();
 
         /* Spawn tasks */
         run_sm::spawn().ok();
+        // read_barometer::spawn().ok();
         state_send::spawn().ok();
+        ejection_sense::spawn().ok();
         blink::spawn().ok();
-        // fire_main::spawn_after(ExtU64::secs(15)).ok();
-        // fire_drogue::spawn_after(ExtU64::secs(15)).ok();
+        // send an online message to the com board. 
+        let message = Message::new(
+            0,// technically true time is not known yet.
+            COM_ID,
+            messages::command::Command {
+                data: messages::command::CommandData::Online(messages::command::Online { online: true }),
+            },
+        );
+        send_command::spawn(message).ok(); 
+        // fire_main::spawn_after(ExtU64::secs(60)).ok();
+        // fire_drogue::spawn_after(ExtU64::secs(60)).ok();
 
         /* Monotonic clock */
         let mono = Systick::new(core.SYST, gclk0.freq().to_Hz());
@@ -126,6 +232,7 @@ mod app {
                 em: ErrorManager::new(),
                 data_manager: DataManager::new(),
                 can0,
+                can_command_manager,
                 gpio,
                 recovery_timer,
             },
@@ -133,6 +240,12 @@ mod app {
                 led_green,
                 led_red,
                 state_machine,
+                adc1,
+                drogue_current_sense,
+                main_current_sense,
+                drogue_sense,
+                main_sense,
+                barometer,
             },
             init::Monotonics(mono),
         )
@@ -144,27 +257,94 @@ mod app {
         loop {}
     }
 
-    // interrupt handler for recovery counter
-    #[task(binds=TC2, shared=[data_manager, recovery_timer])]
-    fn recovery_counter_tick(mut cx: recovery_counter_tick::Context) {
-        cx.shared.recovery_timer.lock(|timer| {
-            if timer.wait().is_ok() {
-                cx.shared.data_manager.lock(|data| {
-                    data.recovery_counter += 1;
-                });
-                // restart timer after interrupt
-                let duration_mins = atsamd_hal::fugit::MinutesDurationU32::minutes(1);
-                // timer requires specific duration format
-                let timer_duration: atsamd_hal::fugit::Duration<u32, 1, 1000000000> =
-                    duration_mins.convert();
-                timer.start(timer_duration);
-            }
-            timer.enable_interrupt(); // clear interrupt
+    #[task(local = [adc1, main_sense, drogue_sense, main_current_sense, drogue_current_sense], shared = [&em])]
+    fn ejection_sense(mut cx: ejection_sense::Context) {
+        cx.shared.em.run(|| {
+            let data_drogue_current: u16 =
+                cx.local.adc1.read(cx.local.drogue_current_sense).unwrap();
+            let data_main_current: u16 = cx.local.adc1.read(cx.local.main_current_sense).unwrap();
+            let data_drogue_sense: u16 = cx.local.adc1.read(cx.local.drogue_sense).unwrap();
+            let data_main_sense: u16 = cx.local.adc1.read(cx.local.main_sense).unwrap();
+            let sensing = messages::sensor::Sensor {
+                data: messages::sensor::SensorData::RecoverySensing(
+                    messages::sensor::RecoverySensing {
+                        drogue_current: data_drogue_current,
+                        main_current: data_main_current,
+                        drogue_voltage: data_drogue_sense,
+                        main_voltage: data_main_sense,
+                    },
+                ),
+            };
+
+            let message = Message::new(
+                cortex_m::interrupt::free(|cs| {
+                    let mut rc = RTC.borrow(cs).borrow_mut();
+                    let rtc = rc.as_mut().unwrap();
+                    rtc.count32()
+                }),
+                COM_ID,
+                sensing,
+            );
+            // info!("Drogue current: {} Main current: {} Drogue sense: {} Main sense: {}", data_drogue_current, data_main_current, data_drogue_sense, data_main_sense);
+            spawn!(send_internal, message).ok();
+            spawn_after!(ejection_sense, ExtU64::secs(1)).ok();
+            Ok(())
         });
+    }
+
+    /// Handles the CAN0 interrupt.
+    #[task(priority = 3, binds = CAN1, shared = [can_command_manager, data_manager])]
+    fn can_command(mut cx: can_command::Context) {
+        info!("CAN1 interrupt");
+        cx.shared.can_command_manager.lock(|can| {
+            cx.shared
+                .data_manager
+                .lock(|data_manager| can.process_data(data_manager));
+        });
+    }
+
+    /// Receives a log message from the custom logger so that it can be sent over the radio.
+    pub fn queue_gs_message(d: impl Into<Data>) {
+        let message = Message::new(
+            cortex_m::interrupt::free(|cs| {
+                let mut rc = RTC.borrow(cs).borrow_mut();
+                let rtc = rc.as_mut().unwrap();
+                rtc.count32()
+            }),
+            COM_ID,
+            d.into(),
+        );
+
+        send_internal::spawn(message).ok();
+    }
+
+    /**
+     * Sends a message over CAN.
+     */
+    #[task(capacity = 5, shared = [can_command_manager, &em])]
+    fn send_command(mut cx: send_command::Context, m: Message) {
+        cx.shared.em.run(|| {
+            cx.shared
+                .can_command_manager
+                .lock(|can| can.send_message(m))?;
+            Ok(())
+        });
+    }
+
+    #[task(local = [barometer], shared = [&em])]
+    fn read_barometer(cx: read_barometer::Context) {
+        cx.shared.em.run(|| {
+            let barometer = cx.local.barometer;
+            let (p, t) = barometer.get_data()?;
+            info!("pressure {} temperature {}", p, t);
+            Ok(())
+        });
+        spawn_after!(read_barometer, ExtU64::secs(1)).ok();
     }
 
     #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
     fn fire_drogue(mut cx: fire_drogue::Context) {
+        info!("Firing drogue");
         cx.shared.em.run(|| {
             if !(*cx.local.fired) {
                 cx.shared.gpio.lock(|gpio| {
@@ -183,6 +363,7 @@ mod app {
 
     #[task(priority = 3, local = [fired: bool = false], shared=[gpio, &em])]
     fn fire_main(mut cx: fire_main::Context) {
+        info!("Firing main");
         cx.shared.em.run(|| {
             if !(*cx.local.fired) {
                 cx.shared.gpio.lock(|gpio| {
@@ -236,7 +417,7 @@ mod app {
     }
 
     /// Sends info about the current state of the system.
-    #[task(shared = [data_manager, &em])]
+    #[task(priority = 3, shared = [data_manager, &em])]
     fn state_send(mut cx: state_send::Context) {
         cx.shared.em.run(|| {
             let rocket_state = cx
@@ -250,9 +431,17 @@ mod app {
                 return Ok(());
             };
             let board_state = messages::state::State { data: state.into() };
-            let message = Message::new(&monotonics::now(), COM_ID, board_state);
-            spawn!(send_internal, message)?;
-            spawn_after!(state_send, ExtU64::secs(2))?; // I think this is fine here.
+            let message = Message::new(
+                cortex_m::interrupt::free(|cs| {
+                    let mut rc = RTC.borrow(cs).borrow_mut();
+                    let rtc = rc.as_mut().unwrap();
+                    rtc.count32()
+                }),
+                COM_ID,
+                board_state,
+            );
+            spawn!(send_command, message)?;
+            spawn_after!(state_send, ExtU64::secs(5))?; // I think this is fine here.
             Ok(())
         });
     }

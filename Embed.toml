@@ -10,7 +10,7 @@ protocol = "Swd"
 enabled = true
 
 [default.general]
-chip = "ATSAME51J20A"
+chip = "STM32H733VGTx"
 
 [default.probe]
 protocol = "Swd"

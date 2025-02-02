@@ -6,18 +6,15 @@
 //! and ground-station communication.
 
 use crate::command::Command;
-use crate::health::Health;
-use crate::node::Node;
+use crate::sender::Sender;
 use crate::sensor::Sensor;
 use crate::state::State;
 use derive_more::From;
-use fugit::Instant;
 /// This is to help control versions.
 pub use mavlink;
 use messages_proc_macros_lib::common_derives;
 
 pub mod command;
-pub mod health;
 mod logging;
 pub mod node;
 pub mod sensor;
@@ -39,7 +36,7 @@ pub use logging::{ErrorContext, Event, Log, LogLevel};
 pub struct Message {
     /// Time in milliseconds since epoch. Note that the epoch here can be arbitrary and is not the
     /// Unix epoch.
-    pub timestamp: u64,
+    pub timestamp: u32,
 
     /// The original sender of this message.
     pub sender: Node,
@@ -56,17 +53,12 @@ pub enum Data {
     Sensor(Sensor),
     Log(Log),
     Command(Command),
-    Health(Health),
 }
 
 impl Message {
-    pub fn new<const NOM: u32, const DENOM: u32>(
-        timestamp: &Instant<u64, NOM, DENOM>,
-        sender: Node,
-        data: impl Into<Data>,
-    ) -> Self {
+    pub fn new(timestamp: u32, sender: Sender, data: impl Into<Data>) -> Self {
         Message {
-            timestamp: timestamp.duration_since_epoch().to_millis(),
+            timestamp: timestamp,
             sender,
             data: data.into(),
         }

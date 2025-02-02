@@ -1,17 +1,23 @@
-use atsamd_hal::gpio::{Pin, PushPullOutput, PA06, PA09};
+use atsamd_hal::gpio::{Pin, PushPullOutput, PB11, PB12};
 use atsamd_hal::prelude::*;
-
+use defmt::info;
 pub struct GPIOManager {
-    main_ematch: Pin<PA09, PushPullOutput>,
-    drogue_ematch: Pin<PA06, PushPullOutput>,
+    main_ematch: Pin<PB12, PushPullOutput>,
+    drogue_ematch: Pin<PB11, PushPullOutput>,
 }
 
 impl GPIOManager {
     pub fn new(
-        mut main_ematch: Pin<PA09, PushPullOutput>,
-        mut drogue_ematch: Pin<PA06, PushPullOutput>,
+        mut main_ematch: Pin<PB12, PushPullOutput>,
+        mut drogue_ematch: Pin<PB11, PushPullOutput>,
     ) -> Self {
         drogue_ematch.set_low().ok();
+        match drogue_ematch.set_low() {
+            Ok(_) => {}
+            Err(_) => {
+                info!("Cannot set low");
+            }
+        }
         main_ematch.set_low().ok();
         Self {
             main_ematch,

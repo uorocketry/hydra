@@ -42,8 +42,6 @@ impl ErrorManager {
         if let Err(e) = result {
             self.has_error.store(true, Relaxed);
 
-            error!("{}", e);
-
             if let Some(c) = e.get_context() {
                 error!("{}", e);
                 herror!(Error, c);

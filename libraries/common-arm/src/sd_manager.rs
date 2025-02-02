@@ -1,5 +1,6 @@
 use core::{fmt::Debug, marker::PhantomData};
 use defmt::info;
+use defmt::panic;
 use embedded_hal as hal;
 use embedded_sdmmc as sd;
 use hal::spi::FullDuplex;
@@ -52,6 +53,7 @@ where
 {
     pub fn new(spi: SPI, cs: CS) -> Self {
         let time_sink: TimeSink = TimeSink::new(); // Need to give this a DateTime object for actual timing.
+        info!("Initializing SD card");
         let mut sd_cont = sd::Controller::new(sd::SdMmcSpi::new(spi, cs), time_sink);
         match sd_cont.device().init() {
             Ok(_) => match sd_cont.device().card_size_bytes() {
@@ -79,7 +81,7 @@ where
         let file = sd_cont.open_file_in_dir(
             &mut volume,
             &root_directory,
-            "log.txt",
+            "lc24.txt",
             sd::Mode::ReadWriteCreateOrTruncate,
         );
         let file = match file {

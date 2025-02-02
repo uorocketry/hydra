@@ -6,5 +6,4 @@
 	},
 	"remoteUser": "root",
 	"runArgs": ["--privileged"] 
- 
 }

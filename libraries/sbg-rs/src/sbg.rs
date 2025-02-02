@@ -1,33 +1,21 @@
 use crate::bindings::{
-    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA,
-    _SbgEComLog_SBG_ECOM_LOG_EKF_NAV, _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
-    _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL, _SbgEComLog_SBG_ECOM_LOG_UTC_TIME,
-    _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgErrorCode_SBG_NO_ERROR,
-    _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR,
-    sbgEComCmdOutputSetConf, sbgEComHandle,
+    self, _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING, _SbgEComLog_SBG_ECOM_LOG_AIR_DATA, _SbgEComLog_SBG_ECOM_LOG_EKF_NAV, _SbgEComLog_SBG_ECOM_LOG_GPS1_POS, _SbgEComLog_SBG_ECOM_LOG_GPS1_RAW, _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL, _SbgEComLog_SBG_ECOM_LOG_UTC_TIME, _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40, _SbgErrorCode_SBG_NO_ERROR, _SbgErrorCode_SBG_NULL_POINTER, _SbgErrorCode_SBG_READ_ERROR, _SbgErrorCode_SBG_WRITE_ERROR, sbgEComCmdOutputSetConf, sbgEComHandle
 };
 use crate::bindings::{
     _SbgBinaryLogData, _SbgDebugLogType, _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0, _SbgEComHandle,
     _SbgEComLog_SBG_ECOM_LOG_EKF_QUAT, _SbgEComLog_SBG_ECOM_LOG_IMU_DATA,
     _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A, _SbgEComProtocol, _SbgErrorCode, _SbgInterface,
 };
-use atsamd_hal as hal;
 use core::ffi::c_void;
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 use core::sync::atomic::AtomicUsize;
-use defmt::{flush, warn};
+use defmt::{flush, debug, info, warn, error};
 use embedded_hal::serial::Write;
-use hal::gpio::{PB02, PB03, PB16, PB17};
-use hal::sercom::uart::Duplex;
-use hal::sercom::uart::{self, EightBit, Uart};
-use hal::sercom::{IoSet1, IoSet6, Sercom5};
 use heapless::Deque;
+use heapless::Vec;
+use core::ffi::CStr;
 use messages::sensor::*;
-
-type Pads = uart::PadsFromIds<Sercom5, IoSet6, PB03, PB02>;
-type PadsCDC = uart::PadsFromIds<Sercom5, IoSet1, PB17, PB16>;
-type Config = uart::Config<Pads, EightBit>;
 
 /**
  * Max buffer size for SBG messages.
@@ -43,14 +31,15 @@ static mut BUF_INDEX: AtomicUsize = AtomicUsize::new(0);
  */
 static mut BUF: &[u8; SBG_BUFFER_SIZE] = &[0; SBG_BUFFER_SIZE];
 
-static mut DEQ: Deque<u8, 4096> = Deque::new();
-
-/**
- * Holds the RTC instance. This is used to get the current time.
- */
-static mut RTC: Option<hal::rtc::Rtc<hal::rtc::Count32Mode>> = None;
+static mut DEQ: Deque<u8, 8192> = Deque::new();
 
 static mut DATA_CALLBACK: Option<fn(CallbackData)> = None;
+
+static mut SERIAL_WRITE_CALLBACK: Option<fn(Vec<u8, SBG_BUFFER_SIZE>)> = None;
+
+static mut RTC_GET_TIME: Option<fn() -> u32> = None;
+
+static mut SERIAL_FLUSH_CALLBACK: Option<fn()> = None;
 
 pub enum CallbackData {
     UtcTime(UtcTime),
@@ -68,7 +57,6 @@ struct UARTSBGInterface {
 
 pub struct SBG {
     UARTSBGInterface: UARTSBGInterface,
-    serial_device: Uart<Config, uart::TxDuplex>,
     handle: _SbgEComHandle,
     isInitialized: bool,
 }
@@ -79,23 +67,22 @@ impl SBG {
      * Takes ownership of the serial device and RTC instance.
      */
     pub fn new(
-        mut serial_device: Uart<Config, uart::TxDuplex>,
-        rtc: hal::rtc::Rtc<hal::rtc::Count32Mode>,
         callback: fn(CallbackData),
+        serial_write_callback: fn(Vec<u8, SBG_BUFFER_SIZE>),
+        rtc_get_time: fn() -> u32,
+        serial_flush_callback: fn(),
     ) -> Self {
-        // SAFETY: We are accessing a static variable.
-        // This is safe because we are the only ones who have access to it.
-        // Panic if the RTC instance is already taken, this
-        // only can happen if the SBG instance is created twice.
-        if unsafe { RTC.is_some() } {
-            panic!("RTC instance is already taken!");
+        unsafe {
+            DATA_CALLBACK = Some(callback);
+            SERIAL_WRITE_CALLBACK = Some(serial_write_callback);
+            RTC_GET_TIME = Some(rtc_get_time);
+            SERIAL_FLUSH_CALLBACK = Some(serial_flush_callback);
         }
         // SAFETY: We are assigning the RTC instance to a static variable.
         // This is safe because we are the only ones who have access to it.
-        unsafe { RTC = Some(rtc) };
         let interface = UARTSBGInterface {
             interface: &mut _SbgInterface {
-                handle: &mut serial_device as *mut Uart<Config, uart::TxDuplex> as *mut c_void,
+                handle: null_mut(), // SAFEY: No idea what I just did.
                 type_: 0,
                 name: [0; 48],
                 pDestroyFunc: Some(SBG::SbgDestroyFunc),
@@ -130,17 +117,17 @@ impl SBG {
             cmdDefaultTimeOut: 500,
         };
 
-        unsafe { DATA_CALLBACK = Some(callback) }
+
 
         let isInitialized = false;
 
         SBG {
             UARTSBGInterface: interface,
-            serial_device,
             handle: handle,
             isInitialized,
         }
     }
+
     /**
      * Returns true if the SBG is initialized.
      */
@@ -150,7 +137,7 @@ impl SBG {
     /**
      * Reads SBG data frames for a buffer and returns the most recent data.
      */
-    pub fn read_data(&mut self, buffer: &'static [u8; SBG_BUFFER_SIZE]) {
+    pub fn read_data(&mut self, buffer: &[u8; SBG_BUFFER_SIZE]) {
         // SAFETY: We are assigning a static mut variable.
         // Buf can only be accessed from functions called by sbgEComHandle after this assignment.
         // unsafe { BUF = buffer };
@@ -191,6 +178,19 @@ impl SBG {
                 _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
                 _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
                 _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL,
+                _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
+            )
+        };
+        if errorCode != _SbgErrorCode_SBG_NO_ERROR {
+            warn!("Unable to configure UTC Time logs to 40 cycles");
+        }
+
+        let errorCode: _SbgErrorCode = unsafe {
+            sbgEComCmdOutputSetConf(
+                &mut self.handle,
+                _SbgEComOutputPort_SBG_ECOM_OUTPUT_PORT_A,
+                _SbgEComClass_SBG_ECOM_CLASS_LOG_ECOM_0,
+                _SbgEComLog_SBG_ECOM_LOG_GPS1_POS,
                 _SbgEComOutputMode_SBG_ECOM_OUTPUT_MODE_DIV_40,
             )
         };
@@ -323,28 +323,28 @@ impl SBG {
         if pBuffer.is_null() {
             return _SbgErrorCode_SBG_NULL_POINTER;
         }
-        // SAFETY: We are casting a c_void pointer to a Uart peripheral pointer.
-        // This is safe because we only have one sbg object and we ensure that
-        // the peripheral pointer is not accessed during the lifetime of this function.
-        let serial: *mut Uart<Config, uart::TxDuplex> =
-            unsafe { (*pInterface).handle as *mut Uart<Config, uart::TxDuplex> };
+
         // SAFETY: We are casting a c_void pointer to a u8 pointer and then creating a slice from it.
         // This is safe because we ensure pBuffer is valid, pBuffer is not accessed during the lifetime of this function,
         // and the SBGECom library ensures the buffer given is of the correct size.
         let array: &[u8] = unsafe { from_raw_parts(pBuffer as *const u8, bytesToWrite) };
-        let mut counter: usize = 0;
-        loop {
-            if bytesToWrite == counter {
-                break;
-            }
-            // SAFETY: We are accessing a Uart Peripheral pointer.
-            // This is safe because we ensure that the pointer is not accessed during the lifetime of this function.
-            let result = unsafe { nb::block!(serial.as_mut().unwrap().write(array[counter])) };
-            match result {
-                Ok(_) => counter += 1,
-                Err(_) => return _SbgErrorCode_SBG_WRITE_ERROR,
-            }
+        let vec = array.iter().copied().collect::<Vec<u8, SBG_BUFFER_SIZE>>();
+        match unsafe { SERIAL_WRITE_CALLBACK } {
+            Some(callback) => callback(vec),
+            None => return _SbgErrorCode_SBG_WRITE_ERROR,
         }
+        // let mut counter: usize = 0;
+        // loop {
+        //     if bytesToWrite == counter {
+        //         break;
+        //     }
+        //     // SAFETY: We are accessing a Uart Peripheral pointer.
+        //     // This is safe because we ensure that the pointer is not accessed during the lifetime of this function.
+        //     match unsafe { SERIAL_WRITE_CALLBACK } {
+        //         Some(callback) => callback(&array[counter..counter + 1]),
+        //         None => return _SbgErrorCode_SBG_WRITE_ERROR,
+        //     }
+        // }
         _SbgErrorCode_SBG_NO_ERROR
     }
 
@@ -384,7 +384,13 @@ impl SBG {
                         _SbgEComLog_SBG_ECOM_LOG_GPS1_POS => {
                             callback(CallbackData::GpsPos((*pLogData).gpsPosData.into()))
                         }
-                        _ => (),
+                        _SbgEComLog_SBG_ECOM_LOG_GPS1_VEL => {
+                            callback(CallbackData::GpsVel((*pLogData).gpsVelData.into()))
+                        }
+                        _SbgEComLog_SBG_ECOM_LOG_GPS1_HDT => {
+                        }
+                        _ => {
+                        },
                     }
                 }
             }
@@ -413,13 +419,11 @@ impl SBG {
         // SAFETY: We are casting a c_void pointer to a Uart peripheral pointer.
         // This is safe because we only have one sbg object and we ensure that
         // the peripheral pointer is not accessed during the lifetime of this function.
-        let serial: *mut Uart<Config, Duplex> =
-            unsafe { (*pInterface).handle as *mut Uart<Config, Duplex> };
-        let result = unsafe { serial.as_mut().unwrap().flush() };
-        match result {
-            Ok(_) => return _SbgErrorCode_SBG_NO_ERROR,
-            Err(_) => return _SbgErrorCode_SBG_READ_ERROR,
+        match unsafe { SERIAL_FLUSH_CALLBACK } {
+            Some(callback) => callback(),
+            None => return _SbgErrorCode_SBG_WRITE_ERROR,
         }
+        _SbgErrorCode_SBG_NO_ERROR
     }
 
     /**
@@ -457,31 +461,33 @@ unsafe impl Send for SBG {}
  */
 #[no_mangle]
 pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
-    _pFileName: *const ::core::ffi::c_char,
-    _pFunctionName: *const ::core::ffi::c_char,
-    _line: u32,
-    _pCategory: *const ::core::ffi::c_char,
+    pFileName: *const ::core::ffi::c_char,
+    pFunctionName: *const ::core::ffi::c_char,
+    line: u32,
+    pCategory: *const ::core::ffi::c_char,
     logType: _SbgDebugLogType,
-    _errorCode: _SbgErrorCode,
-    _pFormat: *const ::core::ffi::c_char,
+    errorCode: _SbgErrorCode,
+    pFormat: *const ::core::ffi::c_char,
 ) {
-    // if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
-    //     return;
-    // }
+    if pFileName.is_null() || pFunctionName.is_null() || pCategory.is_null() || pFormat.is_null() {
+        return;
+    }
     // // SAFETY: We are converting a raw pointer to a CStr and then to a str.
     // // This is safe because we check if the pointers are null and
     // // the pointers can only be accessed during the lifetime of this function.
-    // let file = unsafe { CStr::from_ptr(pFileName).to_str().unwrap() };
-    // let function = unsafe { CStr::from_ptr(pFunctionName).to_str().unwrap() };
-    // let _category = unsafe { CStr::from_ptr(pCategory).to_str().unwrap() };
-    // let _format = unsafe { CStr::from_ptr(pFormat).to_str().unwrap() };
+    let file = unsafe { CStr::from_ptr(pFileName).to_str().unwrap() };
+    let function = unsafe { CStr::from_ptr(pFunctionName).to_str().unwrap() };
+    let category = unsafe { CStr::from_ptr(pCategory).to_str().unwrap() };
+    let format = unsafe { CStr::from_ptr(pFormat).to_str().unwrap() };
+
+    // info!("{}:{}:{}:{}:{}:{}", file, function, line, category, errorCode, format);
 
     match logType {
         // silently handle errors
         // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_ERROR => error!("SBG Error"),
         _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_WARNING => warn!("SBG Warning"),
-        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info {} {}", file, function),
-        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug {} {}", file, function),
+        // _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_INFO => info!("SBG Info "),
+        _SbgDebugLogType_SBG_DEBUG_LOG_TYPE_DEBUG => debug!("SBG Debug "),
         _ => (),
     };
     flush();
@@ -494,11 +500,11 @@ pub unsafe extern "C" fn sbgPlatformDebugLogMsg(
 pub extern "C" fn sbgGetTime() -> u32 {
     // SAFETY: We are accessing a static mut variable.
     // This is safe because this is the only place where we access the RTC.
-    unsafe {
-        match &RTC {
-            Some(x) => x.count32(),
-            None => 0, // bad error handling but we can't panic, maybe we should force the timeout to be zero in the event there is no RTC.
+    match unsafe { RTC_GET_TIME } {
+        Some(get_time) => {
+            get_time()
         }
+        None => 0,
     }
 }
 
